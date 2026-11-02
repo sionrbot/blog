@@ -3,6 +3,11 @@
 This is the first file AI agents (Claude Code, Cursor, etc.) should read before editing this theme.
 Humans can read it too, but sentences are written so an agent can act on them without guessing.
 
+## Project Rules
+
+1. **Use `astro add` for integrations**: Use `astro add` for official integrations (e.g. `astro add tailwind`, `astro add react`). For other packages, install using the command for your preferred package manager rather than editing `package.json` directly.
+2. **Verify current APIs**: Check the latest documentation, especially for newer features like sessions and actions. This is also important for features that have seen significant changes since their initial launch, such as content collections, or previously experimental features that may no longer be experimental.
+
 ## Commands
 
 ```sh
