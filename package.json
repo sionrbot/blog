@@ -3,7 +3,14 @@
   "type": "module",
   "version": "1.4.1",
   "engines": {
-    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
+    "node": "^24.22.2 || >=26.0.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.13.0",
+      "onFail": "ignore"
+    }
   },
   "scripts": {
     "dev": "astro dev",
@@ -15,29 +22,29 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/markdown-satteri": "^0.4.1",
-    "@astrojs/mdx": "^8.0.1",
+    "@astrojs/markdown-satteri": "^0.4.6",
+    "@astrojs/mdx": "^8.1.2",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
-    "@iconify-json/lucide": "^1.2.132",
+    "@iconify-json/lucide": "^1.2.150",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.3.3",
+    "astro": "7.4.4",
     "astro-icon": "^1.2.0",
-    "katex": "^0.19.0",
-    "sharp": "^0.35.4",
+    "katex": "^0.19.1",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
     "esbuild": true
   },
-  "packageManager": "pnpm@10.34.5+sha512.a4ee05f2f73658255bd6a89859c065a45c28a57daefae2c893a168ee2b73168c37b91e83e57ea67654ad03f03031746430e8bce38e362e042605fb8abc80192e",
+  "packageManager": "pnpm@11.28.10",
   "devDependencies": {
-    "@astrojs/check": "^0.9.10",
-    "@typescript-eslint/parser": "^8.70.0",
-    "eslint": "^10.10.0",
-    "eslint-plugin-astro": "^3.1.0",
+    "@astrojs/check": "^0.9.12",
+    "@typescript-eslint/parser": "^8.72.1",
+    "eslint": "^10.14.0",
+    "eslint-plugin-astro": "^3.2.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0",
+    "typescript-eslint": "^8.72.1",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },

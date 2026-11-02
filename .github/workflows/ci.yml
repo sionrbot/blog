@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version-file: .nvmrc
+          node-version-file: package.json
       # Install the packageManager version with npm
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
       - run: pnpm install --frozen-lockfile
