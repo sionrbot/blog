@@ -95,26 +95,4 @@ export default defineConfig({
     ],
     ignorePatterns: ['dist/', '.astro/', 'pnpm-lock.yaml'],
   },
-  plugins: [
-    {
-      name: 'vite-plus:vitest-resolver',
-      enforce: 'pre',
-      config: {
-        order: 'post',
-      },
-    },
-    {
-      name: 'vite-plus:auto-inline-matcher-deps',
-      enforce: 'pre',
-      config: {
-        order: 'post',
-      },
-    },
-    {
-      name: 'vite-plus:coverage-version-guard',
-    },
-    {
-      name: 'vite-plus:vitest-cache-paths',
-    },
-  ],
 });
