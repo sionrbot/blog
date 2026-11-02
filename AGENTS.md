@@ -98,4 +98,4 @@ Human-readable version: `docs/content.md`.
 
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.
 - TypeScript is pinned to 6.x. 7.x (native compiler) is not yet supported by `astro check` or typescript-eslint.
-- pnpm is pinned to 10.x via the `packageManager` field. pnpm 9 can't read a pnpm 11+ lockfile, and pnpm 10 below 10.34 can't switch to pnpm 11+ (native binary), so a higher pin breaks installs for buyers with an older global pnpm. Keep `pnpm-workspace.yaml` in pnpm 10 syntax (`onlyBuiltDependencies`, not `allowBuilds`).
+- Use the pnpm 11 version pinned in `package.json#packageManager` and `allowBuilds` in `pnpm-workspace.yaml`. Vite+ manages Node.js through `package.json#devEngines.runtime`; keep the workspace `nodeVersion` aligned with that pin. `runtimeOnFail: ignore` and `pmOnFail: ignore` prevent pnpm from duplicating Vite+ environment management.

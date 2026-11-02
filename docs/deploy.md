@@ -8,8 +8,8 @@ Set `site.url` in `src/config.ts` to your production URL. It is used for canonic
 
 ## Requirements
 
-- Node.js `^22.18.0 || ^24.11.0 || >=26.0.0` (see `.nvmrc` for the CI pin).
-- pnpm 9 or newer. `package.json` pins the exact version in the `packageManager` field; pnpm 10+ and Corepack switch to it on their own. To install that exact version yourself:
+- Node.js pinned in `package.json#devEngines.runtime`. Keep `pnpm-workspace.yaml#nodeVersion` aligned with this version for dependency engine checks. Vite+ selects the runtime from `package.json`.
+- pnpm 11, pinned in `package.json#packageManager`. Vite+ selects this version automatically. Without Vite+, install the declared Node.js version and the exact pnpm version:
 
 ```sh
 npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"

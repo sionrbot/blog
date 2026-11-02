@@ -18,7 +18,7 @@ What's new: [release notes](https://github.com/ondelva/astro-theme-pilcrow/relea
 
 ## Quick start
 
-You need Node.js `^22.18.0 || ^24.11.0 || >=26.0.0` and pnpm 9 or newer (`npm i -g pnpm`). `package.json` pins the exact pnpm version, and pnpm 10+ switches to it on its own.
+Use the Node.js version pinned in `package.json#devEngines.runtime` and the pnpm 11 version pinned in `package.json#packageManager`. Vite+ selects both versions automatically. `pnpm-workspace.yaml#nodeVersion` matches the runtime pin for dependency engine checks; Vite+ manages the actual runtime. Without Vite+, install the declared Node.js version and run `npm i -g pnpm@11.28.10`.
 
 ```sh
 pnpm create astro@latest my-site -- --template ondelva/astro-theme-pilcrow
