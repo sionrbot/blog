@@ -9,12 +9,12 @@ const year = new Date().getFullYear();
 const themeCredit = 'https://ondelva.com/themes/pilcrow';
 ---
 
-<footer class="border-border mt-24 border-t">
-  <div class="hang text-muted mx-auto max-w-5xl px-4 pt-10 pb-14 font-sans text-sm">
+<footer class="mt-24 border-t border-border">
+  <div class="mx-auto hang max-w-5xl px-4 pt-10 pb-14 font-sans text-sm text-muted">
     <div>
       <p>
         © {year} {site.author} ·{' '}
-        <a href={themeCredit} rel="nofollow" class="text-muted hover:text-foreground underline">
+        <a href={themeCredit} rel="nofollow" class="text-muted underline hover:text-foreground">
           Pilcrow
         </a>{' '}
         theme by ondelva
@@ -26,7 +26,7 @@ const themeCredit = 'https://ondelva.com/themes/pilcrow';
               href={href}
               aria-label={label}
               rel="me noopener"
-              class="text-muted hover:text-foreground inline-flex size-10 items-center justify-center"
+              class="inline-flex size-10 items-center justify-center text-muted hover:text-foreground"
             >
               <Icon name={icon} class="size-5" aria-hidden="true" />
             </a>
@@ -36,7 +36,7 @@ const themeCredit = 'https://ondelva.com/themes/pilcrow';
           <a
             href="/rss.xml"
             aria-label={t.rss}
-            class="text-muted hover:text-foreground inline-flex size-10 items-center justify-center"
+            class="inline-flex size-10 items-center justify-center text-muted hover:text-foreground"
           >
             <Icon name="lucide:rss" class="size-5" aria-hidden="true" />
           </a>
@@ -50,7 +50,7 @@ const themeCredit = 'https://ondelva.com/themes/pilcrow';
           <ul class="mt-2 space-y-1.5" aria-label={group.title}>
             {group.links.map(({ label, href }) => (
               <li>
-                <a href={href} class="text-muted hover:text-foreground no-underline">
+                <a href={href} class="text-muted no-underline hover:text-foreground">
                   {label}
                 </a>
               </li>

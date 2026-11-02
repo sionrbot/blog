@@ -14,8 +14,8 @@ const isCurrent = (href: string) => {
 ---
 
 <header class="mx-auto flex w-full max-w-5xl flex-col flex-wrap items-start justify-between gap-x-6 gap-y-2 px-4 py-6 sm:flex-row sm:items-center">
-  <a href="/" class="text-foreground flex items-center gap-1.5 text-xl font-medium no-underline">
-    <Logo class="text-primary size-7" aria-hidden="true" />
+  <a href="/" class="flex items-center gap-1.5 text-xl font-medium text-foreground no-underline">
+    <Logo class="size-7 text-primary" aria-hidden="true" />
     {site.name}
   </a>
   <div class="flex items-center gap-2 sm:gap-4">
@@ -26,7 +26,7 @@ const isCurrent = (href: string) => {
             <a
               href={href}
               aria-current={isCurrent(href) ? 'page' : undefined}
-              class="text-muted hover:text-foreground aria-[current=page]:text-foreground no-underline transition-colors"
+              class="text-muted no-underline transition-colors hover:text-foreground aria-[current=page]:text-foreground"
             >
               {label}
             </a>

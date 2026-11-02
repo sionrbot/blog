@@ -20,7 +20,7 @@ const title = page.currentPage > 1 ? `${t.blog} (${page.currentPage})` : t.blog;
 <BaseLayout title={title} description={t.blogDescription}>
   <div class="mx-auto max-w-5xl px-4 py-12 sm:py-16">
     <h1 class="text-5xl font-light tracking-tight">{t.blog}</h1>
-    <p class="text-muted mt-4 text-xl">{t.blogDescription}</p>
+    <p class="mt-4 text-xl text-muted">{t.blogDescription}</p>
     <div class="mt-12">
       <PostList posts={page.data} />
     </div>

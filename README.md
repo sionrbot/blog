@@ -18,7 +18,7 @@ What's new: [release notes](https://github.com/ondelva/astro-theme-pilcrow/relea
 
 ## Quick start
 
-You need Node.js 22.12+ and pnpm 9 or newer (`npm i -g pnpm`). `package.json` pins the exact pnpm version, and pnpm 10+ switches to it on its own.
+You need Node.js `^22.18.0 || ^24.11.0 || >=26.0.0` and pnpm 9 or newer (`npm i -g pnpm`). `package.json` pins the exact pnpm version, and pnpm 10+ switches to it on its own.
 
 ```sh
 pnpm create astro@latest my-site -- --template ondelva/astro-theme-pilcrow
@@ -67,3 +67,21 @@ This is the free, MIT-licensed edition. Pilcrow Pro is built on the same code an
 
 [MIT](LICENSE).
 Third-party assets: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+
+### Vite+ tooling
+
+Vite+ 1.4.0 provides Vite, Oxlint, and Oxfmt. Its lint and format settings live in
+`vite.config.ts`; Astro application settings stay in `astro.config.mjs`.
+
+- `pnpm exec vp check` checks formatting, lint, and TypeScript through Vite+.
+- `pnpm check` runs Astro's template-aware type checker.
+- `pnpm lint` runs Oxlint and the retained ESLint rules, including Astro template checks
+  that Oxlint does not enforce.
+- `pnpm format` formats with Oxfmt, including Astro and Tailwind class sorting.
+- `pnpm dev`, `pnpm build`, and `pnpm preview` keep using Astro. With a global Vite+
+  CLI, use `vp run dev`, `vp run build`, and `vp run preview` for these scripts.
+  The built-in `vp dev` / `vp build` / `vp preview` commands run plain Vite and do
+  not load Astro's application pipeline.
+
+There is no Vitest suite or library package in this project. `vp test run` therefore
+reports no test files. CI validates the built site with Lighthouse and an internal-link check.
