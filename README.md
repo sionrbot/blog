@@ -73,8 +73,9 @@ Third-party assets: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
 Vite+ 1.4.0 provides Vite, Oxlint, and Oxfmt. Its lint and format settings live in
 `vite.config.ts`; Astro application settings stay in `astro.config.mjs`.
 
+- `pnpm check` generates Astro content collection types and runs its template-aware type checker.
+  Run it before the Vite+ checks on a fresh checkout.
 - `pnpm exec vp check` checks formatting, lint, and TypeScript through Vite+.
-- `pnpm check` runs Astro's template-aware type checker.
 - `pnpm lint` runs Oxlint and the retained ESLint rules, including Astro template checks
   that Oxlint does not enforce.
 - `pnpm format` formats with Oxfmt, including Astro and Tailwind class sorting.

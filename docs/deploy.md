@@ -44,4 +44,4 @@ Build command: `pnpm build`. Publish directory: `dist`.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push to `main` and on pull requests: install, `pnpm exec vp check`, `pnpm check`, `pnpm lint`, `pnpm build`, a Lighthouse run, and an internal link check against `dist`. Use it as a reference for what a deploy pipeline should verify before shipping.
+`.github/workflows/ci.yml` runs on every push to `main` and on pull requests: install, `pnpm check` (including Astro type generation), `pnpm exec vp check`, `pnpm lint`, `pnpm build`, a Lighthouse run, and an internal link check against `dist`. Use it as a reference for what a deploy pipeline should verify before shipping.
