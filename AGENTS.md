@@ -10,15 +10,21 @@ This is the first file you should read before editing this theme.
 ## Commands
 
 ```sh
-pnpm install
-pnpm dev        # http://localhost:4321
-pnpm build      # outputs dist/
-pnpm check      # astro check (types + templates)
-pnpm lint
-pnpm format
+vp install
+vp run dev      # Astro dev server; default http://localhost:4321
+vp fmt          # format with Oxfmt, including Astro and Tailwind class sorting
+vp run check    # generate Astro types and check types + templates
+vp check        # Vite+ formatting, Oxlint, and TypeScript checks
+vp run lint     # Oxlint + ESLint, including Astro template rules
+vp run build    # Astro production build; outputs dist/
+vp run preview  # preview the Astro production build
 ```
 
-After any change, `pnpm check && pnpm build` must pass.
+Use `vp run` for Astro scripts: the built-in `vp dev`, `vp build`, and `vp preview` commands run plain Vite. Both `vp check` and `vp run check` are required to cover Vite+ checks and Astro templates.
+
+Run `vp run check` before `vp check` or `vp run lint` on a fresh checkout so Astro generates content collection types.
+
+After any change, `vp run check && vp check && vp run lint && vp run build` must pass.
 
 ## Where to edit
 

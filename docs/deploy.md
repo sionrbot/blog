@@ -8,7 +8,7 @@ Set `site.url` in `src/config.ts` to your production URL. It is used for canonic
 
 ## Requirements
 
-- Node.js 22.12 or newer.
+- Node.js `^22.18.0 || ^24.11.0 || >=26.0.0` (see `.nvmrc` for the CI pin).
 - pnpm 9 or newer. `package.json` pins the exact version in the `packageManager` field; pnpm 10+ and Corepack switch to it on their own. To install that exact version yourself:
 
 ```sh
@@ -44,4 +44,4 @@ Build command: `pnpm build`. Publish directory: `dist`.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push to `main` and on pull requests: install, `pnpm check`, `pnpm lint`, `pnpm build`, a Lighthouse run, and an internal link check against `dist`. Use it as a reference for what a deploy pipeline should verify before shipping.
+`.github/workflows/ci.yml` runs on every push to `main` and on pull requests: install, `pnpm check` (including Astro type generation), `pnpm exec vp check`, `pnpm lint`, `pnpm build`, a Lighthouse run, and an internal link check against `dist`. Use it as a reference for what a deploy pipeline should verify before shipping.

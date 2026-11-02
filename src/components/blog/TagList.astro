@@ -14,7 +14,7 @@ const { tags } = Astro.props;
   <ul aria-label={t.tags} class="flex flex-wrap gap-x-3 gap-y-1 font-sans text-xs">
     {tags.map((tag) => (
       <li>
-        <a href={tagHref(tag)} class="text-muted hover:text-primary no-underline">
+        <a href={tagHref(tag)} class="text-muted no-underline hover:text-primary">
           #{tag}
         </a>
       </li>

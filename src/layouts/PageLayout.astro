@@ -16,7 +16,7 @@ const { title, description } = Astro.props.frontmatter ?? Astro.props;
   {Astro.props.frontmatter?.hasMath && <link slot="head" rel="stylesheet" href={katexCss} />}
   <article class="mx-auto max-w-prose px-4 py-12 sm:py-16">
     <h1 class="text-5xl font-light tracking-tight">{title}</h1>
-    {description && <p class="text-muted mt-4 text-xl">{description}</p>}
+    {description && <p class="mt-4 text-xl text-muted">{description}</p>}
     <div class="prose mt-10">
       <slot />
     </div>
