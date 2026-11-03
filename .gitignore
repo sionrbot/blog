@@ -26,3 +26,7 @@ pnpm-debug.log*
 
 # wrangler local state
 .wrangler/
+
+# test reports
+test-results/
+.vitest/

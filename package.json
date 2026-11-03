@@ -19,7 +19,10 @@
     "check": "astro check",
     "lint": "vp lint . && eslint .",
     "format": "vp fmt .",
-    "astro": "astro"
+    "astro": "astro",
+    "test:unit": "vp test --project unit",
+    "test:unit:tz": "node tests/support/run-date-timezones.ts",
+    "test:build": "vp test --project build"
   },
   "dependencies": {
     "@astrojs/markdown-satteri": "^0.4.6",
@@ -41,8 +44,10 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@typescript-eslint/parser": "^8.72.1",
+    "cheerio": "1.2.0",
     "eslint": "^10.14.0",
     "eslint-plugin-astro": "^3.2.1",
+    "fast-xml-parser": "5.11.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "catalog:",
