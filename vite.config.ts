@@ -42,7 +42,7 @@ export default defineConfig({
     env: {
       builtin: true,
     },
-    ignorePatterns: ['dist/', '.astro/', 'node_modules/', 'test-results/', '.vitest/'],
+    ignorePatterns: ['dist/', '.astro/', 'node_modules/', 'test-results/', '.vitest/', '.e2e/'],
     rules: {
       'no-array-constructor': 'error',
       'no-unused-expressions': 'error',
@@ -119,6 +119,14 @@ export default defineConfig({
         language: 'astro',
       },
     ],
-    ignorePatterns: ['dist/', '.astro/', 'pnpm-lock.yaml', 'test-results/', '.vitest/'],
+    ignorePatterns: [
+      'dist/',
+      '.astro/',
+      'pnpm-lock.yaml',
+      'test-results/',
+      '.vitest/',
+      '.e2e/',
+      '.agents/skills/e2e/',
+    ],
   },
 });

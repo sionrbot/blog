@@ -1,4 +1,4 @@
-import { access, readFile, writeFile } from 'node:fs/promises';
+import { access, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vite-plus/test';
 import {
@@ -87,6 +87,16 @@ describe('published content across production and development', () => {
 
   test('PUB-01/PUB-02: all public surfaces exclude drafts and preserve publication order', async () => {
     assertPublication(await publicationOutput(fixture.dist));
+  });
+
+  test('synonymous tags share one route and list each published article once', async () => {
+    expect((await readdir(join(fixture.dist, 'blog/tag'))).toSorted()).toEqual([
+      'craft',
+      'shared',
+      'slow-reading',
+    ]);
+    const page = await readHtml(fixture.dist, '/blog/tag/slow-reading/');
+    expect(listPostPaths(page.html())).toEqual(['/blog/newest/', '/blog/middle/', '/blog/oldest/']);
   });
 
   test('PUB-03: the same fixture exposes drafts through the dev HTTP interface', async () => {

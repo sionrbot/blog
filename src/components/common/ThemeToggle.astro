@@ -16,7 +16,7 @@ const t = useT(Astro.currentLocale);
 </button>
 
 <script>
-  // The inline script in BaseLayout's <head> sets the initial theme. This only handles clicks.
+  // BaseLayout resolves saved/system preferences; keep the controls in sync with that theme.
   const root = document.documentElement;
   const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
   const sync = () =>
@@ -31,4 +31,5 @@ const t = useT(Astro.currentLocale);
     }),
   );
   sync();
+  new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['class'] });
 </script>

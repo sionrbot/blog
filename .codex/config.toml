@@ -1,2 +1,6 @@
 [mcp_servers.astro]
 url = "https://mcp.docs.astro.build/mcp"
+
+[mcp_servers.e2e]
+command = "npx"
+args = ["e2e", "mcp"]
