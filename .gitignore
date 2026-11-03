@@ -30,3 +30,18 @@ pnpm-debug.log*
 # test reports
 test-results/
 .vitest/
+.e2e/results/
+.e2e/cache/
+.e2e/sessions/
+.e2e/report.json
+.e2e/ai-trace.json
+.e2e/junit.xml
+.e2e/summary.md
+.e2e/logs/
+.e2e/videos/
+
+# All E2E reports and ephemeral run manifests
+.e2e/
+
+# Local E2E model credentials
+.env.e2e

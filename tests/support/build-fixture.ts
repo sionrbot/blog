@@ -32,6 +32,7 @@ export interface BuildFixture {
   env: NodeJS.ProcessEnv;
   startProcess(args: string[], logName: string): ReturnType<typeof startAstro>;
   build(): Promise<ProcessResult>;
+  beforeDispose(cleanup: () => Promise<void>): void;
   dispose(): Promise<void>;
 }
 
@@ -54,6 +55,7 @@ export async function createFixture(
   let disposed = false;
   const processes = new Set<ReturnType<typeof startAstro>>();
   let disposal: Promise<void> | undefined;
+  const cleanups: (() => Promise<void>)[] = [];
   const release = ownFixture(dispose);
   function startProcess(args: string[], logName: string) {
     if (disposed) throw new Error('Fixture disposed');
@@ -67,7 +69,8 @@ export async function createFixture(
     disposal ??= (async () => {
       await setup.catch(() => {});
       try {
-        const results = await Promise.allSettled([...processes].map((child) => child.stop()));
+        const results = await Promise.allSettled(cleanups.map((cleanup) => cleanup()));
+        results.push(...(await Promise.allSettled([...processes].map((child) => child.stop()))));
         for (const file of ['resolved-config.json', 'resolved-vite.json']) {
           try {
             await cp(join(root, file), join(reportDir, file));
@@ -81,12 +84,9 @@ export async function createFixture(
             failures.map((result) => result.reason),
             'Fixture subprocess cleanup failed',
           );
+        await rm(root, { recursive: true, force: true });
       } finally {
-        try {
-          await rm(root, { recursive: true, force: true });
-        } finally {
-          release();
-        }
+        release();
       }
     })();
     return disposal;
@@ -210,6 +210,10 @@ export default {
     reportDir,
     env,
     startProcess,
+    beforeDispose(cleanup) {
+      if (disposed) throw new Error('Fixture disposed');
+      cleanups.push(cleanup);
+    },
     async build() {
       if (disposed || active) throw new Error('Fixture disposed or already building');
       active = startProcess(['build'], 'build.log');

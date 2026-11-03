@@ -1,0 +1,76 @@
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_ai:
+        description: Run DeepSeek agent tests (requires DEEPSEEK_API_KEY secret)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [default, rendering, configured-forms]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec e2e-web install chromium webkit --with-deps
+      - run: pnpm build
+      - run: pnpm run test:e2e -- --variant ${{ matrix.variant }} --target desktop,narrow,webkit
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-${{ matrix.variant }}
+          path: |
+            .e2e/runs/
+            test-results/build/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+
+  agent:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ai && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [default, rendering, configured-forms]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec e2e-web install chromium --with-deps
+      - run: pnpm build
+      - run: pnpm run test:e2e:ai -- --variant ${{ matrix.variant }} --target desktop,narrow --max-failures 2 --max-duration 600000
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          E2E_MODEL: deepseek-flash
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-ai-${{ matrix.variant }}
+          path: |
+            .e2e/runs/
+            test-results/build/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
