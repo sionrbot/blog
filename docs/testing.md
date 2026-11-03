@@ -1,8 +1,8 @@
 # Testing
 
 This repository includes unit/build tests and TesterArmy E2E tests.
-Core implementation and remote quality/deterministic E2E acceptance are complete;
-remote AI acceptance remains pending as described in the closing status below. E2E focuses
+Core implementation and remote quality, deterministic E2E and AI acceptance
+are complete; the verified revisions and reports are recorded below. E2E focuses
 on key user flows, necessary deterministic assertions, a few AI visual checks,
 and production preview regression. It uses the official default config for
 local development and Codex MCP. SEO/JSON-LD, content schema and Markdown
@@ -460,8 +460,16 @@ Remote CI results must be checked separately from local runs.
   Lighthouse (three URLs, nine runs) and internal links (33 scanned).
 - [Deterministic E2E](https://github.com/sionrbot/sionrbot-blog/actions/runs/41676759125)
   passed all three variant jobs; report artifacts were uploaded for each variant.
-- `DEEPSEEK_API_KEY` is configured as a repository Actions secret. Remote AI
-  acceptance still requires manual dispatch on main after merge; the PR's AI
-  job is intentionally skipped. Local AI reports are not remote evidence.
-- [Draft PR #8](https://github.com/sionrbot/sionrbot-blog/pull/8) holds these changes;
-  no merge or branch-protection change was performed during acceptance.
+- [PR #8](https://github.com/sionrbot/sionrbot-blog/pull/8) was merged into main as
+  `2034bd4` with user approval. Branch protection was not changed.
+- One [manual AI acceptance run](https://github.com/sionrbot/sionrbot-blog/actions/runs/41678389076)
+  on that clean main revision passed all three AI variants: default 6/6,
+  configured-forms 6/6 and rendering 2/2 (Chromium desktop and narrow).
+  All 14 results have one attempt, zero failed/interrupted/flaky/skipped results,
+  and actual model usage: 353,045 + 94,067 + 75,930 = 523,042 tokens.
+  Provider prompt-token caching is not action replay or a measured dollar cost.
+  The same workflow also passed all three deterministic browser jobs and uploaded
+  the six variant report artifacts.
+- `DEEPSEEK_API_KEY` is configured as a repository Actions secret. AI stays
+  manual-only on main; this acceptance sample does not establish long-term
+  stability or make AI a required PR check.
