@@ -1,7 +1,33 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite-plus';
 
 // Astro template rules remain in eslint.config.js; run pnpm lint for both linters.
 export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          include: ['tests/unit/**/*.test.ts'],
+          alias: {
+            'astro:content': fileURLToPath(
+              new URL('./tests/support/astro-content.stub.ts', import.meta.url),
+            ),
+          },
+        },
+      },
+      {
+        test: {
+          name: 'build',
+          include: ['tests/build/**/*.test.ts'],
+          fileParallelism: false,
+          maxWorkers: 1,
+          testTimeout: 180_000,
+          hookTimeout: 180_000,
+        },
+      },
+    ],
+  },
   lint: {
     plugins: ['oxc', 'typescript', 'unicorn'],
     jsPlugins: [
@@ -16,7 +42,7 @@ export default defineConfig({
     env: {
       builtin: true,
     },
-    ignorePatterns: ['dist/', '.astro/', 'node_modules/'],
+    ignorePatterns: ['dist/', '.astro/', 'node_modules/', 'test-results/', '.vitest/'],
     rules: {
       'no-array-constructor': 'error',
       'no-unused-expressions': 'error',
@@ -93,6 +119,6 @@ export default defineConfig({
         language: 'astro',
       },
     ],
-    ignorePatterns: ['dist/', '.astro/', 'pnpm-lock.yaml'],
+    ignorePatterns: ['dist/', '.astro/', 'pnpm-lock.yaml', 'test-results/', '.vitest/'],
   },
 });

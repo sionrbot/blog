@@ -20,8 +20,11 @@ jobs:
       - run: pnpm check
       - run: pnpm exec vp check
       - run: pnpm lint
+      - run: pnpm run test:unit
+      - run: pnpm run test:unit:tz
       - run: pnpm build
-      # Thresholds (mobile 95+) live in lighthouserc.json
+      - run: pnpm run test:build
+      # Thresholds (mobile 95+) live in lighthouserc.cjs
       - run: pnpm dlx @lhci/cli@0.15.1 autorun
       # Check internal links only; external links are skipped
       - run: pnpm dlx linkinator@8.1.0 dist --recurse --skip '^https?://(?!(localhost|127\.0\.0\.1|\[::1\])[:/])'
@@ -33,4 +36,10 @@ jobs:
           # .lighthouseci is a dotted directory, and upload-artifact skips hidden
           # files by default -- without this the report is silently never uploaded.
           include-hidden-files: true
+          if-no-files-found: warn
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-test-diagnostics
+          path: test-results/build/
           if-no-files-found: warn
