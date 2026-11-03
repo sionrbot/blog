@@ -1,8 +1,8 @@
 # Testing
 
 This repository includes unit/build tests and TesterArmy E2E tests.
-Core implementation is complete locally; final remote CI acceptance is tracked
-in the closing status below. E2E focuses
+Core implementation and remote quality/deterministic E2E acceptance are complete;
+remote AI acceptance remains pending as described in the closing status below. E2E focuses
 on key user flows, necessary deterministic assertions, a few AI visual checks,
 and production preview regression. It uses the official default config for
 local development and Codex MCP. SEO/JSON-LD, content schema and Markdown
@@ -425,7 +425,7 @@ job runs only when manually dispatched on main with `run_ai=true` and the
 DeepSeek secret configured. A non-AI event does not claim AI tests passed.
 Artifacts include hidden `.e2e/runs/` and fixture build diagnostics; the existing
 quality workflow is preserved. No PR comments, deployment or branch protection
-changes are made. Remote Actions execution remains unverified locally.
+changes are made. Remote quality and deterministic E2E results are recorded in the closing status below.
 
 These tests verify desktop browser engines at fixed viewport sizes, not real
 mobile devices. Preview 404 behavior does not establish hosting-platform 404
@@ -455,6 +455,13 @@ Remote CI results must be checked separately from local runs.
 - Deferred by user decision: localized builds. Pixel baselines, comprehensive
   accessibility audits and AI required checks remain optional follow-up work.
 - Removed from scope: E2E mutation proofs and arbitrary process-fault injection.
-- Final remote quality and deterministic E2E acceptance: pending the review branch run.
-- Remote AI acceptance: pending a repository `DEEPSEEK_API_KEY` secret and a
-  manual dispatch on main after merge. Local AI reports are not remote evidence.
+- Verified commit `75d0e3c`: [quality CI](https://github.com/sionrbot/sionrbot-blog/actions/runs/41676759051)
+  passed all checks, unit 21/21, timezone 5/5 in each zone, build 32/32,
+  Lighthouse (three URLs, nine runs) and internal links (33 scanned).
+- [Deterministic E2E](https://github.com/sionrbot/sionrbot-blog/actions/runs/41676759125)
+  passed all three variant jobs; report artifacts were uploaded for each variant.
+- `DEEPSEEK_API_KEY` is configured as a repository Actions secret. Remote AI
+  acceptance still requires manual dispatch on main after merge; the PR's AI
+  job is intentionally skipped. Local AI reports are not remote evidence.
+- [Draft PR #8](https://github.com/sionrbot/sionrbot-blog/pull/8) holds these changes;
+  no merge or branch-protection change was performed during acceptance.
