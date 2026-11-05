@@ -6,7 +6,8 @@ are complete; the verified revisions and reports are recorded below. E2E focuses
 on key user flows, necessary deterministic assertions, a few AI visual checks,
 and production preview regression. It uses the official default config for
 local development and Codex MCP. SEO/JSON-LD, content schema and Markdown
-rendering are checked by build artifact tests. Localized builds remain deferred.
+rendering are checked by build artifact tests. The proposed English/Simplified Chinese
+UI switch is specified in [i18n implementation spec](i18n-spec.md); it is not implemented yet.
 
 The source of truth is `package.json`, the runner configurations, `tests/`, and
 `.github/workflows/`. The `build` runner project includes build artifact tests
@@ -23,6 +24,7 @@ vp install
 vp run check
 vp check
 vp run lint
+pnpm run i18n:check
 pnpm run test:unit
 pnpm run test:unit:tz
 vp run build
@@ -55,13 +57,26 @@ Asia/Singapore. Each checks the actual date formatter output against the same
 handwritten expectations, including UTC year boundaries. It prints the Node
 and ICU versions to make failures reproducible.
 
+## i18n
+
+Run `pnpm run i18n:check` for the strict x18n check and `pnpm run test:unit`
+for dictionary and runtime contracts. x18n does not replace runtime tests.
+
+- [Implementation spec](i18n-spec.md): confirmed requirements, proposed UI switching behavior, content-language separation and implementation scope.
+- [Tests and current evidence](i18n-testing.md): existing coverage, known scanner/placeholder limits, and the planned static/unit/build/browser test matrix.
+- [Agent workflow](i18n-testing.md#agent-workflow): official skills, MCP, CLI commands and setup requirements.
+
+The current en/ko/hu checks are the pre-migration baseline. The target en/zh-Hans
+UI switch and its new tests remain unimplemented; the case inventory below
+counts only existing tests.
+
 ## What is covered
 
 | Layer               | Files                              | Contract                                                                                                                                                                                          |
 | ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | unit test           | `tests/unit/posts.test.ts`         | Tag normalization, tag/post links, and refusal to load collections through the unit stub                                                                                                          |
 | unit test           | `tests/unit/dates.test.ts`         | UTC dates, year boundaries, leap day and requested locale                                                                                                                                         |
-| unit test           | `tests/unit/i18n.test.ts`          | Dictionary keys, placeholders, nonempty translations and locale fallback                                                                                                                          |
+| unit test           | `tests/unit/i18n.test.ts`          | Dictionary keys, placeholders, nonempty translations and locale fallback; [i18n details](i18n-testing.md)                                                                                         |
 | build artifact test | `tests/build/isolation.test.ts`    | Two isolated builds retain their own content and caches; source and root dist remain unchanged; invalid description fails and its corrected control succeeds                                      |
 | build artifact test | `tests/build/publication.test.ts`  | PUB-01/PUB-02: drafts are absent from details, home, lists, tags, RSS and sitemap; published content is ordered; the home page contains the newest six posts                                      |
 | integration test    | `tests/build/publication.test.ts`  | PUB-03: the same fixture exposes its draft through actual Astro dev HTTP responses                                                                                                                |
@@ -435,7 +450,8 @@ existing Lighthouse page set. Screenshot baseline regression remains optional
 and is not implemented. SEO/schema/content-rendering assertions run in the build suite described above.
 Normalized-tag route integration checks case/whitespace aliases, exact article order,
 no duplicate articles and draft exclusion in the existing publication build.
-Localized builds are explicitly deferred by the user (2026-11-04).
+The proposed bilingual UI switch is not covered by the existing E2E variants;
+see the [i18n test design](i18n-testing.md#test-design).
 
 ## Verifying E2E changes
 
@@ -452,7 +468,8 @@ Remote CI results must be checked separately from local runs.
 
 - Implemented: publication/pagination, normalized-tag routes, SEO/JSON-LD,
   schema, Markdown/MDX rendering, three E2E variants and the Codex MCP entry.
-- Deferred by user decision: localized builds. Pixel baselines, comprehensive
+- The earlier localized-build plan is superseded by the [bilingual UI spec](i18n-spec.md).
+  That feature and its new tests remain unimplemented. Pixel baselines, comprehensive
   accessibility audits and AI required checks remain optional follow-up work.
 - Removed from scope: E2E mutation proofs and arbitrary process-fault injection.
 - Verified commit `75d0e3c`: [quality CI](https://github.com/sionrbot/sionrbot-blog/actions/runs/41676759051)
