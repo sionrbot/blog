@@ -6,6 +6,7 @@ This is the first file you should read before editing this theme.
 
 1. **Use `astro add` for integrations**: Use `astro add` for official integrations (e.g. `astro add tailwind`, `astro add react`). For other packages, install using the command for your preferred package manager rather than editing `package.json` directly.
 2. **Verify current APIs**: Check the latest documentation, especially for newer features like sessions and actions. This is also important for features that have seen significant changes since their initial launch, such as content collections, or previously experimental features that may no longer be experimental.
+3. **Project-level documentation**: Describe only what the project does or requires and how to use, implement, or test it. Do not include intermediate progress, execution status, or results.
 
 ## Commands
 
@@ -97,7 +98,7 @@ Human-readable version: `docs/content.md`.
 
 ## Tool notes
 
-- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [docs/i18n-testing.md](docs/i18n-testing.md#agent-workflow).
+- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [tests/I18N.md](tests/I18N.md#agent-workflow).
 - Use the configured x18n MCP tools for interactive work, or `pnpm exec x18n <command> --json` as the CLI fallback. Finish with `pnpm run i18n:check` and `pnpm run test:unit`; the normal project checks still apply.
 
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.
