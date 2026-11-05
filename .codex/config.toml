@@ -4,3 +4,7 @@ url = "https://mcp.docs.astro.build/mcp"
 [mcp_servers.e2e]
 command = "npx"
 args = ["e2e", "mcp"]
+
+[mcp_servers.x18n]
+command = "pnpm"
+args = ["exec", "x18n", "mcp"]

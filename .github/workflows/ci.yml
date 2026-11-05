@@ -20,6 +20,7 @@ jobs:
       - run: pnpm check
       - run: pnpm exec vp check
       - run: pnpm lint
+      - run: pnpm run i18n:check
       - run: pnpm run test:unit
       - run: pnpm run test:unit:tz
       - run: pnpm build

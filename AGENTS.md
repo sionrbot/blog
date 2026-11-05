@@ -96,6 +96,9 @@ Human-readable version: `docs/content.md`.
 
 ## Tool notes
 
+- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. The target behavior is in [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [docs/i18n-testing.md](docs/i18n-testing.md#agent-workflow).
+- Use the configured x18n MCP tools for interactive work, or `pnpm exec x18n <command> --json` as the CLI fallback. Finish with `pnpm run i18n:check` and `pnpm run test:unit`; the normal project checks still apply.
+
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.
 - TypeScript is pinned to 6.x. 7.x (native compiler) is not yet supported by `astro check` or typescript-eslint.
 - Use the pnpm 11 version pinned in `package.json#packageManager` and `allowBuilds` in `pnpm-workspace.yaml`. Vite+ manages Node.js through `package.json#devEngines.runtime`; keep the workspace `nodeVersion` aligned with that pin. `runtimeOnFail: ignore` and `pmOnFail: ignore` prevent pnpm from duplicating Vite+ environment management.
