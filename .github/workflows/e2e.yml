@@ -5,11 +5,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      run_ai:
-        description: Run DeepSeek agent tests (requires DEEPSEEK_API_KEY secret)
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -38,13 +33,12 @@ jobs:
           name: e2e-${{ matrix.variant }}
           path: |
             .e2e/runs/
-            test-results/build/
+            test/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
 
   agent:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ai && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -70,7 +64,7 @@ jobs:
           name: e2e-ai-${{ matrix.variant }}
           path: |
             .e2e/runs/
-            test-results/build/
+            test/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7

@@ -52,7 +52,14 @@ export async function createFixture(
 ): Promise<BuildFixture> {
   if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`Invalid fixture name: ${name}`);
   const root = await mkdtemp(join(tmpdir(), `sionrbot-${name}-`));
-  const reportDir = join(projectRoot, 'test-results', 'build', runId, `${name}-${randomUUID()}`);
+  const reportDir = join(
+    projectRoot,
+    'test',
+    'test-results',
+    'build',
+    runId,
+    `${name}-${randomUUID()}`,
+  );
   const env = fixtureEnv(options.demo ?? false);
   let active: ReturnType<typeof startAstro> | undefined;
   let disposed = false;
