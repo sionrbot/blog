@@ -1,0 +1,22 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commit title
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const pattern = /^(feat|fix|perf|revert|content|docs|chore|test|ci|build|refactor|style)(\([^()\r\n]+\))?!?: \S[^\r\n]*$/u;
+            if (!pattern.test(title)) {
+              core.setFailed('Use a Conventional Commit title, e.g. feat: add search, fix: correct dates, or content: publish an article. See docs/releasing.md.');
+            }
