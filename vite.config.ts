@@ -45,6 +45,7 @@ export default defineConfig({
     ignorePatterns: [
       'dist/',
       '.astro/',
+      '.cloudflare/',
       'node_modules/',
       'tests/test-results/',
       '.vitest/',
@@ -129,6 +130,7 @@ export default defineConfig({
     ignorePatterns: [
       'dist/',
       '.astro/',
+      '.cloudflare/',
       'pnpm-lock.yaml',
       'tests/test-results/',
       '.vitest/',
