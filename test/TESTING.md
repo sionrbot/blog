@@ -3,8 +3,7 @@
 Test source lives in `tests/`; this directory contains testing guides and generated
 fixture reports. Commands and runner settings are defined in `package.json`,
 `vite.config.ts`, `e2e.config.ts`, `e2e.ai.config.ts` and `.github/workflows/`.
-See [I18N.md](I18N.md) for language contracts and translation tooling, and
-[PERMISSIONS.md](PERMISSIONS.md) for repository permission checks.
+See [I18N.md](I18N.md) for language contracts and translation tooling.
 
 ## What to test
 
