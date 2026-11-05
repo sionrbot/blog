@@ -6,8 +6,6 @@ A quiet, typography-first Astro theme for writers. Good type, generous measure, 
 
 What's new: [release notes](https://github.com/ondelva/astro-theme-pilcrow/releases) · [changelog in the demo](https://pilcrow-free.ondelva.com/whats-new/)
 
-![screenshot](docs/screenshots/home-light.png)
-
 ## Features
 
 - Astro 7 + Tailwind CSS v4, zero client-side JS by default

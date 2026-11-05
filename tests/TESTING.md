@@ -17,6 +17,9 @@ See [I18N.md](I18N.md) for language contracts and translation tooling.
 | Browser               | `tests/e2e/deterministic/`                                                      | User navigation, theme state, forms, keyboard access, narrow layouts, rendering and language switching                                                           |
 | AI browser            | `tests/e2e/ai/`                                                                 | Reading/navigation goals, theme selection, form discovery/submission and screenshot-based readability checks with exact assertions                               |
 
+Test Astro content collection behavior through real builds; the unit-only
+`astro:content` stub rejects collection access.
+
 Publication and pagination tests include deliberate isolated mutations. Require a
 successful build and parse before checking that the contract rejects the mutated
 output. A build crash is not evidence that an assertion detects the intended bug.
@@ -45,6 +48,10 @@ for Astro; the built-in `vp build` runs plain Vite. Build tests reuse root `dist
 for default-route assertions and isolation fingerprints, so rebuild after source
 or content changes. Run the default-origin build without a `SITE_URL` override.
 
+For tests that modify content or configuration, use `createFixture` from
+`tests/support/build-fixture.ts` to work in an isolated temporary copy. Always
+await `fixture.dispose()` in `finally` or `afterAll`, including failed tests.
+
 For a focused run:
 
 ```sh
@@ -57,22 +64,6 @@ vp test --project build tests/build/isolation.test.ts tests/build/interruption.t
 Asia/Singapore processes. Use handwritten expected dates, including UTC year
 boundaries, rather than generating expectations with the production formatter.
 The command prints Node and ICU versions for reproducibility.
-
-## Fixture isolation and cleanup
-
-`tests/support/build-fixture.ts` copies source and required configuration into an
-OS temporary directory, links installed dependencies, and assigns independent
-Astro/Vite caches and output. It excludes credentials and generated state. Fixture
-processes use an explicit environment to isolate production URL and demo flags.
-
-Build tests run serially. Release every fixture in `finally` or `afterAll`,
-including failures. Disposal stops owned processes before deleting their files
-and retains diagnostics outside the temporary directory. SIGINT/SIGTERM handling
-uses the same lifecycle owner; interruption tests check cleanup, exit status and
-server shutdown. Forced termination of the owner cannot guarantee cleanup.
-
-The unit-only `astro:content` stub rejects collection access. Verify collection,
-publication and image behavior through real Astro builds rather than that stub.
 
 ## Run E2E tests
 
