@@ -1,0 +1,15 @@
+---
+import type { Post } from '../utils/posts';
+import { render } from 'astro:content';
+import PostLayout from '../layouts/PostLayout.astro';
+
+interface Props {
+  post: Post;
+}
+const { post } = Astro.props;
+const { Content, remarkPluginFrontmatter } = await render(post);
+---
+
+<PostLayout post={post} math={remarkPluginFrontmatter.hasMath}>
+  <Content />
+</PostLayout>

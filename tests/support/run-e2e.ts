@@ -35,7 +35,12 @@ for (let i = 0; i < args.length; i++) {
   const arg = args[i];
   if (arg === '--variant') {
     const value = args[++i];
-    if (value !== 'default' && value !== 'rendering' && value !== 'configured-forms')
+    if (
+      value !== 'default' &&
+      value !== 'rendering' &&
+      value !== 'configured-forms' &&
+      value !== 'i18n'
+    )
       throw new Error('Unknown variant');
     variant = value;
   } else if (arg === '--list') list = true;
@@ -47,6 +52,7 @@ for (let i = 0; i < args.length; i++) {
     forwarded.push(arg);
   else throw new Error(`Unsupported argument: ${arg}`);
 }
+if (mode === 'ai' && variant === 'i18n') throw new Error('i18n is a deterministic-only variant');
 // WebKit is explicitly selectable; the everyday default is Chromium at two widths.
 if (!forwarded.includes('--target')) forwarded.push('--target', 'desktop,narrow');
 const reportDir = join(projectRoot, '.e2e', 'runs', `${Date.now()}-${randomUUID()}`, mode, variant);

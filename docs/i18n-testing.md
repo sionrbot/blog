@@ -2,10 +2,40 @@
 
 - 更新日期：2026-11-05（Asia/Shanghai）。
 - 产品需求与目标行为：[i18n implementation spec](i18n-spec.md)。
-- 状态：已有字典单测与 x18n 接入；目标 en/zh-Hans UI 切换及以下新增测试尚未实施。
+- 状态：en/zh-Hans UI 与静态路由已实施；以下列出当前测试和历史证据。
 - 本文集中维护 i18n 覆盖、运行方式和工具限制；通用测试环境、隔离机制、E2E 报告与凭据见 [testing.md](testing.md)。
 
-## Current evidence
+## Local implementation evidence — 2026-11-05
+
+**Fact — 本地工作区，未提交；远程 CI 尚未运行：**
+
+- `vp run check`、`vp check`、`vp run lint`、`vp run build` 通过；生产构建生成 44 个页面。
+- `pnpm run i18n:check` 通过；38 个键，语言集合仅 en/zh-Hans。
+- `pnpm run test:unit`：37/37；`pnpm run test:unit:tz`：三个时区各 6/6，Node 26.13.0 / ICU 78.3。
+- `pnpm run test:build`：12 个测试文件、51/51 通过。套件覆盖双语产物、原文、SEO、schema 和六个真实 x18n CLI 探针。
+- `pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit`：15/15，Chromium desktop/narrow 与 WebKit narrow；`pnpm run test:e2e -- --variant default --target desktop,narrow,webkit`：42/42。
+- i18n E2E 报告：`.e2e/runs/1793870993803-99f654c7-dffc-447b-ae3e-33c89a48f886/deterministic/i18n/`。
+- 默认 E2E 报告：`.e2e/runs/1793871108442-68af571b-79b6-4410-83d5-015bdf59c8af/deterministic/default/`。
+- 其他确定性浏览器回归：`--variant rendering --target desktop,narrow,webkit` 3/3；`--variant configured-forms --target desktop,narrow,webkit` 9/9。
+- 渲染报告：`.e2e/runs/1793871149192-9c258f5c-1b3e-48eb-a3fd-38e55729e818/deterministic/rendering/`；表单报告：`.e2e/runs/1793871153887-32436196-dc96-478f-8a32-461e925c8d55/deterministic/configured-forms/`。
+- 真正 `javaScriptEnabled: false` 的 Chromium / WebKit 补充检查通过；生产 preview、运行脚本、JSON 与 360px 截图保存在 `test-results/build/2026-11-05T09-14-28.581Z-99327/e2e-i18n-a0fb7522-cb5e-4e69-9b26-f341112660a4/`。常规 e2e 的对应回归用例通过 CSP 禁止页面脚本，区别于这一补充检查。
+- 截图观察：360px 中文 Contact 与中英混排首页字形可读、导航正常换行，无可见裁切或重叠。此项为本机观察，不是跨平台字体一致性承诺。
+
+本次审查追加的回归覆盖：
+
+- `page-math.test.ts` 验证 About/Privacy/Terms 两种 UI 的 KaTeX 样式、翻译标题与旧 MDX layout 兼容。
+- `navigation-config.test.ts` 验证配置新增导航键、修改页脚标题、外部链接与片段链接；x18n 继续扫描配置中的字面 `t.key`。
+- `seo.test.ts` 验证 404 过滤只排除错误路由，保留 `404-guide` 文章和 `404` 标签。
+- `i18n.test.ts` 验证完全翻译的 Contact 各自 canonical/sitemap，以及保留英文的订阅标题 `lang="en"`。
+
+已知边界：
+
+- 无效 `/zh/…` 在本地静态 preview 返回 HTTP 404 和英文错误页；显式 `/zh/404/` 是中文静态页面（HTTP 200，noindex）。线上按语言选择错误页需托管层支持，本次未修改部署配置。
+- 普通链接在禁用 JavaScript 时可切换同一页面。当前 fragment 不会发送给服务器，携带锚点使用轻量脚本增强；无 JavaScript 时不携带锚点。无用途的 query 参数不复制。
+- x18n 0.1.7 对纯空格／换行翻译存在诊断缺口，单测 `trim()` 非空契约兜底。占位符误写已由 plugin 的 check/apply 探针覆盖。
+- 标签页维持全部文章列表；10+1 分页验证针对博客列表，没有新增标签分页功能。
+
+## Historical evidence
 
 **Fact — 2026-11-04 本地源码及本会话运行记录；不是目标功能的完成证明：**
 
@@ -29,11 +59,11 @@ x18n 默认 warning 不导致失败；项目 `i18n:check` 使用 `--strict`。MC
 
 ## Test design
 
-以下为目标测试，不代表现有文件已包含这些用例。每项覆盖 spec 中明确的行为；建议设计改变时同步修改断言，避免测试自行创造产品要求。
+以下为验收契约。已实现的自动化入口包括 `tests/unit/i18n.test.ts`、`tests/build/i18n.test.ts`、`tests/build/x18n-tooling.test.ts` 和 `tests/e2e/deterministic/i18n/`；逐项覆盖与工具边界见下方实际证据。
 
 ### Static checks
 
-继续由 quality CI 运行 `pnpm run i18n:check`，把支持集合改为 en/zh-Hans。保留少量隔离配置探针验证项目集成，而不是重测整个第三方工具。
+quality CI 运行 `pnpm run i18n:check`，支持集合为 en/zh-Hans。保留少量隔离配置探针验证项目集成，而不是重测整个第三方工具。
 
 | ID  | 输入/变更                                | 预期                                                      |
 | --- | ---------------------------------------- | --------------------------------------------------------- |
@@ -63,7 +93,7 @@ x18n 默认 warning 不导致失败；项目 `i18n:check` 使用 `--strict`。MC
 
 ### Build artifact tests
 
-建议新增 `tests/build/i18n.test.ts`，复用 [createFixture](../tests/support/build-fixture.ts) 和 [HTML/XML 解析](../tests/support/parse-output.ts)。对一个受控混合语言 fixture 构建一次并共享产物，不按 UI 语言重复构建同一内容。
+`tests/build/i18n.test.ts` 复用 [createFixture](../tests/support/build-fixture.ts) 和 [HTML/XML 解析](../tests/support/parse-output.ts)。对一个受控混合语言 fixture 构建一次并共享产物，不按 UI 语言重复构建同一内容。
 
 fixture 包含 11 篇公开文章以触发两页分页，至少一篇英文、一篇简体中文；包含标题、摘要、标签、代码、链接、日期及明确内容语言。额外安排缺省 lang 和非法 lang 的 schema 对照，复用既有 schema suite。原文来源与预期 manifest 独立于生产翻译和排序函数。
 
@@ -80,7 +110,7 @@ fixture 包含 11 篇公开文章以触发两页分页，至少一篇英文、�
 
 ### Browser tests
 
-复用 TesterArmy、生产 preview 和现有 fixture/manifest 生命周期。需要 mixed-language fixture 的流程集中在一个建议新增的 `i18n` variant；它构建一次，再在同一产物上切换两种 UI。实施时同步 runner 允许列表、配置与 CI，不把不存在的 variant 当成当前可用命令。
+复用 e2e、生产 preview 和现有 fixture/manifest 生命周期。混合语言流程集中在 `i18n` variant；它构建一次，再在同一产物上切换两种 UI。runner 允许列表、配置与 CI 已同步。
 
 | ID  | 操作                                                    | 确定性断言                                                             |
 | --- | ------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -94,7 +124,7 @@ fixture 包含 11 篇公开文章以触发两页分页，至少一篇英文、�
 
 原文保持通过稳定内容区域的 DOM/text、关键属性与独立 fixture 预期断言，不只比较截图，也不因两次都显示错误原文而通过。语言切换由真实控件触发，不能直接调用应用切换函数替代用户动作。
 
-建议 Chromium desktop/narrow 覆盖主要流程，WebKit narrow 做链接切换、刷新和布局冒烟；不把所有既有 E2E 用例乘以两个语言。中文后备字体和阅读效果另做实际浏览器检查，标注其观察性质；不新增 AI required check 或像素基线承诺。
+Chromium desktop/narrow 与 WebKit narrow 覆盖 i18n 流程；既有 E2E 不机械复制为两种语言。中文后备字体和阅读效果另做实际浏览器检查，标注其观察性质；不新增 AI required check 或像素基线承诺。
 
 ## Acceptance
 
@@ -122,7 +152,7 @@ vp run build
 pnpm run test:build
 ```
 
-新增浏览器 variant 的命令在实现后补录；现有 E2E 用法见 [通用文档](testing.md#running-e2e-tests)。这套设计取代旧的 en/ko/hu 多语言构建建议，原先的“多语言构建搁置”不是本次 UI 切换已完成的标记。
+浏览器验收运行 `pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit`；现有 E2E 用法见 [通用文档](testing.md#running-e2e-tests)。这套设计取代旧的 en/ko/hu 多语言构建建议，原先的“多语言构建搁置”不是本次 UI 切换已完成的标记。
 
 ## Agent workflow
 
@@ -146,7 +176,7 @@ pnpm exec x18n ui
 
 翻译任务先检查状态并 search/get 相关键，通过 MCP 写工具或 CLI set/apply 修改字典；rename/delete 先读计划。沿用项目键风格和运行时调用约定，不照搬上游 `t('key')` 示例改写应用。翻译 review 先提出建议，按用户请求应用。
 
-当前工具配置仍是 en/ko/hu；实施迁移时以 [R1](i18n-spec.md#confirmed-decisions) 的 en/zh-Hans 为目标，不能把旧配置当作用户仍要求支持旧语言。占位符配置经实际验证前，不能依赖上游对 placeholder 保护的一般说明。
+当前工具配置使用 en/zh-Hans；通过 custom placeholder plugin 识别 `{name}`。check/apply 的正反向探针见 `tests/build/x18n-tooling.test.ts`。纯空格／换行翻译在 x18n 0.1.7 中可能通过，字典单测的 `trim()` 非空断言承担该契约。
 
 ## Sources
 

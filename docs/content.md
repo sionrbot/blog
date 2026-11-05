@@ -1,12 +1,12 @@
 # Content
 
-Content lives under `src/content/`, one folder per collection, defined in `src/content.config.ts`. Files are Markdown (`.md`) or MDX (`.mdx`) with a frontmatter block. Do not delete a schema field; new fields should be optional.
+Blog collection content lives under `src/content/blog/` and is defined in `src/content.config.ts`. Shared standalone page bodies live under `src/content/pages/`. Files are Markdown (`.md`) or MDX (`.mdx`) with a frontmatter block. Do not delete a schema field; new fields should be optional.
 
 Images go in `src/assets/`, not `public/` (except favicon/robots). Reference `heroImage` with a path relative to the content file, and it is processed through `astro:assets`.
 
 ## blog
 
-Files: `src/content/blog/<slug>.mdx`. The file name becomes the URL: `/blog/<slug>/`.
+Files: `src/content/blog/<slug>.mdx`. Each file generates `/blog/<slug>/` for English UI and `/zh/blog/<slug>/` for Simplified Chinese UI. Both routes render the same original article. The URL chooses the UI language; it does not choose a translation of the article.
 
 Fields:
 
@@ -14,6 +14,7 @@ Fields:
 - `description` (string, required, max 160 characters)
 - `pubDate` (date, required)
 - `updatedDate` (date, optional)
+- `lang` (string, optional, default `en`) — a valid BCP 47 language tag for the original content, for example `en`, `zh-Hans`, or `ja`. It is independent of the supported UI languages. The existing articles were checked and marked `en`; new articles should state their actual language.
 - `heroImage` (image, optional) — relative path from the post to a file in `src/assets/`, e.g. `../../assets/cover.jpg`
 - `heroAlt` (string, required if `heroImage` is set)
 - `tags` (string array, default `[]`)
@@ -26,9 +27,16 @@ Example:
 title: On the pleasure of slow reading
 description: A short case for reading fewer books, more carefully.
 pubDate: 2026-03-02
+lang: en
 tags: [reading]
 ---
 ```
+
+## Standalone pages and UI
+
+About, Privacy, and Terms bodies are maintained once in `src/content/pages/`. Shared templates in `src/templates/` render these bodies through thin route entries in `src/pages/` and `src/pages/zh/`. Their original English descriptions and prose remain English while the page titles and surrounding controls follow the UI language.
+
+Home content and section order live in `src/templates/Home.astro`. UI messages live in `src/i18n/en.ts` and `src/i18n/zh-Hans.ts`. Article titles, descriptions, body text, tags, and image alt text remain in their original language. System navigation uses the language-aware link helper; links authored inside MDX retain their original destinations. See [the i18n spec](i18n-spec.md) for the full translation boundary and SEO rules.
 
 ## MDX features
 

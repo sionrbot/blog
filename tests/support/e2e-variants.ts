@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { i18nPosts } from '../fixtures/i18n.ts';
 import { createFixture, type BuildFixture } from './build-fixture.ts';
 
 async function replaceOnce(path: string, before: string, after: string) {
@@ -10,9 +11,12 @@ async function replaceOnce(path: string, before: string, after: string) {
 
 /** Only isolated copies receive fixture content and fake form configuration. */
 export async function prepareE2EVariant(
-  variant: 'rendering' | 'configured-forms',
+  variant: 'rendering' | 'configured-forms' | 'i18n',
 ): Promise<BuildFixture> {
-  const fixture = await createFixture(`e2e-${variant}`);
+  const fixture = await createFixture(
+    `e2e-${variant}`,
+    variant === 'i18n' ? { posts: i18nPosts } : {},
+  );
   try {
     if (variant === 'rendering') {
       const longValue = 'unbroken_content_'.repeat(30);
@@ -55,7 +59,7 @@ $$
 </div>
 `,
       );
-    } else {
+    } else if (variant === 'configured-forms') {
       const configPath = join(fixture.root, 'src/config.ts');
       await replaceOnce(configPath, "web3formsKey: ''", "web3formsKey: 'e2e-fake-key'");
       await replaceOnce(configPath, "action: ''", "action: 'http://127.0.0.1:54321/newsletter'");

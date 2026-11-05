@@ -1,0 +1,8 @@
+---
+import Page from '../../../templates/Blog.astro';
+import { getBlogPaths } from '../../../templates/paths';
+
+export const getStaticPaths = getBlogPaths;
+---
+
+<Page {...Astro.props} />

@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { site } from '../config';
+import { defaultLocale } from '../i18n/locales';
 
 export type Post = CollectionEntry<'blog'>;
 
@@ -14,5 +14,8 @@ export const postHref = (post: Post) => `/blog/${post.id}/`;
 export const tagSlug = (tag: string) => tag.toLowerCase().trim().replace(/\s+/g, '-');
 export const tagHref = (tag: string) => `/blog/tag/${tagSlug(tag)}/`;
 
-export const formatDate = (date: Date, locale: string = site.locale) =>
-  date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' });
+export const formatDate = (date: Date, locale: string = defaultLocale) =>
+  date.toLocaleDateString(locale === 'zh' ? 'zh-Hans' : locale, {
+    dateStyle: 'long',
+    timeZone: 'UTC',
+  });

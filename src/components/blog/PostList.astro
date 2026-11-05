@@ -1,4 +1,5 @@
 ---
+import { localizedHref } from '../../i18n/links';
 import { formatDate, postHref, type Post } from '../../utils/posts';
 import TagList from './TagList.astro';
 
@@ -18,13 +19,18 @@ const { posts, headingLevel: Heading = 'h2' } = Astro.props;
         </time>
       </p>
       <div class="space-y-2">
-        <Heading class="text-2xl font-medium">
-          <a href={postHref(post)} class="text-foreground no-underline hover:text-primary">
+        <Heading lang={post.data.lang} class="text-2xl font-medium">
+          <a
+            href={localizedHref(postHref(post), Astro.currentLocale)}
+            class="text-foreground no-underline hover:text-primary"
+          >
             {post.data.title}
           </a>
         </Heading>
-        <p class="text-muted">{post.data.description}</p>
-        <TagList tags={post.data.tags} />
+        <p lang={post.data.lang} class="text-muted">
+          {post.data.description}
+        </p>
+        <TagList contentLang={post.data.lang} tags={post.data.tags} />
       </div>
     </li>
   ))}

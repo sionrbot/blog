@@ -1,8 +1,27 @@
 import { defineConfig } from '@x18n/cli';
+import { defaultLocale, supportedLocales } from './src/i18n/locales';
 
 export default defineConfig({
-  sourceLocale: 'en',
-  locales: ['en', 'ko', 'hu'],
+  sourceLocale: defaultLocale,
+  locales: [...supportedLocales],
+  plugins: [
+    {
+      name: 'sionrbot-placeholders',
+      placeholders: [
+        {
+          id: 'single-brace',
+          example: '{name}',
+          find: (value) =>
+            [...value.matchAll(/\{(\w+)\}/g)].map((match) => ({
+              name: match[1],
+              text: match[0],
+              syntax: 'single-brace',
+              range: { start: match.index, end: match.index + match[0].length },
+            })),
+        },
+      ],
+    },
+  ],
   presets: ['general'],
   resources: [
     {

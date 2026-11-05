@@ -7,7 +7,7 @@ import { projectRoot } from './build-fixture.ts';
 
 export interface E2EManifest {
   mode: 'deterministic' | 'ai';
-  variant: 'default' | 'rendering' | 'configured-forms';
+  variant: 'default' | 'rendering' | 'configured-forms' | 'i18n';
   root: string;
   port: number;
   dist: string;
@@ -27,7 +27,7 @@ export function e2eConfiguration(): E2EConfig {
     port < 1024 ||
     port > 65535 ||
     !['deterministic', 'ai'].includes(mode) ||
-    !['default', 'rendering', 'configured-forms'].includes(variant) ||
+    !['default', 'rendering', 'configured-forms', 'i18n'].includes(variant) ||
     !isAbsolute(root) ||
     dist !== join(root, 'dist') ||
     !isAbsolute(reportDir) ||
@@ -62,7 +62,11 @@ export function e2eConfiguration(): E2EConfig {
     targets: [
       {
         name: 'desktop',
-        engine: web({ viewport: { width: 1280, height: 800 }, colorScheme: 'light' }),
+        engine: web({
+          viewport: { width: 1280, height: 800 },
+          colorScheme: 'light',
+          ...(variant === 'i18n' ? { locale: 'zh-CN' } : {}),
+        }),
         app,
       },
       {

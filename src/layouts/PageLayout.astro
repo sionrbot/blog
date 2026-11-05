@@ -6,18 +6,25 @@ import BaseLayout from './BaseLayout.astro';
 interface Props {
   title: string;
   description?: string;
+  contentLang?: string;
+  hasMath?: boolean;
   // hasMath: set by the math plugin (src/utils/math.ts) when the body has `$…$` or `$$…$$`
   frontmatter?: { title: string; description?: string; hasMath?: boolean };
 }
 const { title, description } = Astro.props.frontmatter ?? Astro.props;
+const hasMath = Astro.props.hasMath ?? Astro.props.frontmatter?.hasMath;
 ---
 
 <BaseLayout title={title} description={description}>
-  {Astro.props.frontmatter?.hasMath && <link slot="head" rel="stylesheet" href={katexCss} />}
+  {hasMath && <link slot="head" rel="stylesheet" href={katexCss} />}
   <article class="mx-auto max-w-prose px-4 py-12 sm:py-16">
     <h1 class="text-5xl font-light tracking-tight">{title}</h1>
-    {description && <p class="mt-4 text-xl text-muted">{description}</p>}
-    <div class="prose mt-10">
+    {description && (
+      <p lang={Astro.props.contentLang} class="mt-4 text-xl text-muted">
+        {description}
+      </p>
+    )}
+    <div lang={Astro.props.contentLang} class="prose mt-10">
       <slot />
     </div>
   </article>

@@ -8,6 +8,16 @@ const blog = defineCollection({
     z
       .object({
         title: z.string(),
+        lang: z
+          .string()
+          .refine((value) => {
+            try {
+              return Intl.getCanonicalLocales(value).length === 1;
+            } catch {
+              return false;
+            }
+          }, 'lang must be a valid BCP 47 language tag')
+          .default('en'),
         description: z.string().max(160),
         pubDate: z.coerce.date(),
         updatedDate: z.coerce.date().optional(),

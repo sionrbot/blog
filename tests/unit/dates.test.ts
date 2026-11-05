@@ -15,4 +15,11 @@ describe('formatDate', () => {
   it('uses the requested locale', () => {
     expect(formatDate(new Date('2026-01-02T00:00:00Z'), 'en-GB')).toBe('2 January 2026');
   });
+
+  it('formats Chinese UI dates in UTC, including the route alias', () => {
+    const date = new Date('2026-01-01T00:30:00+08:00');
+    expect(formatDate(date, 'zh-Hans')).toBe('2025年12月31日');
+    expect(formatDate(date, 'zh')).toBe('2025年12月31日');
+    expect(date.toISOString()).toBe('2025-12-31T16:30:00.000Z');
+  });
 });

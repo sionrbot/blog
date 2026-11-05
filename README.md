@@ -48,18 +48,18 @@ See [docs/deploy.md](docs/deploy.md).
 
 This is the free, MIT-licensed edition. Pilcrow Pro is built on the same code and adds the following ([Pro demo](https://pilcrow.ondelva.com)):
 
-|                | Free                                            | Pro                                                                                           |
-| -------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Pages          | Home, About, Blog, Contact, Privacy, Terms, 404 | + Pricing, Features, Team, Newsletter, Changelog, Docs, Work, Cookies, Accessibility          |
-| Home sections  | 5                                               | 20                                                                                            |
-| Blog           | Tags, pagination, RSS                           | + Authors, series, table of contents, reading time, related posts, callouts, copy-code button |
-| SEO            | Meta, Open Graph, sitemap, JSON-LD              | + Generated Open Graph image per post                                                         |
-| Search         | –                                               | Pagefind                                                                                      |
-| i18n           | UI strings (en, ko, hu)                         | + Localized routes, language switcher, hreflang                                               |
-| Integrations   | Analytics, Web3Forms contact form               | + Buttondown / Kit newsletter, Giscus comments, in-page form submit                           |
-| Theme variants | 1 color preset                                  | 4 color presets, 3 font pairings                                                              |
-| Footer credit  | One line, easy to remove                        | None                                                                                          |
-| Support        | GitHub Issues                                   | Email (im@ondelva.com), 2 business days                                                       |
+|                | Free                                                                 | Pro                                                                                           |
+| -------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Pages          | Home, About, Blog, Contact, Privacy, Terms, 404                      | + Pricing, Features, Team, Newsletter, Changelog, Docs, Work, Cookies, Accessibility          |
+| Home sections  | 5                                                                    | 20                                                                                            |
+| Blog           | Tags, pagination, RSS                                                | + Authors, series, table of contents, reading time, related posts, callouts, copy-code button |
+| SEO            | Meta, Open Graph, sitemap, JSON-LD                                   | + Generated Open Graph image per post                                                         |
+| Search         | –                                                                    | Pagefind                                                                                      |
+| i18n           | This fork: en/zh-Hans UI, static routes, language switcher, hreflang | Localized routes, language switcher, hreflang                                                 |
+| Integrations   | Analytics, Web3Forms contact form                                    | + Buttondown / Kit newsletter, Giscus comments, in-page form submit                           |
+| Theme variants | 1 color preset                                                       | 4 color presets, 3 font pairings                                                              |
+| Footer credit  | One line, easy to remove                                             | None                                                                                          |
+| Support        | GitHub Issues                                                        | Email (im@ondelva.com), 2 business days                                                       |
 
 [See the Pro demo →](https://pilcrow.ondelva.com) · [Get Pro →](https://buy.polar.sh/polar_cl_8dCt7ufpdKweXNgPSp3DH73SlxkMoirMTbBuF3WJooD?utm_source=github)
 

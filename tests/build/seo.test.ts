@@ -22,6 +22,7 @@ beforeAll(async () => {
   fixture.env.SITE_URL = origin;
   for (const [id, title, extra] of [
     ['fallback', 'Fallback article', ''],
+    ['404-guide', 'A guide to 404 responses', 'tags: ["404"]\n'],
     [
       'hero',
       'Hero article',
@@ -128,4 +129,15 @@ test('SEO-03: less-than and closing-script text round-trip without breaking JSON
   expect(schemas($).find((entry) => entry['@type'] === 'BreadcrumbList')).toMatchObject({
     itemListElement: expect.arrayContaining([expect.objectContaining({ name: escapedTitle })]),
   });
+});
+
+test('SEO-04: error-page filtering retains legitimate 404 article and tag routes', async () => {
+  const urls = await sitemapUrls(fixture.dist);
+  for (const path of ['/blog/404-guide/', '/blog/tag/404/']) {
+    expect(urls).toContain(`${origin}${path}`);
+    expect((await readHtml(fixture.dist, path))('h1').text()).not.toBe('');
+  }
+  for (const path of ['/404/', '/404.html', '/zh/404/']) {
+    expect(urls).not.toContain(`${origin}${path}`);
+  }
 });

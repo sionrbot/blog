@@ -7,18 +7,21 @@ const t = useT(Astro.currentLocale);
 
 interface Props {
   title: string;
+  titleLang?: string;
   body: string;
   action?: string;
   field?: string; // name of the email input; some services expect a different one
   hidden?: Record<string, string>;
 }
-const { title, body, action, field = 'email', hidden = {} } = Astro.props;
+const { title, titleLang, body, action, field = 'email', hidden = {} } = Astro.props;
 ---
 
 <section class="mx-auto max-w-5xl px-4 py-20">
   <div class="grid gap-x-10 gap-y-6 border-t-2 border-foreground pt-8 md:grid-cols-2">
     <div>
-      <h2 class="text-3xl">{title}</h2>
+      <h2 lang={titleLang} class="text-3xl">
+        {title}
+      </h2>
       <p class="mt-3 text-muted">{body}</p>
     </div>
     <div>

@@ -9,7 +9,7 @@ Everything site-specific lives in `src/config.ts`, `src/styles/global.css`, and 
 - `name` — shown in the header and page titles.
 - `description` — used for meta description and RSS.
 - `url` — your production URL. Set this before deploying; it feeds canonical links, RSS, and sitemap.
-- `locale` — `'en'`, `'ko'`, or `'hu'` (or any language you add in `src/i18n/`), picks the default interface strings.
+- `locale` — the default `en` value from `src/i18n/locales.ts`. Visitor UI language is selected by the URL: English without a prefix, Simplified Chinese under `/zh/`. See [UI strings](#ui-strings).
 - `author` — shown in the footer and JSON-LD structured data.
 - `defaultOgImage` — imported from `src/assets/og-default.png` (see below).
 
@@ -21,11 +21,13 @@ Keeping it is how other people find the theme. Pilcrow Pro ships without it.
 
 ## Navigation and social links
 
-`src/config.ts`, `nav` object:
+`src/config.ts`, `nav(t)` function, where `t` is the current UI dictionary:
 
-- `nav.header` — top bar links (`label`, `href`). Keep it short; four links fit a phone.
-- `nav.footer` — array of groups, each with a `title` and a `links` array.
-- `nav.social` — icon links (`label`, `href`, `icon`; icon names are `lucide:*` via astro-icon). Your own SVG icons go in `src/icons/`; `src/icons/logo.svg` is referenced as `logo`.
+- `nav(t).header` — top bar links (`label`, `href`); use a literal dictionary reference such as `label: t.blog`. Keep it short; four links fit a phone.
+- `nav(t).footer` — array of groups, each with a translated `title` such as `t.legal` and a `links` array using `label` and `href`.
+- `nav(t).social` — icon links (`label`, `href`, `icon`; icon names are `lucide:*` via astro-icon). Your own SVG icons go in `src/icons/`; `src/icons/logo.svg` is referenced as `logo`.
+
+Header and footer site paths such as `/about/` follow the current UI language. External URLs, protocol-relative URLs, and fragment-only links retain their configured destinations. Keep literal `t.key` references in `nav(t)` so x18n can scan them.
 
 ## Color tokens
 
@@ -51,7 +53,7 @@ Font files live in `src/assets/fonts/` (woff2, self-hosted, licensed under the O
 
 ## Home page sections
 
-`src/pages/index.astro` imports section components from `src/components/sections/` and passes them props to compose the home page; edit this file to reorder or change home page content. Available sections: `Hero`, `RecentPosts`, `Features`, `Newsletter`, `CTA`. Section components only accept props; they do not fetch their own data.
+`src/templates/Home.astro` imports section components from `src/components/sections/` and passes them props to compose the home page; edit this file to reorder or change home page content. Available sections: `Hero`, `RecentPosts`, `Features`, `Newsletter`, `CTA`. Section components only accept props; they do not fetch their own data.
 
 ## Section components in a post
 
@@ -107,7 +109,11 @@ Notes:
 
 ## UI strings
 
-`src/i18n/<locale>.ts` (the theme ships `en.ts`, `ko.ts`, and `hu.ts`). `site.locale` picks which file is used. To add a language, copy `en.ts` to `src/i18n/<locale>.ts` and translate it; it is picked up automatically. Do not hardcode user-facing strings inside components; add a key here and read it with `useT(Astro.currentLocale)`.
+The UI dictionaries are `src/i18n/en.ts` and `src/i18n/zh-Hans.ts`. Components read `useT(Astro.currentLocale)`; the URL selects the dictionary. A language link navigates to the same page under the other UI route. Browser language and saved preferences do not override that URL.
+
+Use x18n to add or translate UI keys and keep the two dictionaries complete. System links use `localizedHref` from `src/i18n/links.ts`. Language metadata is centralized in `src/i18n/locales.ts`; adding a language requires coordinated dictionary, route, x18n, sitemap, and test updates. A new dictionary file alone does not register a language.
+
+Blog posts and authored About text remain in their original language. Shared page templates live in `src/templates/`, and About/Privacy/Terms bodies live in `src/content/pages/`. Read [the i18n spec](i18n-spec.md) before changing translation boundaries, supported languages, or route behavior.
 
 ## Dark mode
 

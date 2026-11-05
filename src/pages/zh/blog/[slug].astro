@@ -1,0 +1,8 @@
+---
+import Page from '../../../templates/Post.astro';
+import { getPostPaths } from '../../../templates/paths';
+
+export const getStaticPaths = getPostPaths;
+---
+
+<Page {...Astro.props} />

@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/blog/PostList.astro';
+import type { Post } from '../utils/posts';
+import { localizedHref } from '../i18n/links';
+import { useT, formatMessage } from '../i18n/t';
+
+// Note: tag pages list every post without pagination. Switch to paginate() once a tag has dozens of posts.
+
+const t = useT(Astro.currentLocale);
+
+interface Props {
+  name: string;
+  posts: Post[];
+}
+const { name, posts } = Astro.props;
+const title = `${t.taggedWith}: ${name}`;
+---
+
+<BaseLayout title={title} description={formatMessage(t.tagDescription, { tag: name })}>
+  <div class="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+    <p class="font-sans text-sm text-muted">
+      <a href={localizedHref('/blog/', Astro.currentLocale)} class="underline">
+        {t.allPosts}
+      </a>{' '}
+      / {t.taggedWith}
+    </p>
+    <h1 class="mt-3 text-5xl font-light tracking-tight">#{name}</h1>
+    <div class="mt-12">
+      <PostList posts={posts} />
+    </div>
+  </div>
+</BaseLayout>
