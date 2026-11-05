@@ -6,6 +6,19 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot-blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## 1.5.0 (2026-11-05)
+
+### Features
+
+- add English and Simplified Chinese static UI routes ([#11](https://github.com/sionrbot/sionrbot-blog/issues/11)) ([dfa3f2c](https://github.com/sionrbot/sionrbot-blog/commit/dfa3f2ccce7d6fdb8a01faa1a59221032e04c208))
+- automate version PRs and gated GitHub releases ([#19](https://github.com/sionrbot/sionrbot-blog/issues/19)) ([c37aa68](https://github.com/sionrbot/sionrbot-blog/commit/c37aa68e99d57fc9aaa7da8f15dbf042a6e27a7a))
+- deploy blog to GitHub Pages with project subpath support ([e9f6505](https://github.com/sionrbot/sionrbot-blog/commit/e9f6505ec8932cb4feceffcb7fcb86ee8403bd55))
+- replace language links with compact dropdown ([ddd5214](https://github.com/sionrbot/sionrbot-blog/commit/ddd521404df27e9e675ce592cd55a9a9d220f9eb))
+
+### Bug Fixes
+
+- limit Pages deployment to site inputs ([910924e](https://github.com/sionrbot/sionrbot-blog/commit/910924eaeb471fa7115807f4181c9110dedcc9d4))
+
 ## [1.4.1] - 2026-10-17
 
 ### Added
