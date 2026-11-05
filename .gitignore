@@ -28,7 +28,7 @@ pnpm-debug.log*
 .wrangler/
 
 # test reports
-test/test-results/
+tests/test-results/
 .vitest/
 .e2e/results/
 .e2e/cache/

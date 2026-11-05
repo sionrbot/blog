@@ -98,7 +98,7 @@ Human-readable version: `docs/content.md`.
 
 ## Tool notes
 
-- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [test/I18N.md](test/I18N.md#agent-workflow).
+- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [tests/I18N.md](tests/I18N.md#agent-workflow).
 - Use the configured x18n MCP tools for interactive work, or `pnpm exec x18n <command> --json` as the CLI fallback. Finish with `pnpm run i18n:check` and `pnpm run test:unit`; the normal project checks still apply.
 
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.

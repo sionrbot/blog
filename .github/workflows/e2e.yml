@@ -33,7 +33,7 @@ jobs:
           name: e2e-${{ matrix.variant }}
           path: |
             .e2e/runs/
-            test/test-results/build/
+            tests/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
@@ -64,7 +64,7 @@ jobs:
           name: e2e-ai-${{ matrix.variant }}
           path: |
             .e2e/runs/
-            test/test-results/build/
+            tests/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7

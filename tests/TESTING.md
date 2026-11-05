@@ -1,7 +1,6 @@
 # Testing
 
-Test source lives in `tests/`; this directory contains testing guides and generated
-fixture reports. Commands and runner settings are defined in `package.json`,
+Test source, testing guides and generated fixture reports live in `tests/`. Commands and runner settings are defined in `package.json`,
 `vite.config.ts`, `e2e.config.ts`, `e2e.ai.config.ts` and `.github/workflows/`.
 See [I18N.md](I18N.md) for language contracts and translation tooling.
 
@@ -142,7 +141,7 @@ manifest must fail instead of silently falling back to development.
 Fixture diagnostics are written to:
 
 ```text
-test/test-results/build/<run-id>/<fixture-name>-<uuid>/
+tests/test-results/build/<run-id>/<fixture-name>-<uuid>/
   manifest.json
   build.log
   result.json

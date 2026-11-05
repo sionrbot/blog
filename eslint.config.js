@@ -2,7 +2,7 @@ import tseslint from 'typescript-eslint';
 import astro from 'eslint-plugin-astro';
 
 export default [
-  { ignores: ['dist/', '.astro/', 'node_modules/', 'test/test-results/', '.vitest/'] },
+  { ignores: ['dist/', '.astro/', 'node_modules/', 'tests/test-results/', '.vitest/'] },
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,
   // Lighthouse CI config is CommonJS by extension, so require() is correct there.

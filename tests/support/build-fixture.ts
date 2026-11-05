@@ -54,7 +54,7 @@ export async function createFixture(
   const root = await mkdtemp(join(tmpdir(), `sionrbot-${name}-`));
   const reportDir = join(
     projectRoot,
-    'test',
+    'tests',
     'test-results',
     'build',
     runId,
