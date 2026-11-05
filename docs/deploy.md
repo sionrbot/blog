@@ -1,6 +1,6 @@
 # Deploy
 
-Pilcrow builds to a static site in `dist/`. There is no server runtime to configure.
+Sionrbot-blog builds to a static site in `dist/`. There is no server runtime to configure.
 
 ## Before you deploy
 
@@ -88,19 +88,19 @@ remain under `/zh/`; missing Chinese paths also use the root error page.
 
 Build command: `pnpm build`. Output directory: `dist`.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ondelva/astro-theme-pilcrow)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sionrbot/sionrbot-blog)
 
 ## Vercel
 
 Framework preset: Astro. Build command: `pnpm build`. Output directory: `dist`.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ondelva/astro-theme-pilcrow)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/sionrbot/sionrbot-blog)
 
 ## Netlify
 
 Build command: `pnpm build`. Publish directory: `dist`.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/ondelva/astro-theme-pilcrow)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sionrbot/sionrbot-blog)
 
 ## CI
 

@@ -9,18 +9,13 @@ const t = useT(Astro.currentLocale);
 const navigation = nav(t);
 
 const year = new Date().getFullYear();
-const themeCredit = 'https://ondelva.com/themes/pilcrow';
 ---
 
 <footer class="mt-24 border-t border-border">
   <div class="mx-auto hang max-w-5xl px-4 pt-10 pb-14 font-sans text-sm text-muted">
     <div>
       <p>
-        © {year} {site.author} ·{' '}
-        <a href={themeCredit} rel="nofollow" class="text-muted underline hover:text-foreground">
-          Pilcrow
-        </a>{' '}
-        {t.themeBy} ondelva
+        © {year} {site.author}
       </p>
       <ul class="mt-3 -ml-2.5 flex gap-1">
         {navigation.social.map(({ label, href, icon }) => (

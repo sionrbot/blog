@@ -2,7 +2,7 @@ import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { expect, test } from 'vite-plus/test';
 import { site } from '../../src/config';
-import { createFixture, projectRoot } from '../support/build-fixture';
+import { projectRoot } from '../support/build-fixture';
 import { outputPath, readHtml, rssPosts, sitemapUrls } from '../support/parse-output';
 
 async function absent(path: string) {
@@ -49,18 +49,4 @@ test('ROUTE-01: the default production build contains the required site routes a
   expect(robots).toContain('Sitemap:');
   await absent(join(dist, 'styleguide/index.html'));
   await absent(join(dist, 'whats-new/index.html'));
-});
-
-test('ROUTE-02: a demo build includes the changelog but never the dev-only styleguide', async () => {
-  const fixture = await createFixture('demo-routes', { demo: true });
-  try {
-    const result = await fixture.build();
-    expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const page = await readHtml(fixture.dist, '/whats-new/');
-    expect(page('main h1').text()).toContain("What's new");
-    expect(page('main').text()).toContain('Changelog');
-    await absent(join(fixture.dist, 'styleguide/index.html'));
-  } finally {
-    await fixture.dispose();
-  }
 });

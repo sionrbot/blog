@@ -14,8 +14,8 @@ export interface ProcessResult {
   durationMs: number;
 }
 
-export function fixtureEnv(demo: boolean): NodeJS.ProcessEnv {
-  // Do not inherit SITE_URL, demo flags, NODE_OPTIONS or the test runner's environment.
+export function fixtureEnv(): NodeJS.ProcessEnv {
+  // Do not inherit SITE_URL, NODE_OPTIONS or the test runner's environment.
   const env: NodeJS.ProcessEnv = {};
   for (const key of ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'TMP', 'SystemRoot']) {
     if (process.env[key]) env[key] = process.env[key];
@@ -26,7 +26,6 @@ export function fixtureEnv(demo: boolean): NodeJS.ProcessEnv {
     ASTRO_TELEMETRY_DISABLED: '1',
     NO_COLOR: '1',
     SITE_URL: 'https://fixture.example',
-    ...(demo ? { PUBLIC_DEMO_BUY_URL: 'https://example.test/buy' } : {}),
   };
 }
 

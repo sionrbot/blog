@@ -35,6 +35,5 @@ export default {
   personalBlog: 'Sionrbot 的个人博客',
   contactDescription: '问题、纠正，或关于某篇文章的想法，都欢迎写给我。我会一一阅读。',
   newsletterBody: '每周一篇随笔、三则值得一读的内容，以及一句结语。每封邮件底部都有退订链接。',
-  themeBy: '主题作者：',
   languageNav: '语言',
 };

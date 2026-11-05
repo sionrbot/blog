@@ -13,11 +13,12 @@ Everything site-specific lives in `src/config.ts`, `src/styles/global.css`, and 
 - `author` — shown in the footer and JSON-LD structured data.
 - `defaultOgImage` — imported from `src/assets/og-default.png` (see below).
 
-## Footer credit
+## Footer
 
-The footer carries one line crediting the theme: `Pilcrow theme by ondelva`, linking to the
-theme page on ondelva.com. It is a plain link in `src/components/common/Footer.astro` — delete it if you would rather not have it.
-Keeping it is how other people find the theme. Pilcrow Pro ships without it.
+The footer displays the current year and `site.author`. Set the author in `src/config.ts`.
+Social links, including the project's GitHub repository, come from `nav(t).social`;
+footer navigation comes from `nav(t).footer`. Edit `src/components/common/Footer.astro`
+to change the footer layout.
 
 ## Navigation and social links
 
@@ -146,6 +147,6 @@ Blog posts and authored About text remain in their original language. Shared pag
 
 `src/config.ts`, `seo` object:
 
-- `seo.titleTemplate` — e.g. `'%s · Pilcrow'`.
+- `seo.titleTemplate` — e.g. `'%s · Sionrbot-blog'`.
 - `seo.twitterHandle`.
 - `seo.jsonLd` — `{ type: 'Person' | 'Organization', name }`, used for structured data.

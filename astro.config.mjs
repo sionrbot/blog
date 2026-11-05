@@ -13,7 +13,7 @@ import { site } from './src/config.ts';
 
 // GFM task-list checkboxes have no accessible name and fail Lighthouse's 'label' audit. Wrap the item in a <label>
 const taskListLabels = {
-  name: 'pilcrow-task-list-labels',
+  name: 'sionrbot-task-list-labels',
   element: {
     filter: ['li'],
     /** @param {any} node hast Element */
@@ -33,7 +33,7 @@ const base = deploymentUrl.pathname.replace(/\/$/, '') || '/';
 
 // https://astro.build/config
 export default defineConfig({
-  // SITE_URL overrides config.ts at build time (used by the demo deploys)
+  // SITE_URL overrides config.ts at build time for alternate deployments.
   site: deploymentUrl.origin,
   base,
   i18n: { locales: astroLocales, defaultLocale, routing: { prefixDefaultLocale: false } },
@@ -59,12 +59,9 @@ export default defineConfig({
     }),
     icon(),
     {
-      name: 'pilcrow-styleguide',
+      name: 'sionrbot-styleguide',
       hooks: {
         'astro:config:setup': ({ command, injectRoute }) => {
-          // Demo builds only (the demo bar links to it): the changelog as a page
-          if (process.env.PUBLIC_DEMO_BUY_URL)
-            injectRoute({ pattern: '/whats-new', entrypoint: './src/pages/_whats-new.astro' });
           if (command === 'dev')
             injectRoute({ pattern: '/styleguide', entrypoint: './src/pages/_styleguide.astro' });
         },
