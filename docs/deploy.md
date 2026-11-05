@@ -33,7 +33,11 @@ separate deployment or a root-hosted test build.
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the build
 source. `.github/workflows/deploy.yml` validates and builds the site on pushes to
-`main`, then uploads `dist/` and deploys it to the `github-pages` environment.
+`main` that change `src/**`, `public/**`, `astro.config.mjs`, `tsconfig.json`,
+`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.npmrc`, or the deployment
+workflow itself. It then uploads `dist/` and deploys it to the `github-pages`
+environment. Changes limited to documentation, tests, or other CI workflows do
+not trigger an automatic deployment.
 The workflow can also be started from **Actions → Deploy to GitHub Pages → Run
 workflow**. Deployment uses GitHub's generated token; no personal token or domain
 configuration is needed.
