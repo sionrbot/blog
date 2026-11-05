@@ -1,35 +1,38 @@
 // src/config.ts — single entry point for site settings. Every site-specific value lives here; never hardcode them in components.
+import type en from './i18n/en';
+import { defaultLocale } from './i18n/locales';
 import defaultOgImage from './assets/og-default.png';
 
 export const site = {
   name: 'Sionrbot-blog',
   description: "sionrbot's the first Astro theme blog.",
   url: 'https://blog.sionrbot.xyz',
-  locale: 'en', // 'en' | 'ko' | 'hu' — UI strings come from src/i18n/<locale>.ts
+  locale: defaultLocale, // URL selects the UI language; registry lives in src/i18n/locales.ts
   author: 'sionrbot', // Site author, also used in SEO structured data
   defaultOgImage, // 1200×630. A post's heroImage takes precedence
 } as const;
 
-export const nav = {
-  header: [
-    { label: 'Blog', href: '/blog' },
-    { label: 'About', href: '/about' },
-    { label: 'Contact', href: '/contact' },
-  ],
-  footer: [
-    {
-      title: 'Legal',
-      links: [
-        { label: 'Privacy', href: '/privacy' },
-        { label: 'Terms', href: '/terms' },
-      ],
-    },
-  ],
-  social: [
-    { label: 'GitHub', href: 'https://github.com/', icon: 'lucide:github' },
-    // Icons are Lucide names (https://lucide.dev/icons), e.g. { label: 'Mastodon', href: '…', icon: 'lucide:at-sign' }
-  ],
-} as const;
+export const nav = (t: typeof en) =>
+  ({
+    header: [
+      { label: t.blog, href: '/blog' },
+      { label: t.about, href: '/about' },
+      { label: t.contact, href: '/contact' },
+    ],
+    footer: [
+      {
+        title: t.legal,
+        links: [
+          { label: t.privacy, href: '/privacy' },
+          { label: t.terms, href: '/terms' },
+        ],
+      },
+    ],
+    social: [
+      { label: 'GitHub', href: 'https://github.com/', icon: 'lucide:github' },
+      // Icons are Lucide names (https://lucide.dev/icons), e.g. { label: 'Mastodon', href: '…', icon: 'lucide:at-sign' }
+    ],
+  }) as const;
 
 export const seo = {
   titleTemplate: `%s · ${site.name}`,

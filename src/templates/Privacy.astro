@@ -1,0 +1,16 @@
+---
+import Content, { frontmatter } from '../content/pages/privacy.mdx';
+import PageLayout from '../layouts/PageLayout.astro';
+import { useT } from '../i18n/t';
+
+const t = useT(Astro.currentLocale);
+---
+
+<PageLayout
+  title={t.privacy}
+  description={frontmatter.description}
+  contentLang="en"
+  hasMath={frontmatter.hasMath}
+>
+  <Content />
+</PageLayout>

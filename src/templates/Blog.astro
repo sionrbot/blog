@@ -1,0 +1,28 @@
+---
+// /blog, /blog/2, …
+import type { Page } from 'astro';
+import type { Post } from '../utils/posts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Pagination from '../components/blog/Pagination.astro';
+import PostList from '../components/blog/PostList.astro';
+import { useT } from '../i18n/t';
+
+const t = useT(Astro.currentLocale);
+
+interface Props {
+  page: Page<Post>;
+}
+const { page } = Astro.props;
+const title = page.currentPage > 1 ? `${t.blog} (${page.currentPage})` : t.blog;
+---
+
+<BaseLayout title={title} description={t.blogDescription}>
+  <div class="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+    <h1 class="text-5xl font-light tracking-tight">{t.blog}</h1>
+    <p class="mt-4 text-xl text-muted">{t.blogDescription}</p>
+    <div class="mt-12">
+      <PostList posts={page.data} />
+    </div>
+    <Pagination page={page} />
+  </div>
+</BaseLayout>

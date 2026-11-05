@@ -16,6 +16,9 @@ export interface FixturePost {
   pubDate: string;
   tags: string[];
   draft?: boolean;
+  lang?: string;
+  description?: string;
+  body?: string;
 }
 
 interface FixtureOptions {
@@ -114,17 +117,20 @@ export async function createFixture(
         const data = {
           title: post.title,
           description:
-            options.invalidDescription && index === 0 ? 'x'.repeat(161) : `About ${post.id}`,
+            options.invalidDescription && index === 0
+              ? 'x'.repeat(161)
+              : (post.description ?? `About ${post.id}`),
           pubDate: post.pubDate,
           tags: post.tags,
           draft: post.draft ?? false,
+          ...(post.lang ? { lang: post.lang } : {}),
         };
         const frontmatter = Object.entries(data)
           .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
           .join('\n');
         await writeFile(
           join(content, `${post.id}.mdx`),
-          `---\n${frontmatter}\n---\n\nBody of ${post.title}.\n`,
+          `---\n${frontmatter}\n---\n\n${post.body ?? `Body of ${post.title}.`}\n`,
         );
       }
     }
@@ -138,7 +144,7 @@ export async function createFixture(
     if (options.mutation === 'break-pagination') {
       await replaceOnce(
         join(root, 'src/components/blog/Pagination.astro'),
-        'href={url.next}',
+        'href={localizedHref(url.next, Astro.currentLocale)}',
         'href="/blog/999/"',
       );
     }
@@ -146,7 +152,7 @@ export async function createFixture(
       const direction = options.mutation === 'external-next' ? 'next' : 'prev';
       await replaceOnce(
         join(root, 'src/components/blog/Pagination.astro'),
-        `href={url.${direction}}`,
+        `href={localizedHref(url.${direction}, Astro.currentLocale)}`,
         'href={`https://wrong.example${url.' + direction + '}`}',
       );
     }

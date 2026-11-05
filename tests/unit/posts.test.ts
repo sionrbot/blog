@@ -5,6 +5,7 @@ const post = {
   id: 'notes/a-reading-list',
   collection: 'blog',
   data: {
+    lang: 'en',
     title: 'A reading list',
     description: 'Notes on books.',
     pubDate: new Date('2026-01-01T00:00:00Z'),

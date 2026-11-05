@@ -7,6 +7,8 @@ import icon from 'astro-icon';
 import { satteri } from '@astrojs/markdown-satteri';
 import { tableScroll } from './src/utils/table-scroll.ts';
 import { math } from './src/utils/math.ts';
+import { astroLocales, defaultLocale } from './src/i18n/locales.ts';
+import { canonicalPath, isErrorPage } from './src/i18n/paths.ts';
 import { site } from './src/config.ts';
 
 // GFM task-list checkboxes have no accessible name and fail Lighthouse's 'label' audit. Wrap the item in a <label>
@@ -30,6 +32,7 @@ const taskListLabels = {
 export default defineConfig({
   // SITE_URL overrides config.ts at build time (used by the demo deploys)
   site: process.env.SITE_URL ?? site.url,
+  i18n: { locales: astroLocales, defaultLocale, routing: { prefixDefaultLocale: false } },
   markdown: {
     processor: satteri({
       features: { math: true },
@@ -41,7 +44,15 @@ export default defineConfig({
   },
   integrations: [
     mdx(),
-    sitemap(),
+    sitemap({
+      i18n: { defaultLocale: 'en', locales: { en: 'en', zh: 'zh-Hans' } },
+      filter: (page) => !isErrorPage(new URL(page).pathname),
+      // Index canonical pages while retaining the integration's alternate relationships.
+      serialize: (item) => {
+        const path = new URL(item.url).pathname;
+        return canonicalPath(path) === path ? item : undefined;
+      },
+    }),
     icon(),
     {
       name: 'pilcrow-styleguide',

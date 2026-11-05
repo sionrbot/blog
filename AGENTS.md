@@ -28,25 +28,25 @@ After any change, `vp run check && vp check && vp run lint && vp run build` must
 
 ## Where to edit
 
-| To change                                | File                                                        | Notes                                                                                                                                   |
-| ---------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Site name, URL, description, social, nav | `src/config.ts`                                             | No site-specific values are hardcoded anywhere else                                                                                     |
-| Color palette                            | `@theme` block in `src/styles/global.css`                   | Tailwind v4 CSS variables. There is no `tailwind.config.*`                                                                              |
-| Fonts                                    | `@theme` in `src/styles/global.css` + `src/assets/fonts/`   | Self-hosted. Never link external font services                                                                                          |
-| Logo, favicon                            | `src/assets/logo.svg`, `public/favicon.svg`                 |                                                                                                                                         |
-| Default OG image                         | `src/assets/og-default.png`                                 | 1200×630. Imported by `site.defaultOgImage` in `config.ts`                                                                              |
-| Home section order and content           | `src/pages/index.astro`                                     | Assembles components from `src/components/sections/` via props                                                                          |
-| Add a section                            | `src/components/sections/<Name>.astro`                      | Props only, no data fetching                                                                                                            |
-| Section inside a post                    | Wrap it in `<div class="not-prose breakout">` in the `.mdx` | `breakout` is an `@utility` in `global.css`. Never modify the section component                                                         |
-| Add a blog post                          | `src/content/blog/<slug>.mdx`                               | Frontmatter schema below                                                                                                                |
-| Content schema fields                    | `src/content.config.ts`                                     | Never remove fields; add new ones as optional                                                                                           |
-| Header, footer                           | `src/components/common/Header.astro`, `Footer.astro`        | Link lists live in `config.ts`                                                                                                          |
-| SEO meta                                 | `src/components/common/SEO.astro`                           | Pages only pass `title` / `description` props                                                                                           |
-| New page                                 | `src/pages/<name>.astro` using `PageLayout`                 |                                                                                                                                         |
-| UI strings (buttons, labels)             | `src/i18n/<locale>.ts`                                      | Never write UI strings inside components                                                                                                |
-| Change the UI language                   | `site.locale` in `config.ts`                                | Strings in `src/i18n/<locale>.ts` (`en`, `ko`, `hu`); a new file is picked up automatically. Components use `useT(Astro.currentLocale)` |
-| Newsletter, contact form                 | `forms` in `config.ts`                                      | Newsletter: `forms.newsletter.action`. Contact: Web3Forms key                                                                           |
-| Analytics                                | `analytics` in `config.ts`                                  | Rendered by `src/components/common/Analytics.astro`                                                                                     |
+| To change                                | File                                                        | Notes                                                                                                                            |
+| ---------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Site name, URL, description, social, nav | `src/config.ts`                                             | No site-specific values are hardcoded anywhere else                                                                              |
+| Color palette                            | `@theme` block in `src/styles/global.css`                   | Tailwind v4 CSS variables. There is no `tailwind.config.*`                                                                       |
+| Fonts                                    | `@theme` in `src/styles/global.css` + `src/assets/fonts/`   | Self-hosted. Never link external font services                                                                                   |
+| Logo, favicon                            | `src/assets/logo.svg`, `public/favicon.svg`                 |                                                                                                                                  |
+| Default OG image                         | `src/assets/og-default.png`                                 | 1200×630. Imported by `site.defaultOgImage` in `config.ts`                                                                       |
+| Home section order and content           | `src/templates/Home.astro`                                  | Assembles components from `src/components/sections/` via props                                                                   |
+| Add a section                            | `src/components/sections/<Name>.astro`                      | Props only, no data fetching                                                                                                     |
+| Section inside a post                    | Wrap it in `<div class="not-prose breakout">` in the `.mdx` | `breakout` is an `@utility` in `global.css`. Never modify the section component                                                  |
+| Add a blog post                          | `src/content/blog/<slug>.mdx`                               | Frontmatter schema below                                                                                                         |
+| Content schema fields                    | `src/content.config.ts`                                     | Never remove fields; add new ones as optional                                                                                    |
+| Header, footer                           | `src/components/common/Header.astro`, `Footer.astro`        | Link lists live in `config.ts`                                                                                                   |
+| SEO meta                                 | `src/components/common/SEO.astro`                           | Pages only pass `title` / `description` props                                                                                    |
+| New page                                 | Shared `src/templates/<Name>.astro` using `PageLayout`      | Thin entries in `src/pages/` and `src/pages/zh/`; shared authored MDX lives in `src/content/pages/`                              |
+| UI strings (buttons, labels)             | `src/i18n/<locale>.ts`                                      | Never write UI strings inside components                                                                                         |
+| UI language and routes                   | `src/i18n/locales.ts`, `src/i18n/links.ts`, `src/pages/`    | URL selects `en` (no prefix) or `zh-Hans` (`/zh/`). Components use `useT(Astro.currentLocale)`; system links use `localizedHref` |
+| Newsletter, contact form                 | `forms` in `config.ts`                                      | Newsletter: `forms.newsletter.action`. Contact: Web3Forms key                                                                    |
+| Analytics                                | `analytics` in `config.ts`                                  | Rendered by `src/components/common/Analytics.astro`                                                                              |
 
 ## Don't
 
@@ -67,6 +67,7 @@ blog:
   description: string     # required, max 160 chars
   pubDate: date           # required
   updatedDate?: date
+  lang?: string           # BCP 47 content language; defaults to en, independent of UI
   heroImage?: image       # path relative to the post, under src/assets
   heroAlt?: string        # required when heroImage is set
   tags: string[]          # default []
@@ -96,7 +97,7 @@ Human-readable version: `docs/content.md`.
 
 ## Tool notes
 
-- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. The target behavior is in [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [docs/i18n-testing.md](docs/i18n-testing.md#agent-workflow).
+- For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [docs/i18n-testing.md](docs/i18n-testing.md#agent-workflow).
 - Use the configured x18n MCP tools for interactive work, or `pnpm exec x18n <command> --json` as the CLI fallback. Finish with `pnpm run i18n:check` and `pnpm run test:unit`; the normal project checks still apply.
 
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.

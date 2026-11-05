@@ -1,0 +1,42 @@
+---
+import { isErrorPage } from '../../i18n/paths';
+import { localizedHref } from '../../i18n/links';
+import { resolveLocale } from '../../i18n/locales';
+import { useT } from '../../i18n/t';
+
+const t = useT(Astro.currentLocale);
+const locale = resolveLocale(Astro.currentLocale);
+const isNotFound = isErrorPage(Astro.url.pathname);
+const hrefFor = (code: string) =>
+  isNotFound ? (code === 'en' ? '/404.html' : '/zh/404/') : localizedHref(Astro.url.pathname, code);
+---
+
+<nav aria-label={t.languageNav} class="flex gap-2 font-sans text-sm" data-language-switcher>
+  {(
+    [
+      { code: 'en', label: 'English' },
+      { code: 'zh-Hans', label: '简体中文' },
+    ] as const
+  ).map(({ code, label }) => (
+    <a
+      href={hrefFor(code)}
+      lang={code}
+      hreflang={code}
+      aria-current={locale === code ? 'page' : undefined}
+      class="text-muted underline-offset-4 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
+    >
+      {label}
+    </a>
+  ))}
+</nav>
+
+<script>
+  // Fragments are not sent to the server. Enhance native links with the current anchor.
+  const updateLanguageLinks = () => {
+    document.querySelectorAll<HTMLAnchorElement>('[data-language-switcher] a').forEach((link) => {
+      link.hash = window.location.hash;
+    });
+  };
+  updateLanguageLinks();
+  window.addEventListener('hashchange', updateLanguageLinks);
+</script>

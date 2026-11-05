@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { localizedHref } from '../i18n/links';
+import { useT } from '../i18n/t';
+
+const t = useT(Astro.currentLocale);
+---
+
+<BaseLayout title={t.notFoundTitle} description={t.notFoundBody} noindex>
+  <div class="mx-auto max-w-prose px-4 py-24 text-center">
+    <p class="text-7xl text-primary" aria-hidden="true">
+      ¶
+    </p>
+    <h1 class="mt-6 text-4xl font-medium">{t.notFoundTitle}</h1>
+    <p class="mt-4 text-lg text-muted">{t.notFoundBody}</p>
+    <p class="mt-10 font-sans text-sm">
+      <a href={localizedHref('/', Astro.currentLocale)}>{t.backHome}</a>
+    </p>
+  </div>
+</BaseLayout>

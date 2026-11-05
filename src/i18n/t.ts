@@ -1,13 +1,17 @@
-// UI strings for the page language. Components call `const t = useT(Astro.currentLocale)`.
-// Without Astro i18n routing currentLocale is undefined, so site.locale is used.
-// Every src/i18n/<locale>.ts is picked up here; adding a language needs no change to this file.
 import { site } from '../config';
-import type en from './en';
+import en from './en';
+import zhHans from './zh-Hans';
+import { assertDefaultLocale, resolveLocale } from './locales';
 
-const dicts = Object.fromEntries(
-  Object.entries(
-    import.meta.glob<typeof en>(['./*.ts', '!./t.ts'], { eager: true, import: 'default' }),
-  ).map(([path, dict]) => [path.slice(2, -3), dict]),
-);
+assertDefaultLocale(site.locale);
 
-export const useT = (locale: string = site.locale) => dicts[locale] ?? dicts[site.locale];
+export const dictionaries = { en, 'zh-Hans': zhHans };
+export const useT = (locale?: string): typeof en => dictionaries[resolveLocale(locale)];
+
+/** Interpolate every occurrence without treating values as replacement syntax. */
+export function formatMessage(message: string, params: Record<string, string | number>): string {
+  return message.replace(/\{(\w+)\}/g, (_, key: string) => {
+    if (!Object.hasOwn(params, key)) throw new Error(`Missing message parameter: ${key}`);
+    return String(params[key]);
+  });
+}

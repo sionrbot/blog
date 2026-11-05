@@ -1,0 +1,8 @@
+---
+import Page from '../../../../templates/Tag.astro';
+import { getTagPaths } from '../../../../templates/paths';
+
+export const getStaticPaths = getTagPaths;
+---
+
+<Page {...Astro.props} />

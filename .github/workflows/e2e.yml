@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [default, rendering, configured-forms]
+        variant: [default, rendering, configured-forms, i18n]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

@@ -26,4 +26,16 @@ export default {
   send: 'Send message',
   formNotConfigured: 'This form is not connected yet.',
   tagDescription: 'Every post tagged “{tag}”.',
+  about: 'About',
+  contact: 'Contact',
+  privacy: 'Privacy',
+  terms: 'Terms',
+  legal: 'Legal',
+  recentWriting: 'Recent writing',
+  personalBlog: 'Sionrbot personal blog',
+  contactDescription: 'Questions, corrections, or a note about an essay. I read all of it.',
+  newsletterBody:
+    'The week’s essay, three things worth reading, and a closing line. Every letter has an unsubscribe link at the bottom.',
+  themeBy: 'theme by',
+  languageNav: 'Language',
 };

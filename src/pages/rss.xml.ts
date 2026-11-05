@@ -16,6 +16,5 @@ export async function GET(context: APIContext) {
       categories: post.data.tags,
       link: postHref(post),
     })),
-    customData: `<language>${site.locale}</language>`,
   });
 }

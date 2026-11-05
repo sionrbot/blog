@@ -6,6 +6,12 @@ import { listPostPaths, readHtml } from '../support/parse-output';
 
 test.each([
   {
+    id: 'invalid-language',
+    field: 'lang',
+    invalid: 'pubDate: 2026-01-01\nlang: not_a_language',
+    corrected: 'pubDate: 2026-01-01\nlang: fr-CA',
+  },
+  {
     id: 'invalid-date',
     field: 'pubDate',
     invalid: 'pubDate: not-a-date',
@@ -66,13 +72,17 @@ test('SCHEMA-02: omitted tags and draft become an empty tag list and a published
 import { getCollection } from 'astro:content';
 const [post] = await getCollection('blog');
 ---
-<pre id="schema-defaults">{JSON.stringify({ tags: post.data.tags, draft: post.data.draft })}</pre>
+<pre id="schema-defaults">{JSON.stringify({ tags: post.data.tags, draft: post.data.draft, lang: post.data.lang })}</pre>
 `,
     );
     const result = await fixture.build();
     expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
     const defaults = await readHtml(fixture.dist, '/schema-defaults/');
-    expect(JSON.parse(defaults('#schema-defaults').text())).toEqual({ tags: [], draft: false });
+    expect(JSON.parse(defaults('#schema-defaults').text())).toEqual({
+      tags: [],
+      draft: false,
+      lang: 'en',
+    });
     expect(listPostPaths((await readHtml(fixture.dist, '/blog/')).html())).toEqual([
       '/blog/defaults/',
     ]);
