@@ -37,6 +37,12 @@ Static output. Works on Cloudflare Pages, Vercel, Netlify.
 
 See [docs/deploy.md](docs/deploy.md).
 
+## Releases
+
+Release PRs maintain version numbers and changelog entries. Merging a release PR
+publishes a tag and GitHub Release after its merge commit passes CI and E2E.
+See [docs/releasing.md](docs/releasing.md) for setup, commit conventions, and retries.
+
 ## Test
 
 See [Testing](tests/TESTING.md) for unit, build, browser and AI test coverage and commands.

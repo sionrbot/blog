@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [CI, E2E]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Preview, update the release PR, or retry publishing validated releases
+        type: choice
+        options: [check, pr, publish]
+        default: check
+
+permissions:
+  contents: read
+
+# PR updates and publishing share a queue. Completed CI/E2E events also retry
+# candidates if an earlier event arrived before the other workflow finished.
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Only trusted main-branch tooling runs with the release token.
+      # Release candidates are validated separately by their exact merge SHA.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - name: Verify release credential
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo '::error::Configure RELEASE_TOKEN. See docs/releasing.md.'
+            exit 1
+          fi
+      - name: Manage releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'sync' }}
+        run: node scripts/release.ts "$RELEASE_MODE"

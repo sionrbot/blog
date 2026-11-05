@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+Versions 1.0.0–1.4.1 below describe the upstream
+[Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
+Sionrbot-blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
+
 ## [1.4.1] - 2026-10-17
 
 ### Added
