@@ -3,6 +3,7 @@ import { Icon } from 'astro-icon/components';
 import { nav, site } from '../../config';
 import { navigationHref } from '../../i18n/links';
 import { useT } from '../../i18n/t';
+import { withBase } from '../../utils/base-path';
 
 const t = useT(Astro.currentLocale);
 const navigation = nav(t);
@@ -36,7 +37,7 @@ const themeCredit = 'https://ondelva.com/themes/pilcrow';
         ))}
         <li>
           <a
-            href="/rss.xml"
+            href={withBase('/rss.xml')}
             aria-label={t.rss}
             class="inline-flex size-10 items-center justify-center text-muted hover:text-foreground"
           >

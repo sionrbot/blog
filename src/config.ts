@@ -6,7 +6,7 @@ import defaultOgImage from './assets/og-default.png';
 export const site = {
   name: 'Sionrbot-blog',
   description: "sionrbot's the first Astro theme blog.",
-  url: 'https://blog.sionrbot.xyz',
+  url: 'https://sionrbot.github.io/sionrbot-blog/',
   locale: defaultLocale, // URL selects the UI language; registry lives in src/i18n/locales.ts
   author: 'sionrbot', // Site author, also used in SEO structured data
   defaultOgImage, // 1200×630. A post's heroImage takes precedence

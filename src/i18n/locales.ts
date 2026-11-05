@@ -1,3 +1,5 @@
+import { withoutBase } from '../utils/base-path';
+
 export const supportedLocales = ['en', 'zh-Hans'] as const;
 export type Locale = (typeof supportedLocales)[number];
 export const defaultLocale = 'en' satisfies Locale;
@@ -17,5 +19,7 @@ export function resolveLocale(locale?: string): Locale {
 }
 
 export const localePath = (locale?: string) => (resolveLocale(locale) === 'zh-Hans' ? 'zh' : 'en');
-export const localeFromPath = (pathname: string): Locale =>
-  pathname === '/zh' || pathname.startsWith('/zh/') ? 'zh-Hans' : 'en';
+export const localeFromPath = (pathname: string, base?: string): Locale => {
+  const path = withoutBase(pathname, base);
+  return path === '/zh' || path.startsWith('/zh/') ? 'zh-Hans' : 'en';
+};

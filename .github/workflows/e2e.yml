@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# The browser and Lighthouse baseline serves dist at the domain root.
+# The Pages deployment workflow builds the configured production subpath.
+env:
+  SITE_URL: https://sionrbot.github.io
+
 jobs:
   browser:
     runs-on: ubuntu-latest

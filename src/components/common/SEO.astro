@@ -4,6 +4,7 @@ import type { ImageMetadata } from 'astro';
 import { canonicalPath, localizedHref } from '../../i18n/links';
 import { resolveLocale } from '../../i18n/locales';
 import { seo, site } from '../../config';
+import { withBase } from '../../utils/base-path';
 
 interface Props {
   title?: string; // site name only when omitted
@@ -25,7 +26,7 @@ const {
 const fullTitle = title ? seo.titleTemplate.replace('%s', title) : site.name;
 const canonical = new URL(canonicalPath(Astro.url.pathname), Astro.site);
 const ogImage = new URL(image.src, Astro.site);
-const home = new URL('/', Astro.site).href;
+const home = new URL(withBase('/'), Astro.site).href;
 const locale = resolveLocale(Astro.currentLocale);
 
 const schema = [
@@ -47,7 +48,7 @@ const schemaJson = JSON.stringify(schema).replace(/</g, '\\u003c');
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
-<link rel="alternate" type="application/rss+xml" title={site.name} href="/rss.xml" />
+<link rel="alternate" type="application/rss+xml" title={site.name} href={withBase('/rss.xml')} />
 {!noindex &&
   ['en', 'zh-Hans'].map((language) => (
     <link
@@ -56,7 +57,7 @@ const schemaJson = JSON.stringify(schema).replace(/</g, '\\u003c');
       href={new URL(localizedHref(Astro.url.pathname, language), Astro.site)}
     />
   ))}
-<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="sitemap" href={withBase('/sitemap-index.xml')} />
 
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content={site.name} />

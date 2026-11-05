@@ -28,10 +28,14 @@ const taskListLabels = {
   },
 };
 
+const deploymentUrl = new URL(process.env.SITE_URL ?? site.url);
+const base = deploymentUrl.pathname.replace(/\/$/, '') || '/';
+
 // https://astro.build/config
 export default defineConfig({
   // SITE_URL overrides config.ts at build time (used by the demo deploys)
-  site: process.env.SITE_URL ?? site.url,
+  site: deploymentUrl.origin,
+  base,
   i18n: { locales: astroLocales, defaultLocale, routing: { prefixDefaultLocale: false } },
   markdown: {
     processor: satteri({
@@ -46,11 +50,11 @@ export default defineConfig({
     mdx(),
     sitemap({
       i18n: { defaultLocale: 'en', locales: { en: 'en', zh: 'zh-Hans' } },
-      filter: (page) => !isErrorPage(new URL(page).pathname),
+      filter: (page) => !isErrorPage(new URL(page).pathname, base),
       // Index canonical pages while retaining the integration's alternate relationships.
       serialize: (item) => {
         const path = new URL(item.url).pathname;
-        return canonicalPath(path) === path ? item : undefined;
+        return canonicalPath(path, base) === path ? item : undefined;
       },
     }),
     icon(),

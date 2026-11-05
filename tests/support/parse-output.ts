@@ -3,6 +3,17 @@ import { join } from 'node:path';
 import { load } from 'cheerio';
 import { XMLParser } from 'fast-xml-parser';
 
+/** Map a deployed URL path to the file tree; Astro does not nest dist under base. */
+export function outputPath(pathname: string, base = '/'): string {
+  const prefix = base.replace(/\/$/, '');
+  if (!prefix) return pathname;
+  if (pathname === prefix) return '/';
+  if (!pathname.startsWith(`${prefix}/`)) {
+    throw new Error(`Path ${pathname} is outside deployment base ${base}`);
+  }
+  return pathname.slice(prefix.length);
+}
+
 /** Read an actual emitted document, never a component or a mocked collection. */
 export async function readHtml(dist: string, route: string) {
   const file = route.endsWith('.html') ? route : `${route.replace(/\/$/, '')}/index.html`;
@@ -50,14 +61,14 @@ export function rssPosts(source: string) {
 }
 
 /** Follow the emitted sitemap index instead of assuming one hardcoded shard. */
-export async function sitemapUrls(dist: string): Promise<string[]> {
+export async function sitemapUrls(dist: string, base = '/'): Promise<string[]> {
   const index = parseXml(await readFile(join(dist, 'sitemap-index.xml'), 'utf8'));
   const shards = entries(record(index.sitemapindex).sitemap);
   const urls: string[] = [];
   for (const shard of shards) {
     const pathname = new URL(string(record(shard).loc)).pathname;
     if (pathname.includes('..')) throw new Error('Unexpected sitemap shard path');
-    const document = parseXml(await readFile(join(dist, pathname), 'utf8'));
+    const document = parseXml(await readFile(join(dist, outputPath(pathname, base)), 'utf8'));
     for (const entry of entries(record(document.urlset).url)) {
       urls.push(string(record(entry).loc));
     }

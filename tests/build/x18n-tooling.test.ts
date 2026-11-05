@@ -52,9 +52,11 @@ describe('x18n integration probes', () => {
   beforeAll(() => {
     fixture = mkdtempSync(join(tmpdir(), 'sionrbot-x18n-'));
     mkdirSync(join(fixture, 'src/i18n'), { recursive: true });
+    mkdirSync(join(fixture, 'src/utils'), { recursive: true });
     symlinkSync(join(root, 'node_modules'), join(fixture, 'node_modules'), 'dir');
     copyFileSync(join(root, 'x18n.config.ts'), join(fixture, 'x18n.config.ts'));
     copyFileSync(join(root, 'src/i18n/locales.ts'), join(fixture, 'src/i18n/locales.ts'));
+    copyFileSync(join(root, 'src/utils/base-path.ts'), join(fixture, 'src/utils/base-path.ts'));
     write('package.json', '{"type":"module"}');
   });
   afterAll(() => rmSync(fixture, { recursive: true, force: true }));

@@ -10,6 +10,7 @@ import SEO from '../components/common/SEO.astro';
 import { features } from '../config';
 import { resolveLocale } from '../i18n/locales';
 import { useT } from '../i18n/t';
+import { withBase } from '../utils/base-path';
 
 const t = useT(Astro.currentLocale);
 
@@ -20,8 +21,8 @@ type Props = ComponentProps<typeof SEO>;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <link rel="icon" href={withBase('/favicon.ico')} sizes="32x32" />
     <!-- Preload only the body face used above the fold -->
     <link rel="preload" href={serifFont} as="font" type="font/woff2" crossorigin />
     <meta name="generator" content={Astro.generator} />

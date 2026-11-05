@@ -46,7 +46,9 @@ pnpm run test:build
 `vp run check` generates Astro types before other checks. Use `vp run build`
 for Astro; the built-in `vp build` runs plain Vite. Build tests reuse root `dist`
 for default-route assertions and isolation fingerprints, so rebuild after source
-or content changes. Run the default-origin build without a `SITE_URL` override.
+or content changes. Normally build without a `SITE_URL` override to verify the
+production subpath. If overriding it, pass the same `SITE_URL` when running build
+tests so URL-to-output assertions use the matching deployment base.
 
 For tests that modify content or configuration, use `createFixture` from
 `tests/support/build-fixture.ts` to work in an isolated temporary copy. Always
@@ -71,12 +73,17 @@ Install browsers once, then build the current checkout:
 
 ```sh
 pnpm exec e2e-web install chromium webkit
-vp run build
+SITE_URL=https://sionrbot.github.io vp run build
 pnpm run test:e2e -- --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant rendering --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant configured-forms --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit
 ```
+
+The existing browser and Lighthouse baseline serves the site at the domain root;
+build it with the root `SITE_URL` above. The Pages deployment builds the configured
+production subpath, which is covered separately by build assertions. Rebuild without
+the override before running the default production build tests or deploying.
 
 Linux CI adds `--with-deps` to browser installation. Targets are Chromium
 `desktop` (1280×800), Chromium `narrow` (360×800) and WebKit `webkit` (360×800).

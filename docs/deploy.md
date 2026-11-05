@@ -24,6 +24,25 @@ pnpm build
 
 Output goes to `dist/`.
 
+## GitHub Pages
+
+This repository publishes to https://sionrbot.github.io/sionrbot-blog/.
+`site.url` in `src/config.ts` includes the repository path. Astro derives its
+`site` origin and `base` path from that URL; `SITE_URL` can override both for a
+separate deployment or a root-hosted test build.
+
+In the repository's **Settings → Pages**, select **GitHub Actions** as the build
+source. `.github/workflows/deploy.yml` validates and builds the site on pushes to
+`main`, then uploads `dist/` and deploys it to the `github-pages` environment.
+The workflow can also be started from **Actions → Deploy to GitHub Pages → Run
+workflow**. Deployment uses GitHub's generated token; no personal token or domain
+configuration is needed.
+
+Use the workflow's deployment URL to open the site. The Chinese UI is under
+`/sionrbot-blog/zh/`. Preview locally with `pnpm preview` and open the same
+`/sionrbot-blog/` prefix. GitHub Pages serves the generated root `404.html` for
+unknown URLs; it does not automatically choose the Chinese error page.
+
 ## Cloudflare Pages
 
 Build command: `pnpm build`. Output directory: `dist`.
