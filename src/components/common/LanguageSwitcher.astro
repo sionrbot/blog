@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 import { isErrorPage } from '../../i18n/paths';
 import { localizedHref } from '../../i18n/links';
 import { resolveLocale } from '../../i18n/locales';
@@ -14,24 +15,41 @@ const hrefFor = (code: string) =>
     : localizedHref(Astro.url.pathname, code);
 ---
 
-<nav aria-label={t.languageNav} class="flex gap-2 font-sans text-sm" data-language-switcher>
-  {(
-    [
-      { code: 'en', label: 'English' },
-      { code: 'zh-Hans', label: '简体中文' },
-    ] as const
-  ).map(({ code, label }) => (
-    <a
-      href={hrefFor(code)}
-      lang={code}
-      hreflang={code}
-      aria-current={locale === code ? 'page' : undefined}
-      class="text-muted underline-offset-4 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
-    >
-      {label}
-    </a>
-  ))}
-</nav>
+<details class="group relative font-sans text-sm" data-language-switcher>
+  <summary
+    aria-label={t.languageNav}
+    class="flex h-10 cursor-pointer list-none items-center gap-2 rounded-xs px-2 text-foreground transition-colors hover:bg-foreground/5 [&::-webkit-details-marker]:hidden"
+  >
+    <Icon name="lucide:languages" class="size-[1em]" aria-hidden="true" />
+    <Icon
+      name="lucide:chevron-down"
+      class="size-4 transition-transform group-open:rotate-180"
+      aria-hidden="true"
+    />
+  </summary>
+  <nav
+    aria-label={t.languageNav}
+    class="absolute right-0 z-50 mt-2 min-w-40 rounded-xs border border-border bg-background p-1"
+  >
+    {(
+      [
+        { code: 'en', label: 'English' },
+        { code: 'zh-Hans', label: '简体中文' },
+      ] as const
+    ).map(({ code, label }) => (
+      <a
+        href={hrefFor(code)}
+        lang={code}
+        hreflang={code}
+        aria-current={locale === code ? 'page' : undefined}
+        class="flex min-h-11 items-center justify-between gap-4 rounded-xs px-3 py-2 text-muted no-underline hover:bg-foreground/5 hover:text-foreground aria-[current=page]:text-foreground"
+      >
+        {label}
+        {locale === code && <Icon name="lucide:check" class="size-4" aria-hidden="true" />}
+      </a>
+    ))}
+  </nav>
+</details>
 
 <script>
   // Fragments are not sent to the server. Enhance native links with the current anchor.
@@ -42,4 +60,24 @@ const hrefFor = (code: string) =>
   };
   updateLanguageLinks();
   window.addEventListener('hashchange', updateLanguageLinks);
+
+  document.querySelectorAll<HTMLDetailsElement>('[data-language-switcher]').forEach((switcher) => {
+    document.addEventListener('click', (event) => {
+      if (event.target instanceof Node && !switcher.contains(event.target)) {
+        switcher.open = false;
+      }
+    });
+    switcher.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && switcher.open) {
+        event.preventDefault();
+        switcher.open = false;
+        switcher.querySelector('summary')?.focus();
+      }
+    });
+    switcher.addEventListener('focusout', (event) => {
+      if (event.relatedTarget instanceof Node && !switcher.contains(event.relatedTarget)) {
+        switcher.open = false;
+      }
+    });
+  });
 </script>
