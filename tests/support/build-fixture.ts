@@ -23,7 +23,6 @@ export interface FixturePost {
 
 interface FixtureOptions {
   posts?: readonly FixturePost[];
-  demo?: boolean;
   mutation?: 'publish-drafts' | 'break-pagination' | 'external-next' | 'external-prev';
   invalidDescription?: boolean;
 }
@@ -60,7 +59,7 @@ export async function createFixture(
     runId,
     `${name}-${randomUUID()}`,
   );
-  const env = fixtureEnv(options.demo ?? false);
+  const env = fixtureEnv();
   let active: ReturnType<typeof startAstro> | undefined;
   let disposed = false;
   const processes = new Set<ReturnType<typeof startAstro>>();
@@ -106,7 +105,6 @@ export async function createFixture(
     for (const entry of [
       'src',
       'public',
-      'CHANGELOG.md',
       'astro.config.mjs',
       'tsconfig.json',
       'package.json',

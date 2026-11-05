@@ -29,7 +29,11 @@ export const nav = (t: typeof en) =>
       },
     ],
     social: [
-      { label: 'GitHub', href: 'https://github.com/', icon: 'lucide:github' },
+      {
+        label: 'GitHub',
+        href: 'https://github.com/sionrbot/sionrbot-blog',
+        icon: 'lucide:github',
+      },
       // Icons are Lucide names (https://lucide.dev/icons), e.g. { label: 'Mastodon', href: '…', icon: 'lucide:at-sign' }
     ],
   }) as const;
