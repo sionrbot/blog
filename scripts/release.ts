@@ -270,19 +270,19 @@ async function main(): Promise<void> {
   if (!token || !repository) throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required');
   const api = createReleaseApi(repository, token);
   const [owner, repo] = repository.split('/');
-  const github = await GitHub.create({ owner, repo, token });
-  // Release publishing needs label transitions, but no automatic PR conversation messages.
-  github.commentOnIssue = async () => '';
-  const manifest = await Manifest.fromManifest(github, 'main');
+  async function loadManifest(): Promise<Manifest> {
+    // GitHub caches branch files. A fresh client is needed as well as a fresh
+    // Manifest when main advances while a release is being published.
+    const github = await GitHub.create({ owner, repo, token });
+    // Release publishing needs label transitions, but no automatic PR conversation messages.
+    github.commentOnIssue = async () => '';
+    return Manifest.fromManifest(github, 'main');
+  }
+  const manifest = await loadManifest();
   setInitialRelease(manifest);
   if (mode === 'pr') await createFormattedPullRequests(manifest);
   else if (mode === 'publish' || mode === 'sync') {
-    await publishAndRefresh(
-      manifest,
-      api,
-      () => Manifest.fromManifest(github, 'main'),
-      mode === 'sync',
-    );
+    await publishAndRefresh(manifest, api, loadManifest, mode === 'sync');
   } else {
     const pullRequests = await manifest.buildPullRequests();
     const releases = await manifest.buildReleases();
