@@ -84,5 +84,5 @@ Vite+ 1.4.0 provides Vite, Oxlint, and Oxfmt. Its lint and format settings live 
   The built-in `vp dev` / `vp build` / `vp preview` commands run plain Vite and do
   not load Astro's application pipeline.
 
-There is no Vitest suite or library package in this project. `vp test run` therefore
-reports no test files. CI validates the built site with Lighthouse and an internal-link check.
+See [Testing](test/TESTING.md) for unit, build, browser and AI test coverage and commands.
+[Language testing](test/I18N.md) covers bilingual UI contracts and translation tooling.
