@@ -51,6 +51,7 @@
     "@typescript-eslint/parser": "^8.72.1",
     "@x18n/cli": "0.1.7",
     "ai": "^7.0.159",
+    "cf": "1.0.0-beta.28",
     "cheerio": "1.2.0",
     "e2e": "0.22.0",
     "eslint": "^10.14.0",
@@ -60,6 +61,7 @@
     "typescript-eslint": "^8.72.1",
     "vite": "catalog:",
     "vite-plus": "catalog:",
+    "wrangler": "4.158.0",
     "zod": "^4.6.7"
   },
   "private": true,

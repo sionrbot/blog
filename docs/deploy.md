@@ -38,7 +38,7 @@ source. `.github/workflows/deploy.yml` validates and builds the site on pushes t
 workflow itself. It then uploads `dist/` and deploys it to the `github-pages`
 environment. Changes limited to documentation, tests, or other CI workflows do
 not trigger an automatic deployment.
-The workflow can also be started from **Actions → Deploy to GitHub Pages → Run
+The workflow can also be started from **Actions → Deploy to GitHub Pages and Cloudflare Workers → Run
 workflow**. Deployment uses GitHub's generated token; no personal token or domain
 configuration is needed.
 
@@ -46,6 +46,43 @@ Use the workflow's deployment URL to open the site. The Chinese UI is under
 `/sionrbot-blog/zh/`. Preview locally with `pnpm preview` and open the same
 `/sionrbot-blog/` prefix. GitHub Pages serves the generated root `404.html` for
 unknown URLs; it does not automatically choose the Chinese error page.
+
+## Cloudflare Workers
+
+The same deployment workflow publishes an independent build to
+https://sionrbot-blog.pgsnotfound404.workers.dev. Both platforms share the existing
+push path filters and manual trigger. Changes only to `cloudflare.config.ts` or
+`wrangler.config.ts` require a manual workflow run. The Workers job runs
+independently of the GitHub Pages jobs.
+
+Set repository Actions secrets `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID`. The token needs Workers Scripts Write for the target
+account. This static deployment uses the workers.dev hostname and no DNS, KV,
+R2, or server-side Astro adapter.
+
+Build and validate using the Workers URL so navigation, assets, feeds, and SEO
+metadata use the root path. Keep `site.url` unchanged for GitHub Pages:
+
+```sh
+export SITE_URL=https://sionrbot-blog.pgsnotfound404.workers.dev
+pnpm build
+pnpm exec vp test --project build tests/build/base-path.test.ts tests/build/routes.test.ts tests/build/seo.test.ts
+pnpm exec cf-wrangler build
+pnpm exec cf deploy --prebuilt --dry-run
+pnpm exec cf deploy --prebuilt
+```
+
+For local deployment, authenticate with `cf auth login` or supply the two
+Cloudflare environment variables. CI receives credentials only in the deploy step.
+
+`wrangler.config.ts` packages `dist/` as `.cloudflare/output/v0/` using Wrangler's
+`cf-wrangler` binary. `cloudflare.config.ts` defines the Worker and static routing.
+The prebuilt commands bypass `cf` framework detection, which does not support
+Astro 6+ during the beta. Tool versions are pinned in the project lockfile.
+Do not use `cf build` or plain `cf deploy` for this project.
+
+Unknown URLs return the generated root `404.html` with HTTP 404. Chinese pages
+remain under `/zh/`; missing Chinese paths also use the root error page.
 
 ## Cloudflare Pages
 
