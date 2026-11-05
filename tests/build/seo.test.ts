@@ -4,7 +4,7 @@ import { load } from 'cheerio';
 import { afterAll, beforeAll, expect, test } from 'vite-plus/test';
 import { site } from '../../src/config';
 import { createFixture, projectRoot } from '../support/build-fixture';
-import { readHtml, sitemapUrls } from '../support/parse-output';
+import { outputPath, readHtml, sitemapUrls } from '../support/parse-output';
 
 const origin = 'https://seo.fixture.example';
 const escapedTitle = 'Reading <notes> </script><script id="unexpected-script">bad()</script>';
@@ -47,23 +47,26 @@ test.each(['default', 'override'] as const)(
   'SEO-01: %s origin is used across emitted metadata and feeds',
   async (variant) => {
     const dist = variant === 'default' ? join(projectRoot, 'dist') : fixture.dist;
-    const expectedOrigin = variant === 'default' ? new URL(site.url).origin : origin;
-    const urls = await sitemapUrls(dist);
+    const deployment = new URL(variant === 'default' ? (process.env.SITE_URL ?? site.url) : origin);
+    const expectedOrigin = deployment.origin;
+    const base = deployment.pathname;
+    const home = `${expectedOrigin}${base.replace(/\/$/, '')}/`;
+    const urls = await sitemapUrls(dist, base);
     expect(urls.length).toBeGreaterThan(0);
     for (const url of urls) {
       expect(new URL(url).origin).toBe(expectedOrigin);
-      const $ = await readHtml(dist, new URL(url).pathname);
+      const $ = await readHtml(dist, outputPath(new URL(url).pathname, base));
       expect($('link[rel="canonical"]').attr('href')).toBe(url);
       expect($('meta[property="og:url"]').attr('content')).toBe(url);
       for (const selector of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {
         const image = $(selector).attr('content')!;
         expect(new URL(image).origin).toBe(expectedOrigin);
-        await access(join(dist, new URL(image).pathname));
+        await access(join(dist, outputPath(new URL(image).pathname, base)));
       }
       const data = schemas($);
       expect(data.find((entry) => entry['@type'] === 'WebSite')).toMatchObject({
-        url: `${expectedOrigin}/`,
-        publisher: { url: `${expectedOrigin}/` },
+        url: home,
+        publisher: { url: home },
       });
       const post = data.find((entry) => entry['@type'] === 'BlogPosting');
       if (post) {
@@ -79,7 +82,7 @@ test.each(['default', 'override'] as const)(
         expect(new URL(xml(link).text()).origin).toBe(expectedOrigin);
     }
     expect(await readFile(join(dist, 'robots.txt'), 'utf8')).toContain(
-      `Sitemap: ${expectedOrigin}/sitemap-index.xml`,
+      `Sitemap: ${home}sitemap-index.xml`,
     );
   },
 );

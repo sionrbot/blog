@@ -3,6 +3,8 @@ title: About
 description: A few words about the person behind these essays.
 ---
 
+import { withBase } from '../../utils/base-path';
+
 I write slowly, mostly about reading, handwriting, and the small mechanics of how text sits on a page. This site is where those essays end up once they have stopped changing every morning.
 
 Nothing here is sponsored, and there are no ads. If an essay mentions a book or a pen, it is because I used it and had something to say about it.
@@ -13,4 +15,4 @@ The site is built with [Astro](https://astro.build) and the Pilcrow theme. The b
 
 ## Getting in touch
 
-The best way to reach me is the [contact page](/contact/). I read everything and answer most of it, eventually.
+The best way to reach me is the <a href={withBase('/contact/')}>contact page</a>. I read everything and answer most of it, eventually.
