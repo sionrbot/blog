@@ -12,6 +12,11 @@ catalog:
   vite-plus: 1.4.0
 overrides:
   vite@*: 'catalog:'
+  # GHSA-g3hv-75wg-m249: remove once these consumers support a patched minimatch.
+  'eslint@10.14.0>minimatch': 11.0.5
+  '@eslint/config-array@0.23.5>minimatch': 11.0.5
+  '@typescript-eslint/typescript-estree@8.72.1>minimatch': 11.0.5
+  '@google-automations/git-file-utils@3.2.1>minimatch': 11.0.5
 peerDependencyRules:
   allowAny:
     - vite
@@ -24,3 +29,5 @@ minimumReleaseAgeExclude:
   - cf@1.0.0-beta.28
   - miniflare@5.20261104.0-beta
   - wrangler@4.158.0
+  - '@isaacs/nonrecursive-glob-match@1.1.0'
+  - minimatch@11.0.5
