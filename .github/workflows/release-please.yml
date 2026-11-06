@@ -44,6 +44,18 @@ jobs:
         with:
           node-version-file: package.json
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - name: Locate pnpm store
+        id: pnpm-store
+        run: |
+          store_path=$(pnpm store path --silent)
+          echo "path=$store_path" >> "$GITHUB_OUTPUT"
+      # Reuse the host cache populated by CI/deploy; workflow_run has read-only cache access.
+      # A hit never skips the frozen install.
+      - name: Restore pnpm store
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-v1-${{ runner.os }}-${{ runner.arch }}-host-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.npmrc') }}
       - run: pnpm install --frozen-lockfile
       - name: Verify release credential
         env:
