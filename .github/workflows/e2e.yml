@@ -15,25 +15,31 @@ env:
   SITE_URL: https://sionrbot.github.io
 
 jobs:
-  browser:
+  variant:
     runs-on: ubuntu-latest
     # Keep this version aligned with @e2e-dev/web's playwright-core dependency.
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
       options: --ipc=host
-    timeout-minutes: 20
+    # Preserve the two former 20-minute job budgets for combined variants.
+    timeout-minutes: ${{ matrix.variant == 'i18n' && 20 || 40 }}
     strategy:
       fail-fast: false
       matrix:
         variant: [default, rendering, configured-forms, i18n]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - id: checkout
+        uses: actions/checkout@v7
+      - id: node
+        uses: actions/setup-node@v7
         with:
           node-version-file: package.json
-      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
-      - run: pnpm install --frozen-lockfile
-      - name: Verify preinstalled browsers
+      - id: pnpm
+        run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - id: dependencies
+        run: pnpm install --frozen-lockfile
+      - id: browsers
+        name: Verify preinstalled browsers
         run: |
           node --input-type=module <<'NODE'
           import { createRequire } from 'node:module';
@@ -48,64 +54,50 @@ jobs:
             console.log(`${browser.name()}: ${browser.executablePath()}`);
           }
           NODE
-      - run: pnpm build
-      - run: pnpm run test:e2e -- --variant ${{ matrix.variant }} --target desktop,narrow,webkit
-      - if: ${{ !cancelled() }}
+      - id: browser_build
+        run: pnpm build
+      - id: browser
+        timeout-minutes: 20
+        run: pnpm run test:e2e -- --variant ${{ matrix.variant }} --target desktop,narrow,webkit
+      - id: browser_artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: e2e-${{ matrix.variant }}
           path: |
-            .e2e/runs/
+            .e2e/runs/*/deterministic/
             tests/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
 
-  agent:
-    runs-on: ubuntu-latest
-    # Keep this version aligned with @e2e-dev/web's playwright-core dependency.
-    container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
-      options: --ipc=host
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: [default, rendering, configured-forms]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: package.json
-      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
-      - run: pnpm install --frozen-lockfile
-      - name: Verify preinstalled browsers
-        run: |
-          node --input-type=module <<'NODE'
-          import { createRequire } from 'node:module';
-          import { accessSync, constants } from 'node:fs';
-          const require = createRequire(import.meta.url);
-          const webRequire = createRequire(require.resolve('@e2e-dev/web'));
-          const { version } = webRequire('playwright-core/package.json');
-          if (version !== '1.64.1') throw new Error(`Update the container image for Playwright ${version}`);
-          const { chromium, webkit } = webRequire('playwright-core');
-          for (const browser of [chromium, webkit]) {
-            accessSync(browser.executablePath(), constants.X_OK);
-            console.log(`${browser.name()}: ${browser.executablePath()}`);
-          }
-          NODE
-      - run: pnpm build
-      - run: pnpm run test:e2e:ai -- --variant ${{ matrix.variant }} --target desktop,narrow --max-failures 2 --max-duration 600000
+      # Keep independent builds and runner/fixture lifecycles; only setup is shared.
+      # An explicit status function allows AI coverage after a browser failure.
+      - id: agent_build
+        if: ${{ !cancelled() && matrix.variant != 'i18n' && steps.browsers.outcome == 'success' }}
+        run: pnpm build
+      - id: agent
+        if: ${{ !cancelled() && matrix.variant != 'i18n' && steps.agent_build.outcome == 'success' }}
+        timeout-minutes: 20
+        run: pnpm run test:e2e:ai -- --variant ${{ matrix.variant }} --target desktop,narrow --max-failures 2 --max-duration 600000
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           E2E_MODEL: deepseek-flash
-      - if: ${{ !cancelled() }}
+      - id: agent_artifacts
+        if: ${{ !cancelled() && matrix.variant != 'i18n' }}
         uses: actions/upload-artifact@v7
         with:
           name: e2e-ai-${{ matrix.variant }}
           path: |
-            .e2e/runs/
+            .e2e/runs/*/ai/
             tests/test-results/build/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
+      - name: Verify required E2E stages
+        if: ${{ always() }}
+        run: node scripts/verify-e2e-job.ts
+        env:
+          E2E_VARIANT: ${{ matrix.variant }}
+          E2E_CANCELLED: ${{ cancelled() }}
+          E2E_STEPS: ${{ toJSON(steps) }}
