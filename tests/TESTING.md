@@ -167,14 +167,21 @@ in these artifacts or CI, rather than adding execution history to these guides.
 
 ## CI and coverage boundaries
 
-The quality workflow runs static checks, i18n, unit/timezone tests, a production
-build, build tests, Lighthouse and internal links. E2E runs automatically on pull
+The CI workflow first runs `validation`: static checks, i18n and unit/timezone
+tests. Only after it succeeds do `checks` (production build and build tests) and
+`lighthouse` (an independent build, Lighthouse and internal links) run in parallel.
+The three execution jobs check out the same event commit and use the same root `SITE_URL`.
+The required `quality` check waits for all three jobs and fails unless all succeed,
+including when any job fails, is cancelled or is skipped.
+The workflow retains its main-push trigger for the release publisher’s exact-SHA
+CI/E2E gate. E2E runs automatically on pull
 requests and pushes to main; manual dispatch is also available. Deterministic
 jobs cover all four variants and three targets. AI jobs cover `default`,
 `rendering` and `configured-forms` on Chromium desktop/narrow and require the
 `DEEPSEEK_API_KEY` Actions secret. Secret availability follows repository settings.
 
-CI uploads fixture diagnostics on quality failure and E2E reports/fixture logs
+CI uploads fixture diagnostics on `checks` failure, Lighthouse reports on
+`lighthouse` failure, and E2E reports/fixture logs
 for E2E jobs that are not cancelled. Inspect remote runs separately from local
 results.
 

@@ -11,7 +11,7 @@ env:
   SITE_URL: https://sionrbot.github.io
 
 jobs:
-  quality:
+  validation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -28,8 +28,39 @@ jobs:
       - run: pnpm run i18n:check
       - run: pnpm run test:unit
       - run: pnpm run test:unit:tz
+
+  checks:
+    needs: validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      # Install the packageManager version with npm
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm run test:build
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-test-diagnostics
+          path: tests/test-results/build/
+          if-no-files-found: warn
+
+  lighthouse:
+    needs: validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      # Install the packageManager version with npm
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
       # Thresholds (mobile 95+) live in lighthouserc.cjs
       - run: pnpm dlx @lhci/cli@0.15.1 autorun
       # Check internal links only; external links are skipped
@@ -43,9 +74,20 @@ jobs:
           # files by default -- without this the report is silently never uploaded.
           include-hidden-files: true
           if-no-files-found: warn
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-test-diagnostics
-          path: tests/test-results/build/
-          if-no-files-found: warn
+
+  # Keep the required check name stable and reject failed, cancelled or skipped jobs.
+  quality:
+    needs: [validation, checks, lighthouse]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all quality checks
+        env:
+          VALIDATION_RESULT: ${{ needs.validation.result }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
+        run: |
+          if [ "$VALIDATION_RESULT" != success ] || [ "$CHECKS_RESULT" != success ] || [ "$LIGHTHOUSE_RESULT" != success ]; then
+            echo "::error::Quality checks did not all succeed: validation=$VALIDATION_RESULT, checks=$CHECKS_RESULT, lighthouse=$LIGHTHOUSE_RESULT"
+            exit 1
+          fi
