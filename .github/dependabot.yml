@@ -1,0 +1,165 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: '02:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+    # Group minor/patch updates by technology, separately for routine and security updates.
+    # Security updates are enabled in repository settings and are not on this schedule.
+    # Major updates remain individual PRs. Keep repository-wide security grouping and auto-merge off.
+    groups:
+      astro:
+        applies-to: version-updates
+        patterns:
+          - astro
+          - '@astrojs/*'
+        update-types: [minor, patch]
+      vite-plus:
+        applies-to: version-updates
+        patterns:
+          - vite-plus
+          - vite
+          - '@voidzero-dev/vite-plus-core'
+          - vitest
+          - '@vitest/*'
+          - oxlint
+          - oxfmt
+        update-types: [minor, patch]
+      typescript-eslint:
+        applies-to: version-updates
+        patterns:
+          - typescript
+          - typescript-eslint
+          - '@typescript-eslint/*'
+          - eslint
+          - eslint-plugin-astro
+        update-types: [minor, patch]
+      content-rendering:
+        applies-to: version-updates
+        patterns:
+          - katex
+          - shiki
+          - '@shikijs/*'
+        update-types: [minor, patch]
+      tailwind:
+        applies-to: version-updates
+        patterns:
+          - tailwindcss
+          - '@tailwindcss/*'
+        update-types: [minor, patch]
+      assets:
+        applies-to: version-updates
+        patterns:
+          - sharp
+          - astro-icon
+          - '@iconify-json/*'
+        update-types: [minor, patch]
+      i18n:
+        applies-to: version-updates
+        patterns:
+          - '@x18n/*'
+        update-types: [minor, patch]
+      browser-tests:
+        applies-to: version-updates
+        patterns:
+          - e2e
+          - '@e2e-dev/*'
+          - playwright
+          - playwright-core
+          - '@playwright/*'
+        update-types: [minor, patch]
+      ai-tests:
+        applies-to: version-updates
+        patterns:
+          - ai
+          - '@ai-sdk/*'
+          - zod
+        update-types: [minor, patch]
+      build-tests:
+        applies-to: version-updates
+        patterns:
+          - cheerio
+          - fast-xml-parser
+        update-types: [minor, patch]
+      # Explicit security groups work with repository-wide security grouping disabled.
+      astro-security:
+        applies-to: security-updates
+        patterns:
+          - astro
+          - '@astrojs/*'
+        update-types: [minor, patch]
+      vite-plus-security:
+        applies-to: security-updates
+        patterns:
+          - vite-plus
+          - vite
+          - '@voidzero-dev/vite-plus-core'
+          - vitest
+          - '@vitest/*'
+          - oxlint
+          - oxfmt
+        update-types: [minor, patch]
+      typescript-eslint-security:
+        applies-to: security-updates
+        patterns:
+          - typescript
+          - typescript-eslint
+          - '@typescript-eslint/*'
+          - eslint
+          - eslint-plugin-astro
+        update-types: [minor, patch]
+      content-rendering-security:
+        applies-to: security-updates
+        patterns:
+          - katex
+          - shiki
+          - '@shikijs/*'
+        update-types: [minor, patch]
+      tailwind-security:
+        applies-to: security-updates
+        patterns:
+          - tailwindcss
+          - '@tailwindcss/*'
+        update-types: [minor, patch]
+      assets-security:
+        applies-to: security-updates
+        patterns:
+          - sharp
+          - astro-icon
+          - '@iconify-json/*'
+        update-types: [minor, patch]
+      i18n-security:
+        applies-to: security-updates
+        patterns:
+          - '@x18n/*'
+        update-types: [minor, patch]
+      browser-tests-security:
+        applies-to: security-updates
+        patterns:
+          - e2e
+          - '@e2e-dev/*'
+          - playwright
+          - playwright-core
+          - '@playwright/*'
+        update-types: [minor, patch]
+      ai-tests-security:
+        applies-to: security-updates
+        patterns:
+          - ai
+          - '@ai-sdk/*'
+          - zod
+        update-types: [minor, patch]
+      build-tests-security:
+        applies-to: security-updates
+        patterns:
+          - cheerio
+          - fast-xml-parser
+        update-types: [minor, patch]
