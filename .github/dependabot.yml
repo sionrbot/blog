@@ -5,8 +5,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
-      day: monday
-      time: '23:00'
+      day: tuesday
+      time: '02:00'
       timezone: Asia/Shanghai
     open-pull-requests-limit: 10
     commit-message:
