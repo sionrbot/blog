@@ -17,6 +17,10 @@ env:
 jobs:
   browser:
     runs-on: ubuntu-latest
+    # Keep this version aligned with @e2e-dev/web's playwright-core dependency.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+      options: --ipc=host
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -29,7 +33,21 @@ jobs:
           node-version-file: package.json
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec e2e-web install chromium webkit --with-deps
+      - name: Verify preinstalled browsers
+        run: |
+          node --input-type=module <<'NODE'
+          import { createRequire } from 'node:module';
+          import { accessSync, constants } from 'node:fs';
+          const require = createRequire(import.meta.url);
+          const webRequire = createRequire(require.resolve('@e2e-dev/web'));
+          const { version } = webRequire('playwright-core/package.json');
+          if (version !== '1.64.1') throw new Error(`Update the container image for Playwright ${version}`);
+          const { chromium, webkit } = webRequire('playwright-core');
+          for (const browser of [chromium, webkit]) {
+            accessSync(browser.executablePath(), constants.X_OK);
+            console.log(`${browser.name()}: ${browser.executablePath()}`);
+          }
+          NODE
       - run: pnpm build
       - run: pnpm run test:e2e -- --variant ${{ matrix.variant }} --target desktop,narrow,webkit
       - if: ${{ !cancelled() }}
@@ -45,6 +63,10 @@ jobs:
 
   agent:
     runs-on: ubuntu-latest
+    # Keep this version aligned with @e2e-dev/web's playwright-core dependency.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+      options: --ipc=host
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -57,7 +79,21 @@ jobs:
           node-version-file: package.json
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec e2e-web install chromium --with-deps
+      - name: Verify preinstalled browsers
+        run: |
+          node --input-type=module <<'NODE'
+          import { createRequire } from 'node:module';
+          import { accessSync, constants } from 'node:fs';
+          const require = createRequire(import.meta.url);
+          const webRequire = createRequire(require.resolve('@e2e-dev/web'));
+          const { version } = webRequire('playwright-core/package.json');
+          if (version !== '1.64.1') throw new Error(`Update the container image for Playwright ${version}`);
+          const { chromium, webkit } = webRequire('playwright-core');
+          for (const browser of [chromium, webkit]) {
+            accessSync(browser.executablePath(), constants.X_OK);
+            console.log(`${browser.name()}: ${browser.executablePath()}`);
+          }
+          NODE
       - run: pnpm build
       - run: pnpm run test:e2e:ai -- --variant ${{ matrix.variant }} --target desktop,narrow --max-failures 2 --max-duration 600000
         env:
