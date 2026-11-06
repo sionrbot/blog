@@ -85,7 +85,11 @@ build it with the root `SITE_URL` above. The Pages deployment builds the configu
 production subpath, which is covered separately by build assertions. Rebuild without
 the override before running the default production build tests or deploying.
 
-Linux CI adds `--with-deps` to browser installation. Targets are Chromium
+Linux CI uses a digest-pinned Playwright container with browsers and system
+dependencies preinstalled. Keep the image and version checks in
+`.github/workflows/e2e.yml` aligned with `@e2e-dev/web`'s `playwright-core`
+dependency when upgrading it. CI verifies the version and browser executables
+before running tests. Targets are Chromium
 `desktop` (1280×800), Chromium `narrow` (360×800) and WebKit `webkit` (360×800).
 The default target selection is `desktop,narrow`, with one worker and no retries.
 
