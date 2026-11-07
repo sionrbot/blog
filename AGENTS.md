@@ -104,3 +104,20 @@ Human-readable version: `docs/content.md`.
 - Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.
 - TypeScript is pinned to 6.x. 7.x (native compiler) is not yet supported by `astro check` or typescript-eslint.
 - Use the pnpm 11 version pinned in `package.json#packageManager` and `allowBuilds` in `pnpm-workspace.yaml`. Vite+ manages Node.js through `package.json#devEngines.runtime`; keep the workspace `nodeVersion` aligned with that pin. `runtimeOnFail: ignore` and `pmOnFail: ignore` prevent pnpm from duplicating Vite+ environment management.
+
+## Agent skills
+
+### Issue tracker
+
+Track issues and specs in GitHub Issues. Before reading or publishing tickets,
+read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels. Before triaging issues, read
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use a single-context domain layout. Before exploring domain concepts or
+architectural decisions, read `docs/agents/domain.md`.
