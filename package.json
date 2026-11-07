@@ -45,7 +45,7 @@
   },
   "packageManager": "pnpm@11.28.10",
   "devDependencies": {
-    "@ai-sdk/deepseek": "3.0.79",
+    "@ai-sdk/openai": "4.0.102",
     "@astrojs/check": "^0.9.12",
     "@e2e-dev/web": "0.15.4",
     "@typescript-eslint/parser": "^8.72.1",

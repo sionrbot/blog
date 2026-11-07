@@ -105,10 +105,11 @@ payload, method and request-count assertions. AI fills newsletter fields; the te
 submits once deterministically because a popup does not change the source page.
 AI navigation goals also require exact URL/heading assertions.
 
-For AI tests, set `DEEPSEEK_API_KEY` in the environment or an ignored `.env.e2e`
+For AI tests, set `OPENAI_API_KEY` in the environment or an ignored `.env.e2e`
 file with permissions `0600`. `E2E_MODEL` overrides the configured
-`deepseek-flash` model. Existing environment variables take precedence over the
-file. Deterministic configuration does not load model credentials.
+`gpt-6.1-sol` model. AI interactions and visual judgments use the OpenAI Responses
+API with `high` reasoning effort. Existing environment variables take precedence
+over the file. Deterministic configuration does not load model credentials.
 
 ```sh
 pnpm run test:e2e:ai -- --target desktop,narrow
@@ -172,7 +173,7 @@ build, build tests, Lighthouse and internal links. E2E runs automatically on pul
 requests and pushes to main; manual dispatch is also available. Deterministic
 jobs cover all four variants and three targets. AI jobs cover `default`,
 `rendering` and `configured-forms` on Chromium desktop/narrow and require the
-`DEEPSEEK_API_KEY` Actions secret. Secret availability follows repository settings.
+`OPENAI_API_KEY` Actions secret. Secret availability follows repository settings.
 
 CI uploads fixture diagnostics on quality failure and E2E reports/fixture logs
 for E2E jobs that are not cancelled. Inspect remote runs separately from local

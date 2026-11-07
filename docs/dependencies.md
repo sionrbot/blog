@@ -112,7 +112,7 @@ pre-merge verification.
 
 ## CI credentials
 
-The AI E2E jobs require `DEEPSEEK_API_KEY` in **Dependabot secrets**, with access to
+The AI E2E jobs require `OPENAI_API_KEY` in **Dependabot secrets**, with access to
 this repository. Dependabot-triggered workflows cannot use the value from Actions
 secrets. Set a suitable key under Settings → Secrets and variables → Dependabot.
 GitHub does not expose an existing Actions secret's value for copying.
