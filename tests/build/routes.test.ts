@@ -22,7 +22,7 @@ test('ROUTE-01: the default production build contains the required site routes a
   }
   for (const route of [
     '/',
-    '/blog/',
+    '/articles/',
     '/about/',
     '/contact/',
     '/privacy/',

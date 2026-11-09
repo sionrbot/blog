@@ -13,7 +13,9 @@ export function pageIdentity(path: string, base?: string): string {
 export function canonicalPath(path: string, base?: string): string {
   const identity = pageIdentity(path, base);
   return withBase(
-    identity.replace(/\/$/, '') === '/contact' ? path.split(/[?#]/, 1)[0] : identity,
+    identity.replace(/\/$/, '') === '/contact'
+      ? withoutBase(path.split(/[?#]/, 1)[0], base)
+      : identity,
     base,
   );
 }

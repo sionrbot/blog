@@ -77,7 +77,7 @@ describe('message formatting', () => {
 });
 
 describe('localized page identities', () => {
-  it.each(['/', '/about/', '/blog/example/', '/blog/tag/中文/', '/blog/2/'])(
+  it.each(['/', '/about/', '/blog/example/', '/blog/tag/中文/', '/articles/2/'])(
     'round-trips %s',
     (path) => {
       const chinese = localizedHref(path, 'zh-Hans');

@@ -37,8 +37,8 @@ test('I18N-B1: both static UI routes contain localized navigation and matching p
   ]) {
     for (const route of [
       '/',
-      '/blog/',
-      '/blog/2/',
+      '/articles/',
+      '/articles/2/',
       '/blog/tag/shared/',
       '/about/',
       '/contact/',
@@ -47,7 +47,7 @@ test('I18N-B1: both static UI routes contain localized navigation and matching p
     ]) {
       const $ = await readHtml(fixture.dist, `${prefix}${route}`);
       expect($('html').attr('lang')).toBe(lang);
-      expect($(`header a[href="${prefix}/blog/"]`).text()).toContain(blog);
+      expect($(`header a[href="${prefix}/articles/"]`).text()).toContain(blog);
       expect($('a[hreflang="en"]').attr('href')).toBe(route);
       expect($('a[hreflang="zh-Hans"]').attr('href')).toBe(`/zh${route}`);
       expect($('a[hreflang][aria-current="page"]').attr('hreflang')).toBe(lang);
@@ -63,7 +63,7 @@ test('I18N-B1: both static UI routes contain localized navigation and matching p
     expect(
       listPostPaths((await readHtml(fixture.dist, `${prefix}/blog/tag/shared/`)).html()),
     ).toEqual([...i18nFirstPage, 'older-1'].map((id) => `${prefix}/blog/${id}/`));
-    for (const base of ['/blog']) {
+    for (const base of ['/articles']) {
       expect(listPostPaths((await readHtml(fixture.dist, `${prefix}${base}/`)).html())).toEqual(
         i18nFirstPage.map((id) => `${prefix}/blog/${id}/`),
       );
@@ -117,7 +117,7 @@ test('I18N-B3: home pages show the latest six posts without the hero or newslett
   ]) {
     const home = await readHtml(fixture.dist, `${prefix}/`);
     expect(home('main h1').text()).toBe(title);
-    expect(home(`main a[href="${prefix}/blog/"]`).text().trim()).toBe(`${moreLabel} →`);
+    expect(home(`main a[href="${prefix}/articles/"]`).text().trim()).toBe(`${moreLabel} →`);
     expect(listPostPaths(home.html())).toEqual(
       i18nFirstPage.slice(0, 6).map((id) => `${prefix}/blog/${id}/`),
     );

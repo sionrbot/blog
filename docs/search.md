@@ -37,7 +37,7 @@ To run the browser tests against the development server and the repository base:
 
 ```sh
 vp run build
-SEARCH_TEST_BASE=/sionrbot-blog pnpm exec e2e run tests/e2e/deterministic/default/search.e2e.ts --target desktop
+SEARCH_TEST_BASE=/blog pnpm exec e2e run tests/e2e/deterministic/default/search.e2e.ts --target desktop
 ```
 
 The direct E2E command starts the configured development server. To exercise a

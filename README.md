@@ -1,6 +1,6 @@
 # Sionrbot blog
 
-Sionrbot-blog is a personal blog built with Astro, extensively customized from [ondelva's Pilcrow](https://github.com/ondelva/astro-theme-pilcrow).
+Sionrbot personal blog is a personal blog built with Astro, extensively customized from [ondelva's Pilcrow](https://github.com/ondelva/astro-theme-pilcrow).
 
 ## Features
 

@@ -4,10 +4,10 @@ import { resolveLocale } from './locales';
 export { canonicalPath } from './paths';
 import { pageIdentity } from './paths';
 
-/** UI routes have no query-driven identity. Preserve only an explicit fragment. */
+/** Localize a site-relative path without a deployment prefix; preserve an explicit fragment. */
 export function localizedHref(path: string, locale?: string): string {
   const hash = path.includes('#') ? path.slice(path.indexOf('#')) : '';
-  return getRelativeLocaleUrl(resolveLocale(locale), pageIdentity(path).slice(1)) + hash;
+  return getRelativeLocaleUrl(resolveLocale(locale), pageIdentity(path, '/').slice(1)) + hash;
 }
 
 /** Localize configured site paths, leaving external and in-page destinations intact. */

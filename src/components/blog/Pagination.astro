@@ -1,5 +1,6 @@
 ---
 import type { Page } from 'astro';
+import { withoutBase } from '../../utils/base-path';
 import { localizedHref } from '../../i18n/links';
 import { useT, formatMessage } from '../../i18n/t';
 
@@ -14,7 +15,7 @@ const { currentPage, lastPage, url } = Astro.props.page;
 {lastPage > 1 && (
   <nav aria-label={t.pagination} class="mt-10 flex items-center justify-between font-sans text-sm">
     {url.prev ? (
-      <a href={localizedHref(url.prev, Astro.currentLocale)} rel="prev">
+      <a href={localizedHref(withoutBase(url.prev), Astro.currentLocale)} rel="prev">
         ← {t.newer}
       </a>
     ) : (
@@ -22,7 +23,7 @@ const { currentPage, lastPage, url } = Astro.props.page;
     )}
     <span class="text-muted">{formatMessage(t.pageOf, { n: currentPage, total: lastPage })}</span>
     {url.next ? (
-      <a href={localizedHref(url.next, Astro.currentLocale)} rel="next">
+      <a href={localizedHref(withoutBase(url.next), Astro.currentLocale)} rel="next">
         {t.older} →
       </a>
     ) : (

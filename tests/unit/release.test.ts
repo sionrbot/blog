@@ -305,7 +305,7 @@ it('renders first-release notes without comparing against the inherited theme ta
     ],
     {
       owner: 'sionrbot',
-      repository: 'sionrbot-blog',
+      repository: 'blog',
       targetBranch: 'main',
       version: manifest.repositoryConfig['.'].releaseAs!,
       currentTag: `v${manifest.repositoryConfig['.'].releaseAs}`,
@@ -314,7 +314,7 @@ it('renders first-release notes without comparing against the inherited theme ta
   );
   expect(notes).toContain('1.5.0');
   expect(notes).toContain('add bilingual blog routes');
-  expect(notes).toContain(`https://github.com/sionrbot/sionrbot-blog/commit/${sha}`);
+  expect(notes).toContain(`https://github.com/sionrbot/blog/commit/${sha}`);
   expect(notes).not.toContain('/compare/');
   expect(notes).not.toContain('v1.4.1');
 });

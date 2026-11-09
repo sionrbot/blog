@@ -4,7 +4,7 @@ import { isErrorPage } from '../../i18n/paths';
 import { localizedHref } from '../../i18n/links';
 import { resolveLocale } from '../../i18n/locales';
 import { useT } from '../../i18n/t';
-import { withBase } from '../../utils/base-path';
+import { withBase, withoutBase } from '../../utils/base-path';
 
 const t = useT(Astro.currentLocale);
 const locale = resolveLocale(Astro.currentLocale);
@@ -12,7 +12,7 @@ const isNotFound = isErrorPage(Astro.url.pathname);
 const hrefFor = (code: string) =>
   isNotFound
     ? withBase(code === 'en' ? '/404.html' : '/zh/404/')
-    : localizedHref(Astro.url.pathname, code);
+    : localizedHref(withoutBase(Astro.url.pathname), code);
 ---
 
 <details class="group relative font-sans text-sm" data-language-switcher>

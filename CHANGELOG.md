@@ -4,38 +4,38 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
-Sionrbot-blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
+Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
-## [1.7.0](https://github.com/sionrbot/sionrbot-blog/compare/v1.6.0...v1.7.0) (2026-11-09)
-
-### Features
-
-- simplify home and refresh personal content ([#42](https://github.com/sionrbot/sionrbot-blog/issues/42)) ([1d09f4d](https://github.com/sionrbot/sionrbot-blog/commit/1d09f4d91a329521c1cb82d4fa7f7ff94302e460))
-
-## [1.6.0](https://github.com/sionrbot/sionrbot-blog/compare/v1.5.1...v1.6.0) (2026-11-09)
+## [1.7.0](https://github.com/sionrbot/blog/compare/v1.6.0...v1.7.0) (2026-11-09)
 
 ### Features
 
-- add bilingual full-text search and freedom article ([#39](https://github.com/sionrbot/sionrbot-blog/issues/39)) ([0278efe](https://github.com/sionrbot/sionrbot-blog/commit/0278efea615851047fe210926a77ee6bd399ec83))
+- simplify home and refresh personal content ([#42](https://github.com/sionrbot/blog/issues/42)) ([1d09f4d](https://github.com/sionrbot/blog/commit/1d09f4d91a329521c1cb82d4fa7f7ff94302e460))
 
-## [1.5.1](https://github.com/sionrbot/sionrbot-blog/compare/v1.5.0...v1.5.1) (2026-11-07)
+## [1.6.0](https://github.com/sionrbot/blog/compare/v1.5.1...v1.6.0) (2026-11-09)
+
+### Features
+
+- add bilingual full-text search and freedom article ([#39](https://github.com/sionrbot/blog/issues/39)) ([0278efe](https://github.com/sionrbot/blog/commit/0278efea615851047fe210926a77ee6bd399ec83))
+
+## [1.5.1](https://github.com/sionrbot/blog/compare/v1.5.0...v1.5.1) (2026-11-07)
 
 ### Bug Fixes
 
-- **deps:** remediate minimatch pattern amplification ([#33](https://github.com/sionrbot/sionrbot-blog/issues/33)) ([5bd2ed1](https://github.com/sionrbot/sionrbot-blog/commit/5bd2ed1a9d7e7645fcbe131b4cff35af0f6f17e9))
+- **deps:** remediate minimatch pattern amplification ([#33](https://github.com/sionrbot/blog/issues/33)) ([5bd2ed1](https://github.com/sionrbot/blog/commit/5bd2ed1a9d7e7645fcbe131b4cff35af0f6f17e9))
 
 ## 1.5.0 (2026-11-05)
 
 ### Features
 
-- add English and Simplified Chinese static UI routes ([#11](https://github.com/sionrbot/sionrbot-blog/issues/11)) ([dfa3f2c](https://github.com/sionrbot/sionrbot-blog/commit/dfa3f2ccce7d6fdb8a01faa1a59221032e04c208))
-- automate version PRs and gated GitHub releases ([#19](https://github.com/sionrbot/sionrbot-blog/issues/19)) ([c37aa68](https://github.com/sionrbot/sionrbot-blog/commit/c37aa68e99d57fc9aaa7da8f15dbf042a6e27a7a))
-- deploy blog to GitHub Pages with project subpath support ([e9f6505](https://github.com/sionrbot/sionrbot-blog/commit/e9f6505ec8932cb4feceffcb7fcb86ee8403bd55))
-- replace language links with compact dropdown ([ddd5214](https://github.com/sionrbot/sionrbot-blog/commit/ddd521404df27e9e675ce592cd55a9a9d220f9eb))
+- add English and Simplified Chinese static UI routes ([#11](https://github.com/sionrbot/blog/issues/11)) ([dfa3f2c](https://github.com/sionrbot/blog/commit/dfa3f2ccce7d6fdb8a01faa1a59221032e04c208))
+- automate version PRs and gated GitHub releases ([#19](https://github.com/sionrbot/blog/issues/19)) ([c37aa68](https://github.com/sionrbot/blog/commit/c37aa68e99d57fc9aaa7da8f15dbf042a6e27a7a))
+- deploy blog to GitHub Pages with project subpath support ([e9f6505](https://github.com/sionrbot/blog/commit/e9f6505ec8932cb4feceffcb7fcb86ee8403bd55))
+- replace language links with compact dropdown ([ddd5214](https://github.com/sionrbot/blog/commit/ddd521404df27e9e675ce592cd55a9a9d220f9eb))
 
 ### Bug Fixes
 
-- limit Pages deployment to site inputs ([910924e](https://github.com/sionrbot/sionrbot-blog/commit/910924eaeb471fa7115807f4181c9110dedcc9d4))
+- limit Pages deployment to site inputs ([910924e](https://github.com/sionrbot/blog/commit/910924eaeb471fa7115807f4181c9110dedcc9d4))
 
 ## [1.4.1] - 2026-10-17
 

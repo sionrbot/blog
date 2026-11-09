@@ -4,7 +4,7 @@ import type { ImageMetadata } from 'astro';
 import { canonicalPath, localizedHref } from '../../i18n/links';
 import { resolveLocale } from '../../i18n/locales';
 import { seo, site } from '../../config';
-import { withBase } from '../../utils/base-path';
+import { withBase, withoutBase } from '../../utils/base-path';
 
 interface Props {
   title?: string; // site name only when omitted
@@ -54,7 +54,7 @@ const schemaJson = JSON.stringify(schema).replace(/</g, '\\u003c');
     <link
       rel="alternate"
       hreflang={language}
-      href={new URL(localizedHref(Astro.url.pathname, language), Astro.site)}
+      href={new URL(localizedHref(withoutBase(Astro.url.pathname), language), Astro.site)}
     />
   ))}
 <link rel="sitemap" href={withBase('/sitemap-index.xml')} />

@@ -19,7 +19,7 @@ export const contactSubmission = {
   method: 'POST',
   fields: {
     access_key: 'e2e-fake-key',
-    subject: 'New message from Sionrbot-blog',
+    subject: 'New message from Sionrbot personal blog',
     name: 'Ada Reader',
     email: 'ada@example.test',
     message: 'A browser test message.',
