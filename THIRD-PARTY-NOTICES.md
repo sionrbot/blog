@@ -3,13 +3,14 @@
 This theme bundles the following third-party assets. Each is used under its own license.
 Update this file whenever an asset is added or removed.
 
-| Asset          | Type                  | Source                                       | License | Notice / attribution                                                                        |
-| -------------- | --------------------- | -------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
-| KaTeX          | Math rendering, fonts | https://katex.org                            | MIT     | Copyright (c) 2013-2020 Khan Academy and other contributors                                 |
-| Lucide         | Icons                 | https://lucide.dev                           | ISC     | Copyright (c) Lucide Contributors                                                           |
-| Newsreader     | Font                  | https://github.com/productiontype/Newsreader | OFL-1.1 | Copyright 2020 The Newsreader Project Authors. `src/assets/fonts/OFL-Newsreader.txt`        |
-| Inter          | Font                  | https://github.com/rsms/inter                | OFL-1.1 | Copyright 2016 The Inter Project Authors. `src/assets/fonts/OFL-Inter.txt`                  |
-| JetBrains Mono | Font                  | https://github.com/JetBrains/JetBrainsMono   | OFL-1.1 | Copyright 2020 The JetBrains Mono Project Authors. `src/assets/fonts/OFL-JetBrainsMono.txt` |
+| Asset          | Type                              | Source                                       | License | Notice / attribution                                                                        |
+| -------------- | --------------------------------- | -------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| KaTeX          | Math rendering, fonts             | https://katex.org                            | MIT     | Copyright (c) 2013-2020 Khan Academy and other contributors                                 |
+| Lucide         | Icons                             | https://lucide.dev                           | ISC     | Copyright (c) Lucide Contributors                                                           |
+| Pagefind       | Search JavaScript and WebAssembly | https://pagefind.app                         | MIT     | Copyright (c) Pagefind                                                                      |
+| Newsreader     | Font                              | https://github.com/productiontype/Newsreader | OFL-1.1 | Copyright 2020 The Newsreader Project Authors. `src/assets/fonts/OFL-Newsreader.txt`        |
+| Inter          | Font                              | https://github.com/rsms/inter                | OFL-1.1 | Copyright 2016 The Inter Project Authors. `src/assets/fonts/OFL-Inter.txt`                  |
+| JetBrains Mono | Font                              | https://github.com/JetBrains/JetBrainsMono   | OFL-1.1 | Copyright 2020 The JetBrains Mono Project Authors. `src/assets/fonts/OFL-JetBrainsMono.txt` |
 
 The Newsreader italic files (`newsreader-latin-wght-italic.woff2`, `newsreader-latin-ext-wght-italic.woff2`) are modified versions: their optical-size axis is
 pinned to 18 and their weight axis limited to 300–700. They remain under OFL-1.1.
@@ -18,3 +19,13 @@ The logo (`src/assets/logo.svg`), favicon, and default OG image (`src/assets/og-
 from Newsreader and Inter glyph outlines; they are artwork produced with those fonts, not font software.
 
 Sample content (text, company names, people) is fictional. Sample content contains no photos.
+
+## Imported article
+
+`src/content/blog/freedom.mdx` contains “重读自由软件宣言：计算在谁的机器上”,
+attributed in the supplied source document to @ShiZheng24517 on
+[X](https://x.com/ShiZheng24517/status/2109823256266248662), published 2026-10-13.
+Its body retains the original externally hosted
+[cover image](https://pbs.twimg.com/media/HUeZBawbkAAjZ03.jpg).
+The supplied document does not specify a license for the article or image;
+neither is covered by this repository's MIT license.
