@@ -33,12 +33,12 @@
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
     "@iconify-json/lucide": "^1.2.151",
-    "@tailwindcss/vite": "^4.3.4",
+    "@tailwindcss/vite": "^4.3.5",
     "astro": "7.4.7",
     "astro-icon": "^1.2.0",
     "katex": "^0.19.1",
     "sharp": "^0.35.5",
-    "tailwindcss": "^4.3.4"
+    "tailwindcss": "^4.3.5"
   },
   "allowScripts": {
     "esbuild": true
