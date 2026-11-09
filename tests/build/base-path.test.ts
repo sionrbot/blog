@@ -33,6 +33,8 @@ describe.each(['/sionrbot-blog', '/blog'])('deployment base %s', (base) => {
         expect($('header nav a').first().attr('href')?.replace(/\/$/, '')).toBe(
           `${base}${prefix}/articles`,
         );
+        if (route === '/articles/' || route.startsWith('/blog/'))
+          expect($('header nav a').first().attr('aria-current')).toBe('page');
         expect($('a[hreflang="en"]').attr('href')).toBe(`${base}${route}`);
         expect($('a[hreflang="zh-Hans"]').attr('href')).toBe(`${base}/zh${route}`);
         expect($('link[rel="canonical"]').attr('href')).toBe(
