@@ -9,7 +9,7 @@ test('a reader opens an article, follows its tag, and returns to all posts', asy
   await app.open('/');
   const navigation = screen.getByRole('navigation', 'Main');
   await navigation.getByRole('link', 'Blog').tap();
-  await expect(browser).toHaveURL(/\/blog\/?$/);
+  await expect(browser).toHaveURL(/\/articles\/?$/);
   await expect(screen.getByRole('heading', 'Blog', { level: 1 })).toBeVisible();
   await screen.getByRole('link', 'A Typography Sampler').tap();
   await expect(browser).toHaveURL(/\/blog\/typography-sampler\/?$/);
@@ -25,7 +25,7 @@ test('a reader opens an article, follows its tag, and returns to all posts', asy
   await expect(navigation.getByRole('link', 'About')).not.toHaveAttribute('aria-current');
   await expect(navigation.getByRole('link', 'Contact')).not.toHaveAttribute('aria-current');
   await screen.getByRole('link', 'All posts').tap();
-  await expect(browser).toHaveURL(/\/blog\/?$/);
+  await expect(browser).toHaveURL(/\/articles\/?$/);
   await expect(screen.getByRole('heading', 'Blog', { level: 1 })).toBeVisible();
   await expect(navigation.getByRole('link', 'Blog')).toHaveAttribute('aria-current', 'page');
 });

@@ -38,7 +38,7 @@ const jsonLd = [
     '@type': 'BreadcrumbList',
     itemListElement: [
       { name: t.home, item: abs(localizedHref('/', Astro.currentLocale)) },
-      { name: t.blog, item: abs(localizedHref('/blog/', Astro.currentLocale)) },
+      { name: t.blog, item: abs(localizedHref('/articles/', Astro.currentLocale)) },
       { name: title, item: url },
     ].map((crumb, i) => ({ '@type': 'ListItem', position: i + 1, ...crumb })),
   },
@@ -102,7 +102,7 @@ const jsonLd = [
     <footer class="mt-16 space-y-6 border-t border-border pt-8">
       <TagList contentLang={post.data.lang} tags={tags} />
       <p data-pagefind-ignore class="font-sans text-sm">
-        <a href={localizedHref('/blog/', Astro.currentLocale)}>← {t.backToBlog}</a>
+        <a href={localizedHref('/articles/', Astro.currentLocale)}>← {t.backToBlog}</a>
       </p>
     </footer>
   </article>

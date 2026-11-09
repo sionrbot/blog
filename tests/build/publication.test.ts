@@ -22,7 +22,7 @@ async function exists(path: string) {
 }
 
 async function publicationOutput(dist: string) {
-  const blog = await readHtml(dist, '/blog/');
+  const blog = await readHtml(dist, '/articles/');
   const home = await readHtml(dist, '/');
   const shared = await readHtml(dist, '/blog/tag/shared/');
   const craft = await readHtml(dist, '/blog/tag/craft/');
@@ -107,7 +107,9 @@ describe('published content across production and development', () => {
       });
       expect(detail.status).toBe(200);
       expect(await detail.text()).toContain('Unpublished fixture secret');
-      const listing = await fetch(`${server.url}/blog/`, { signal: AbortSignal.timeout(10_000) });
+      const listing = await fetch(`${server.url}/articles/`, {
+        signal: AbortSignal.timeout(10_000),
+      });
       expect(listing.status).toBe(200);
       expect(listPostPaths(await listing.text())).toEqual([
         '/blog/secret-draft/',

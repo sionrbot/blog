@@ -6,7 +6,7 @@ export function withoutBase(path: string, base = import.meta.env?.BASE_URL ?? '/
   return path.startsWith(`${prefix}/`) ? path.slice(prefix.length) : path;
 }
 
-/** Resolve a site-relative path beneath the deployment prefix exactly once. */
+/** Prepend the deployment prefix to a site-relative path. */
 export function withBase(path: string, base = import.meta.env?.BASE_URL ?? '/'): string {
-  return `${base.replace(/\/$/, '')}${withoutBase(path, base)}`;
+  return `${base.replace(/\/$/, '')}${path}`;
 }

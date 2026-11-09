@@ -14,7 +14,13 @@ const isCurrent = (href: string) => {
   if (!href.startsWith('/') || href.startsWith('//')) return false;
   const h = href.split(/[?#]/, 1)[0].replace(/\/$/, '');
   const home = localizedHref('/', Astro.currentLocale).replace(/\/$/, '');
-  return path === h || (h !== home && path.startsWith(`${h}/`));
+  const articles = localizedHref('/articles/', Astro.currentLocale).replace(/\/$/, '');
+  const posts = localizedHref('/blog/', Astro.currentLocale);
+  return (
+    path === h ||
+    (h !== home && path.startsWith(`${h}/`)) ||
+    (h === articles && path.startsWith(posts))
+  );
 };
 ---
 

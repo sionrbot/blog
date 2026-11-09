@@ -4,9 +4,9 @@ import { defaultLocale } from './i18n/locales';
 import defaultOgImage from './assets/og-default.png';
 
 export const site = {
-  name: 'Sionrbot-blog',
-  description: "sionrbot's the first Astro theme blog.",
-  url: 'https://sionrbot.github.io/sionrbot-blog/',
+  name: 'Sionrbot personal blog',
+  description: 'Sionrbot personal blog',
+  url: 'https://sionrbot.github.io/blog/',
   locale: defaultLocale, // URL selects the UI language; registry lives in src/i18n/locales.ts
   author: 'sionrbot', // Site author, also used in SEO structured data
   defaultOgImage, // 1200×630. A post's heroImage takes precedence
@@ -15,7 +15,7 @@ export const site = {
 export const nav = (t: typeof en) =>
   ({
     header: [
-      { label: t.blog, href: '/blog' },
+      { label: t.blog, href: '/articles' },
       { label: t.about, href: '/about' },
       { label: t.contact, href: '/contact' },
       { label: t.search, href: '/search' },
@@ -32,7 +32,7 @@ export const nav = (t: typeof en) =>
     social: [
       {
         label: 'GitHub',
-        href: 'https://github.com/sionrbot/sionrbot-blog',
+        href: 'https://github.com/sionrbot/blog',
         icon: 'lucide:github',
       },
       // Icons are Lucide names (https://lucide.dev/icons), e.g. { label: 'Mastodon', href: '…', icon: 'lucide:at-sign' }

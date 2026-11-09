@@ -16,7 +16,7 @@ to the repository secret:
 
 ```sh
 gh auth status
-gh auth token | gh secret set RELEASE_TOKEN --repo sionrbot/sionrbot-blog
+gh auth token | gh secret set RELEASE_TOKEN --repo sionrbot/blog
 ```
 
 Do not paste the token into chat, commit it, or print it in workflow logs. This
@@ -123,7 +123,7 @@ can be reused. A tag pointing to another SHA fails the workflow for investigatio
 If the Release already exists but label updates failed, rerun publication to
 reconcile the pending PR.
 
-For a local read-only preview, supply `GITHUB_REPOSITORY=sionrbot/sionrbot-blog` and
+For a local read-only preview, supply `GITHUB_REPOSITORY=sionrbot/blog` and
 a read-capable `GITHUB_TOKEN` through your environment, then run
 `node scripts/release.ts check`. Credentials must not be saved in tracked files.
 Run `vp run test:unit` to exercise the release gate without GitHub writes.

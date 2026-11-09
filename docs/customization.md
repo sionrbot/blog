@@ -147,6 +147,6 @@ Blog posts and authored About text remain in their original language. Shared pag
 
 `src/config.ts`, `seo` object:
 
-- `seo.titleTemplate` — e.g. `'%s · Sionrbot-blog'`.
+- `seo.titleTemplate` — e.g. `'%s · Sionrbot personal blog'`.
 - `seo.twitterHandle`.
 - `seo.jsonLd` — `{ type: 'Person' | 'Organization', name }`, used for structured data.

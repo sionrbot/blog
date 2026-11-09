@@ -83,7 +83,7 @@ const [post] = await getCollection('blog');
       draft: false,
       lang: 'en',
     });
-    expect(listPostPaths((await readHtml(fixture.dist, '/blog/')).html())).toEqual([
+    expect(listPostPaths((await readHtml(fixture.dist, '/articles/')).html())).toEqual([
       '/blog/defaults/',
     ]);
     const article = await readHtml(fixture.dist, '/blog/defaults/');

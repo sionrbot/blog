@@ -149,15 +149,15 @@ export async function createFixture(
     if (options.mutation === 'break-pagination') {
       await replaceOnce(
         join(root, 'src/components/blog/Pagination.astro'),
-        'href={localizedHref(url.next, Astro.currentLocale)}',
-        'href="/blog/999/"',
+        'href={localizedHref(withoutBase(url.next), Astro.currentLocale)}',
+        'href="/articles/999/"',
       );
     }
     if (options.mutation === 'external-next' || options.mutation === 'external-prev') {
       const direction = options.mutation === 'external-next' ? 'next' : 'prev';
       await replaceOnce(
         join(root, 'src/components/blog/Pagination.astro'),
-        `href={localizedHref(url.${direction}, Astro.currentLocale)}`,
+        `href={localizedHref(withoutBase(url.${direction}), Astro.currentLocale)}`,
         'href={`https://wrong.example${url.' + direction + '}`}',
       );
     }

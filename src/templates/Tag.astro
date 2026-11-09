@@ -20,7 +20,7 @@ const title = `${t.taggedWith}: ${name}`;
 <BaseLayout title={title} description={formatMessage(t.tagDescription, { tag: name })}>
   <div class="mx-auto max-w-5xl px-4 py-12 sm:py-16">
     <p class="font-sans text-sm text-muted">
-      <a href={localizedHref('/blog/', Astro.currentLocale)} class="underline">
+      <a href={localizedHref('/articles/', Astro.currentLocale)} class="underline">
         {t.allPosts}
       </a>{' '}
       / {t.taggedWith}

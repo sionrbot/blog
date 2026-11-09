@@ -15,7 +15,7 @@ function pathname(href: string | undefined): string | undefined {
 async function paginationOutput(dist: string, pageCount: number) {
   const pages = [];
   for (let page = 1; page <= pageCount; page += 1) {
-    const $ = await readHtml(dist, page === 1 ? '/blog/' : `/blog/${page}/`);
+    const $ = await readHtml(dist, page === 1 ? '/articles/' : `/articles/${page}/`);
     pages.push({
       paths: listPostPaths($.html()),
       navCount: $('nav[aria-label="Pagination"]').length,
@@ -26,7 +26,7 @@ async function paginationOutput(dist: string, pageCount: number) {
       canonical: $('link[rel="canonical"]').attr('href'),
     });
   }
-  const numberedDirectories = (await readdir(join(dist, 'blog'), { withFileTypes: true }))
+  const numberedDirectories = (await readdir(join(dist, 'articles'), { withFileTypes: true }))
     .filter((entry) => entry.isDirectory() && /^\d+$/.test(entry.name))
     .map((entry) => entry.name)
     .toSorted();
@@ -51,8 +51,9 @@ function assertPagination(
     if (expectedPages.length > 1) {
       expect(page.position).toBe(`Page ${index + 1} of ${expectedPages.length}`);
     }
-    const expectedPrevious = index === 0 ? undefined : index === 1 ? '/blog' : `/blog/${index}`;
-    const expectedNext = index === expectedPages.length - 1 ? undefined : `/blog/${index + 2}`;
+    const expectedPrevious =
+      index === 0 ? undefined : index === 1 ? '/articles' : `/articles/${index}`;
+    const expectedNext = index === expectedPages.length - 1 ? undefined : `/articles/${index + 2}`;
     for (const direction of ['previous', 'next'] as const) {
       const href = page[direction];
       if (href !== undefined) {
@@ -73,7 +74,7 @@ function assertPagination(
     );
     expect(page.canonical).toBeDefined();
     expect(new URL(page.canonical!).origin).toBe('https://fixture.example');
-    expect(pathname(page.canonical)).toBe(index === 0 ? '/blog' : `/blog/${index + 1}`);
+    expect(pathname(page.canonical)).toBe(index === 0 ? '/articles' : `/articles/${index + 1}`);
   }
 }
 

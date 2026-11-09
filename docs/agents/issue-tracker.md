@@ -1,13 +1,13 @@
 # Issue tracker: GitHub
 
-Issues and specs live in `sionrbot/sionrbot-blog` on GitHub.
+Issues and specs live in `sionrbot/blog` on GitHub.
 Use the `gh` CLI from this repository.
 
 ## Target repository
 
 Before the first issue creation in a session, run
 `gh repo view --json nameWithOwner` and verify the target is
-`sionrbot/sionrbot-blog`. Use `--repo sionrbot/sionrbot-blog` when needed
+`sionrbot/blog`. Use `--repo sionrbot/blog` when needed
 to select it explicitly.
 
 ## Operations

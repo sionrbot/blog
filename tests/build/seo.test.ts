@@ -112,7 +112,7 @@ test.each(['fallback', 'hero'] as const)(
     expect(data.find((entry) => entry['@type'] === 'BreadcrumbList')).toMatchObject({
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/` },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${origin}/blog/` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${origin}/articles/` },
         { '@type': 'ListItem', position: 3, name: title, item: url },
       ],
     });

@@ -1,6 +1,6 @@
 # Deploy
 
-Sionrbot-blog builds to a static site in `dist/`. There is no server runtime to configure.
+Sionrbot personal blog builds to a static site in `dist/`. There is no server runtime to configure.
 
 ## Before you deploy
 
@@ -26,7 +26,10 @@ Output goes to `dist/`.
 
 ## GitHub Pages
 
-This repository publishes to https://sionrbot.github.io/sionrbot-blog/.
+The production URL is https://sionrbot.github.io/blog/.
+For a standard GitHub Pages project site, deploy from the `sionrbot/blog`
+repository: GitHub derives the public path from the repository name. Changing
+`site.url` alone does not rename the repository or change its Pages address.
 `site.url` in `src/config.ts` includes the repository path. Astro derives its
 `site` origin and `base` path from that URL; `SITE_URL` can override both for a
 separate deployment or a root-hosted test build.
@@ -43,8 +46,8 @@ workflow**. Deployment uses GitHub's generated token; no personal token or domai
 configuration is needed.
 
 Use the workflow's deployment URL to open the site. The Chinese UI is under
-`/sionrbot-blog/zh/`. Preview locally with `pnpm preview` and open the same
-`/sionrbot-blog/` prefix. GitHub Pages serves the generated root `404.html` for
+`/blog/zh/`. Preview locally with `pnpm preview` and open the same
+`/blog/` prefix. GitHub Pages serves the generated root `404.html` for
 unknown URLs; it does not automatically choose the Chinese error page.
 
 ## Cloudflare Workers
@@ -88,19 +91,19 @@ remain under `/zh/`; missing Chinese paths also use the root error page.
 
 Build command: `pnpm build`. Output directory: `dist`.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sionrbot/sionrbot-blog)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sionrbot/blog)
 
 ## Vercel
 
 Framework preset: Astro. Build command: `pnpm build`. Output directory: `dist`.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/sionrbot/sionrbot-blog)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/sionrbot/blog)
 
 ## Netlify
 
 Build command: `pnpm build`. Publish directory: `dist`.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sionrbot/sionrbot-blog)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sionrbot/blog)
 
 ## CI
 
