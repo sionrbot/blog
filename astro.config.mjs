@@ -10,6 +10,7 @@ import { math } from './src/utils/math.ts';
 import { astroLocales, defaultLocale } from './src/i18n/locales.ts';
 import { canonicalPath, isErrorPage } from './src/i18n/paths.ts';
 import { site } from './src/config.ts';
+import { search } from './src/integrations/search.ts';
 
 // GFM task-list checkboxes have no accessible name and fail Lighthouse's 'label' audit. Wrap the item in a <label>
 const taskListLabels = {
@@ -48,6 +49,7 @@ export default defineConfig({
   },
   integrations: [
     mdx(),
+    search(),
     sitemap({
       i18n: { defaultLocale: 'en', locales: { en: 'en', zh: 'zh-Hans' } },
       filter: (page) => !isErrorPage(new URL(page).pathname, base),

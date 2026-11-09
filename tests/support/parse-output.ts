@@ -3,15 +3,15 @@ import { join } from 'node:path';
 import { load } from 'cheerio';
 import { XMLParser } from 'fast-xml-parser';
 
-/** Map a deployed URL path to the file tree; Astro does not nest dist under base. */
+/** Map a URL path to decoded file names; Astro does not nest dist under base. */
 export function outputPath(pathname: string, base = '/'): string {
   const prefix = base.replace(/\/$/, '');
-  if (!prefix) return pathname;
+  if (!prefix) return decodeURIComponent(pathname);
   if (pathname === prefix) return '/';
   if (!pathname.startsWith(`${prefix}/`)) {
     throw new Error(`Path ${pathname} is outside deployment base ${base}`);
   }
-  return pathname.slice(prefix.length);
+  return decodeURIComponent(pathname.slice(prefix.length));
 }
 
 /** Read an actual emitted document, never a component or a mocked collection. */

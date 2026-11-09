@@ -18,6 +18,7 @@ export const nav = (t: typeof en) =>
       { label: t.blog, href: '/blog' },
       { label: t.about, href: '/about' },
       { label: t.contact, href: '/contact' },
+      { label: t.search, href: '/search' },
     ],
     footer: [
       {

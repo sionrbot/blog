@@ -37,4 +37,15 @@ export default {
   newsletterBody:
     'The week’s essay, three things worth reading, and a closing line. Every letter has an unsubscribe link at the bottom.',
   languageNav: 'Language',
+  search: 'Search',
+  searchDescription: 'Search titles, tags, and full article text.',
+  searchLabel: 'Search articles',
+  searchPlaceholder: 'Enter a word or phrase',
+  searchLoading: 'Searching…',
+  searchEmpty: 'No matching articles. Try another word or phrase.',
+  searchPrompt: 'Enter a word or phrase to search all articles.',
+  searchError: 'Search could not load. Reload the page to try again.',
+  searchResultsCount: 'Results: {count}',
+  searchMore: 'Show more results',
+  searchRequiresJavaScript: 'Enable JavaScript to search articles.',
 };
