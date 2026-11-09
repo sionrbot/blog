@@ -44,7 +44,7 @@ test('keyboard users can activate navigation and theme controls with visible foc
     }),
   ).toBe(true);
   await browser.keyboard.press('Enter');
-  await expect(browser).toHaveURL(/\/blog\/?$/);
+  await expect(browser).toHaveURL(/\/articles\/?$/);
   await expect(screen.getByRole('heading', 'Blog', { level: 1 })).toBeVisible();
   // Tab through skip link, logo, Blog, About, Contact, then Search.
   for (let index = 0; index < 6; index++) await browser.keyboard.press(tab);
