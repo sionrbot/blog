@@ -95,6 +95,9 @@ Human-readable version: `docs/content.md`.
 2. Make the change.
 3. Run `pnpm check && pnpm build` and report the result.
 4. For visual changes (layout, color), start `pnpm dev` and ask the user to check.
+5. Before merging a PR, synchronizing the repository, or cleaning task branches, read
+   [docs/agents/closeout.md](docs/agents/closeout.md). Complete its final verification
+   before reporting delivery complete; report pending release or deployment work separately.
 
 ## Tool notes
 
