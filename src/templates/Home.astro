@@ -15,6 +15,7 @@ const recent = (await getPosts()).slice(0, 6);
 <BaseLayout>
   <RecentPosts
     title={t.recentWriting}
+    headingLevel="h1"
     posts={recent}
     moreLabel={t.allPosts}
     moreHref={localizedHref('/blog/', Astro.currentLocale)}

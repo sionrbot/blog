@@ -45,5 +45,5 @@ test('a missing route serves the site 404 with noindex and a working home link',
   await expect(browser.locator('link[rel="canonical"]')).toHaveCount(0);
   await screen.getByRole('link', 'Back to the front page').tap();
   await expect(browser).toHaveURL('/');
-  await expect(screen.getByRole('heading', 'Barely Surviving and Deeply Loving')).toBeVisible();
+  await expect(screen.getByRole('heading', 'Recent writing', { level: 1 })).toBeVisible();
 });

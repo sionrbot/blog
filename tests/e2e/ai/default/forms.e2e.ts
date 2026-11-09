@@ -1,7 +1,7 @@
 import { test } from '@e2e-dev/web';
 import { expect } from 'e2e';
 
-test('a reader can identify why contact and newsletter submission are unavailable', async ({
+test('a reader can identify why contact submission is unavailable and return to recent writing', async ({
   app,
   agent,
   screen,
@@ -18,12 +18,7 @@ test('a reader can identify why contact and newsletter submission are unavailabl
   );
   await agent.act('Return to the home page using the site name link in the header.');
   await expect(browser).toHaveURL('/');
-  await expect(screen.getByRole('heading', 'Barely Surviving and Deeply Loving')).toBeVisible();
-  await agent.act('Find The Sunday letter newsletter section on this page.');
-  await expect(screen.getByRole('heading', 'The Sunday letter')).toBeVisible();
-  await expect(screen.getByRole('button', 'Subscribe')).toBeDisabled();
-  await expect(screen.getByText('This form is not connected yet.')).toBeVisible();
-  await agent.assert(
-    'The newsletter form explains that it is not connected yet and Subscribe is disabled.',
-  );
+  await expect(screen.getByRole('heading', 'Recent writing', { level: 1 })).toBeVisible();
+  await expect(browser.locator('main form')).toHaveCount(0);
+  await expect(screen.getByRole('button', 'Subscribe')).toHaveCount(0);
 });

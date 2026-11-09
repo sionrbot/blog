@@ -27,7 +27,7 @@ const { posts, headingLevel: Heading = 'h2' } = Astro.props;
             {post.data.title}
           </a>
         </Heading>
-        <p lang={post.data.lang} class="text-muted">
+        <p lang={post.data.lang} class="wrap-anywhere text-muted">
           {post.data.description}
         </p>
         <TagList contentLang={post.data.lang} tags={post.data.tags} />

@@ -116,7 +116,7 @@ test('I18N-B3: home pages show the latest six posts without the hero or newslett
     ['/zh', '近期文章', '全部文章'],
   ]) {
     const home = await readHtml(fixture.dist, `${prefix}/`);
-    expect(home('main h2').text()).toBe(title);
+    expect(home('main h1').text()).toBe(title);
     expect(home(`main a[href="${prefix}/blog/"]`).text().trim()).toBe(`${moreLabel} →`);
     expect(listPostPaths(home.html())).toEqual(
       i18nFirstPage.slice(0, 6).map((id) => `${prefix}/blog/${id}/`),
