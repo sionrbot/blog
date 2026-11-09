@@ -67,7 +67,7 @@ test('unavailable local storage does not prevent opening or toggling the theme',
   });
   await browser.emulateMedia({ colorScheme: 'light' });
   await app.open('/');
-  await expect(screen.getByRole('heading', 'Barely Surviving and Deeply Loving')).toBeVisible();
+  await expect(screen.getByRole('heading', 'Recent writing', { level: 1 })).toBeVisible();
   const toggle = screen.getByRole('button', 'Toggle dark mode');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await toggle.tap();

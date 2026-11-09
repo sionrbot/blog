@@ -28,7 +28,7 @@ export const contactSubmission = {
 
 export const newsletterAction = 'http://127.0.0.1:54321/newsletter';
 export const newsletterVariants = [
-  { path: '/', fields: { email: 'ada@example.test' } },
+  { path: '/e2e-newsletter-default/', fields: { email: 'ada@example.test' } },
   {
     path: '/e2e-newsletter/',
     fields: { subscriber_email: 'ada@example.test', list: 'e2e-readers', source: 'fixture' },

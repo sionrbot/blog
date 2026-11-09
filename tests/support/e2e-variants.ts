@@ -64,6 +64,23 @@ $$
       await replaceOnce(configPath, "web3formsKey: ''", "web3formsKey: 'e2e-fake-key'");
       await replaceOnce(configPath, "action: ''", "action: 'http://127.0.0.1:54321/newsletter'");
       await writeFile(
+        join(fixture.root, 'src/pages/e2e-newsletter-default.astro'),
+        `---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Newsletter from '../components/sections/Newsletter.astro';
+import { forms } from '../config';
+---
+<BaseLayout title="Default newsletter fixture">
+  <h1>Default newsletter fixture</h1>
+  <Newsletter
+    title="Fixture newsletter"
+    body="A subscription with default provider fields."
+    action={forms.newsletter.action}
+  />
+</BaseLayout>
+`,
+      );
+      await writeFile(
         join(fixture.root, 'src/pages/e2e-newsletter.astro'),
         `---
 import BaseLayout from '../layouts/BaseLayout.astro';

@@ -1,6 +1,6 @@
 # i18n implementation spec
 
-- 更新日期：2026-11-05（Asia/Shanghai）。
+- 更新日期：2026-11-10（Asia/Shanghai）。
 - 范围：英文与简体中文 UI；多语言静态路由；博客内容保持原文。
 - 测试与工具操作：[i18n testing](../tests/I18N.md)，描述测试范围、执行方法与工具边界。
 
@@ -18,7 +18,7 @@
 | D4  | 切换至当前页面的另一种 UI 地址              | 保持文章、标签或分页等页面身份；系统生成的站内导航延续当前 UI 语言              |
 | D5  | 内容和模板共用                              | 两种路由引用同一份文章和页面模板，不复制两套内容或业务逻辑                      |
 | D6  | 明确 UI 文案全部翻译                        | 覆盖现有字典、硬编码 UI、Contact 说明及订阅说明                                 |
-| D7  | 作者内容保持原文                            | 首页口号、About 导语及正文、文章内容保持原文；主题演示内容排除                  |
+| D7  | 作者内容保持原文                            | About 描述及正文、文章内容保持原文；主题演示内容排除                            |
 
 例：`/blog/example/` 为英文 UI，`/zh/blog/example/` 为中文 UI，两者呈现同一篇原文。刷新、收藏和分享通过 URL 保留 UI 语言。
 
@@ -31,18 +31,19 @@
 - [语言注册表](../src/i18n/locales.ts)、[字典](../src/i18n/t.ts) 与 x18n 使用 en/zh-Hans；`/zh/` 映射简体中文。
 - [共享模板](../src/templates/) 和薄路由入口生成两种 UI；[语言控件](../src/components/common/LanguageSwitcher.astro) 使用普通链接。URL 决定 UI，不读取语言偏好。
 - 已有 11 篇文章原文核查均为英文，显式补标 `lang: en`；schema 默认 en，其他有效语言标签可用于文章。
-- 首页、Contact、导航与订阅 UI 使用字典；About/Privacy/Terms 原文由共享 MDX 维护。
+- [首页模板](../src/templates/Home.astro) 仅展示最近 6 篇文章，列表标题和全部文章入口使用字典；首页不渲染 Hero 或 Newsletter。
+- Contact、导航与可复用订阅组件的 UI 使用字典；About/Privacy/Terms 原文由共享 MDX 维护。
 - 构建产物与浏览器验证覆盖混合语言、11 篇文章分页 fixture。具体命令、结果与限制以测试文档为准，未执行远程 CI。
 
 ## Translation boundary
 
 ### Translate as UI
 
-- 现有 27 个字典键的全部用途，包括可见文本、`aria-label`、placeholder、分页参数、404 和页面描述。
+- 现有字典键的全部用途，包括可见文本、`aria-label`、placeholder、分页参数、404 和页面描述。
 - Header 的 Blog/About/Contact；Footer 的 Legal/Privacy/Terms；首页 Recent writing 和 All posts。
 - 普通页面的通用标题，例如 About、Contact、Privacy、Terms。
 - Contact 标题、完整说明、表单标签、按钮和本站提供的状态／不可用提示。
-- 订阅内容介绍与退订说明、邮箱标签及 placeholder、订阅按钮和不可用提示。
+- 可复用订阅组件的退订说明、邮箱标签及 placeholder、订阅按钮和不可用提示；首页不展示订阅区块。
 - skip link、主题与语言控件、分页、标签列表等可访问名称。
 
 完整说明句可以是 UI，不以句子长度或是否带作者语气判断。组件 props、MDX 文件位置以及当前是否硬编码，也不构成翻译范围依据。
@@ -50,14 +51,13 @@
 ### Preserve original content
 
 - 文章标题、摘要、正文、代码、引用、标签文字、图片说明与文章图片 alt。
-- 首页口号 `Barely Surviving and Deeply Loving` 与 `Passion, Thinking and Technology.`。
-- About 导语、正文、正文小标题和正文链接文字。
+- [About 内容](../src/content/pages/about.mdx) 的描述 `Barely Surviving and Deeply Loving`、正文 `Passion, Thinking and Technology.`、正文小标题和正文链接文字。
 - 站点名、作者名、品牌名、外部服务名称。
 - 表单输入值、字段名、提交地址、隐藏参数；文章 slug 和原始时间戳。
 
 ### Implementation conventions
 
-- `Sionrbot personal blog` 翻译通用描述并保留 `Sionrbot`；`The Sunday letter` 暂保留原名，不创作未经确认的正式译名。
+- 首页不再使用 `personalBlog` 和 `newsletterBody`，两个键不保留在英文字典或简体中文字典中。
 - `site.description` 暂保留原文。Privacy/Terms 的描述与正文保持原文，不借 UI 翻译改写现有占位政策。
 - 日期显示按 UI 语言格式化，继续使用 UTC；`datetime`、JSON-LD 时间戳和正文手写日期不变。
 - UI 页标题和已纳入翻译范围的描述随 UI 渲染；文章标题、摘要和分享文案保持原文；About 导语不因复用于 metadata 而另行翻译。
@@ -108,7 +108,7 @@
 
 ### Content language
 
-- 根 `<html lang>` 表示 UI 语言；文章、英文 About 和首页保留原文区独立标记实际内容语言。
+- 根 `<html lang>` 表示 UI 语言；文章、英文 About 和首页文章列表中的原文标题／摘要独立标记实际内容语言。
 - 在文章 schema 增加可选 `lang`，表示有效 BCP 47 内容语言；不限制为 UI 支持集合，不产生翻译副本。
 - 实施时核对现有文章并补标；旧文章的默认兼容值以内容核查为依据，不凭字符比例猜测。
 - 原文标题、摘要、正文及图片说明保留内容语言语义；周围翻译控件和格式化日期使用 UI 语言，避免错误继承。
@@ -134,7 +134,7 @@
 | `src/i18n/`、`src/config.ts`、`x18n.config.ts`       | 双语字典、语言映射、UI 配置接入、移除 ko/hu |
 | `src/pages/`、`src/layouts/`、共享 MDX 内容          | 薄路由入口、共用模板、两套静态页面          |
 | `src/components/common/`、`src/components/blog/`     | 导航、语言切换器、分页、可访问名称和 SEO    |
-| 首页、Contact、Newsletter 调用处                     | 接入已确认的翻译文案                        |
+| 首页文章列表、Contact、可复用 Newsletter 组件        | 接入已确认的翻译文案                        |
 | `src/utils/posts.ts`、集中链接工具                   | 文章／标签链接、日期                        |
 | `src/content.config.ts`、文章语言字段                | 原文语言语义与兼容                          |
 | `tests/`、必要的 E2E 配置／CI                        | 单测、构建产物、浏览器验证                  |
@@ -153,6 +153,7 @@
 | 可访问性与布局 | 文本和可访问名称正确，键盘可操作，360px 下两种 UI 无页面级横向溢出                      |
 
 - 使用包含英文／中文原文及跨页列表的受控 fixture；同一次构建生成两种 UI，再验证路由与切换。
+- [首页构建测试](../tests/build/i18n.test.ts) 同时验证英文和中文首页：列表标题与全部文章入口本地化、最近 6 篇文章的顺序和链接正确、Hero 文案及 Newsletter 标题和表单不存在；保留中文 skip link 和独立的 Contact 页面检查。
 - 通过真实链接触发切换；独立预期验证文章不变，不以生产翻译函数生成全部测试答案。
 - 不把所有既有测试机械复制两遍；不继续沿用客户端 DOM 更新、存储异常、URL 不变和表单保留的旧验收要求。
 - 修改语言功能时同步 [i18n testing](../tests/I18N.md) 的测试范围与执行方法。

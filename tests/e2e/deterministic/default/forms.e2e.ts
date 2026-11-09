@@ -1,7 +1,7 @@
 import { test } from '@e2e-dev/web';
 import { expect } from 'e2e';
 
-test('unconfigured contact and newsletter forms explain their disabled submission', async ({
+test('unconfigured contact explains disabled submission and home has no newsletter', async ({
   app,
   browser,
   screen,
@@ -16,10 +16,7 @@ test('unconfigured contact and newsletter forms explain their disabled submissio
   await expect(screen.getByRole('button', 'Send message')).toBeDisabled();
   await expect(browser.locator('input[name="access_key"]')).toHaveValue('');
   await app.open('/');
-  await expect(screen.getByRole('heading', 'The Sunday letter')).toBeVisible();
-  await expect(screen.getByRole('button', 'Subscribe')).toBeDisabled();
-  await expect(screen.getByText('This form is not connected yet.')).toBeVisible();
-  await screen.getByLabel('Email address').fill('reader@example.test');
-  await expect(screen.getByRole('button', 'Subscribe')).toBeDisabled();
-  await expect(browser.locator('form')).not.toHaveAttribute('action');
+  await expect(screen.getByRole('heading', 'Recent writing', { level: 1 })).toBeVisible();
+  await expect(browser.locator('main form')).toHaveCount(0);
+  await expect(screen.getByRole('button', 'Subscribe')).toHaveCount(0);
 });
