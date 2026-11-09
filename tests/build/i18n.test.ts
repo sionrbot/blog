@@ -110,16 +110,27 @@ test('I18N-B2: original article text, links and content language survive both UI
   }
 });
 
-test('I18N-B3: Chinese forms and descriptions are static, while author copy stays original', async () => {
-  const home = await readHtml(fixture.dist, '/zh/');
-  expect(home('h1').text()).toBe('Barely Surviving and Deeply Loving');
-  expect(home('h1').closest('[lang]').attr('lang')).toBe('en');
-  const newsletterTitle = home('h2').filter(
-    (_, heading) => home(heading).text() === 'The Sunday letter',
-  );
-  expect(newsletterTitle).toHaveLength(1);
-  expect(newsletterTitle.attr('lang')).toBe('en');
-  expect(home('a[href="#main"]').text()).toContain('跳');
+test('I18N-B3: home pages show the latest six posts without the hero or newsletter', async () => {
+  for (const [prefix, title, moreLabel] of [
+    ['', 'Recent writing', 'All posts'],
+    ['/zh', '近期文章', '全部文章'],
+  ]) {
+    const home = await readHtml(fixture.dist, `${prefix}/`);
+    expect(home('main h2').text()).toBe(title);
+    expect(home(`main a[href="${prefix}/blog/"]`).text().trim()).toBe(`${moreLabel} →`);
+    expect(listPostPaths(home.html())).toEqual(
+      i18nFirstPage.slice(0, 6).map((id) => `${prefix}/blog/${id}/`),
+    );
+    expect(home('main').text()).not.toContain('Barely Surviving and Deeply Loving');
+    expect(home('main').text()).not.toContain('Passion, Thinking and Technology.');
+    expect(home('main').text()).not.toContain('The Sunday letter');
+    expect(home('main form')).toHaveLength(0);
+  }
+  const chineseHome = await readHtml(fixture.dist, '/zh/');
+  expect(chineseHome('a[href="#main"]').text()).toContain('跳');
+});
+
+test('I18N-B5: Chinese contact forms and descriptions are static', async () => {
   const contact = await readHtml(fixture.dist, '/zh/contact/');
   expect(contact('h1').text()).toBe('联系');
   expect(contact('label[for="contact-name"]').text()).toContain('姓名');

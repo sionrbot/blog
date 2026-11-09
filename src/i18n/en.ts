@@ -32,10 +32,7 @@ export default {
   terms: 'Terms',
   legal: 'Legal',
   recentWriting: 'Recent writing',
-  personalBlog: 'Sionrbot personal blog',
   contactDescription: 'Questions, corrections, or a note about an essay. I read all of it.',
-  newsletterBody:
-    'The week’s essay, three things worth reading, and a closing line. Every letter has an unsubscribe link at the bottom.',
   languageNav: 'Language',
   search: 'Search',
   searchDescription: 'Search titles, tags, and full article text.',

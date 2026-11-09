@@ -136,8 +136,6 @@ export default defineConfig({
       '.vitest/',
       '.e2e/',
       '.agents/skills/e2e/',
-      // Preserve the imported article body verbatim, including its original EOF.
-      'src/content/blog/freedom.mdx',
     ],
   },
 });

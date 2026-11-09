@@ -1,14 +1,11 @@
 ---
 // Home. Change section order and copy here. Section components live in src/components/sections/.
-// A writer's home page: a short introduction, then the latest posts.
+// A writer's home page: the latest posts.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Hero from '../components/sections/Hero.astro';
-import Newsletter from '../components/sections/Newsletter.astro';
 import RecentPosts from '../components/sections/RecentPosts.astro';
 import { useT } from '../i18n/t';
 import { getPosts } from '../utils/posts';
 import { localizedHref } from '../i18n/links';
-import { forms } from '../config';
 
 const t = useT(Astro.currentLocale);
 
@@ -16,22 +13,10 @@ const recent = (await getPosts()).slice(0, 6);
 ---
 
 <BaseLayout>
-  <Hero
-    eyebrow={t.personalBlog}
-    contentLang="en"
-    title="Barely Surviving and Deeply Loving"
-    lede="Passion, Thinking and Technology."
-  />
   <RecentPosts
     title={t.recentWriting}
     posts={recent}
     moreLabel={t.allPosts}
     moreHref={localizedHref('/blog/', Astro.currentLocale)}
-  />
-  <Newsletter
-    title="The Sunday letter"
-    titleLang="en"
-    body={t.newsletterBody}
-    action={forms.newsletter.action}
   />
 </BaseLayout>
