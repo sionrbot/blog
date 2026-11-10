@@ -26,11 +26,11 @@ describe('post and tag links', () => {
   });
 
   it('links to the normalized tag route with a trailing slash', () => {
-    expect(tagHref('  Slow   Reading ')).toBe('/blog/tag/slow-reading/');
+    expect(tagHref('  Slow   Reading ')).toBe('/articles/tag/slow-reading/');
   });
 
   it('preserves the content entry id in the article route', () => {
-    expect(postHref(post)).toBe('/blog/notes/a-reading-list/');
+    expect(postHref(post)).toBe('/articles/notes/a-reading-list/');
   });
 });
 

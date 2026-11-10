@@ -14,7 +14,7 @@ test('search finds Chinese originals once and keeps the current UI language', as
   await expect(screen.getByRole('link', '重读自由软件宣言：计算在谁的机器上')).toHaveCount(1);
   await expect(screen.getByRole('link', '重读自由软件宣言：计算在谁的机器上')).toHaveAttribute(
     'href',
-    `${base}/blog/freedom/`,
+    `${base}/articles/freedom/`,
   );
   await screen.getByLabel('Language', { visible: true }).tap();
   await screen.getByRole('link', '简体中文').tap();
@@ -22,7 +22,7 @@ test('search finds Chinese originals once and keeps the current UI language', as
   await expect(screen.getByRole('status')).toHaveText('找到 1 篇文章');
   await expect(screen.getByRole('link', '重读自由软件宣言：计算在谁的机器上')).toHaveAttribute(
     'href',
-    `${base}/zh/blog/freedom/`,
+    `${base}/zh/articles/freedom/`,
   );
   await screen.getByRole('link', '重读自由软件宣言：计算在谁的机器上').tap();
   await expect(
@@ -35,7 +35,7 @@ test('search handles English, empty queries, and no results', async ({ app, scre
   await screen.getByRole('searchbox', '搜索文章').fill('newsletter');
   await expect(screen.getByRole('link', 'The Unhurried Newsletter')).toHaveAttribute(
     'href',
-    `${base}/zh/blog/the-unhurried-newsletter/`,
+    `${base}/zh/articles/the-unhurried-newsletter/`,
   );
   await screen.getByRole('searchbox', '搜索文章').fill('zzzxxyyqqnomatch');
   await expect(screen.getByRole('status')).toHaveText('没有找到相关文章，请换个关键词或短语。');

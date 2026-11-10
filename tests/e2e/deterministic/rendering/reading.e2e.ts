@@ -6,7 +6,7 @@ test('wide article content scrolls locally and embedded controls remain usable',
   browser,
   screen,
 }) => {
-  await app.open('/blog/e2e-rendering/');
+  await app.open('/articles/e2e-rendering/');
   await expect(screen.getByRole('heading', 'E2E rendering specimen')).toBeVisible();
   await expect(browser.locator('.table-scroll > table')).toHaveCount(1);
   await expect(browser.locator('.katex-display')).toHaveCount(1);

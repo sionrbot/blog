@@ -30,13 +30,13 @@ export const publicationPosts: readonly FixturePost[] = [
 
 // Independent manifest: do not generate expected results with production helpers.
 export const publishedPaths = [
-  '/blog/newest/',
-  '/blog/second-newest/',
-  '/blog/third-newest/',
-  '/blog/middle/',
-  '/blog/third-oldest/',
-  '/blog/second-oldest/',
-  '/blog/oldest/',
+  '/articles/newest/',
+  '/articles/second-newest/',
+  '/articles/third-newest/',
+  '/articles/middle/',
+  '/articles/third-oldest/',
+  '/articles/second-oldest/',
+  '/articles/oldest/',
 ];
 
 export const publishedTitles = [

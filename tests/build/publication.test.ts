@@ -24,8 +24,8 @@ async function exists(path: string) {
 async function publicationOutput(dist: string) {
   const blog = await readHtml(dist, '/articles/');
   const home = await readHtml(dist, '/');
-  const shared = await readHtml(dist, '/blog/tag/shared/');
-  const craft = await readHtml(dist, '/blog/tag/craft/');
+  const shared = await readHtml(dist, '/articles/tag/shared/');
+  const craft = await readHtml(dist, '/articles/tag/craft/');
   const rss = rssPosts(await readFile(join(dist, 'rss.xml'), 'utf8'));
   const sitemap = await sitemapUrls(dist);
   const details: string[] = [];
@@ -41,8 +41,8 @@ async function publicationOutput(dist: string) {
     details,
     rss,
     sitemap,
-    draftPage: await exists(join(dist, 'blog/secret-draft/index.html')),
-    draftTag: await exists(join(dist, 'blog/tag/draft-only/index.html')),
+    draftPage: await exists(join(dist, 'articles/secret-draft/index.html')),
+    draftTag: await exists(join(dist, 'articles/tag/draft-only/index.html')),
     publicLinks: [blog, home, shared, craft].flatMap(($) =>
       $('a[href]')
         .map((_, element) => $(element).attr('href'))
@@ -57,9 +57,9 @@ function assertPublication(output: Awaited<ReturnType<typeof publicationOutput>>
   expect(output.blog).toEqual(publishedPaths);
   expect(output.home).toEqual(publishedPaths.slice(0, 6));
   expect(output.shared).toEqual(publishedPaths);
-  expect(output.craft).toEqual(['/blog/newest/', '/blog/middle/']);
+  expect(output.craft).toEqual(['/articles/newest/', '/articles/middle/']);
   expect(output.details).toEqual(publishedTitles);
-  expect(output.publicLinks).not.toContain('/blog/secret-draft/');
+  expect(output.publicLinks).not.toContain('/articles/secret-draft/');
   expect(output.rss.map((post) => new URL(post.url).pathname)).toEqual(publishedPaths);
   expect(output.rss.map((post) => post.title)).toEqual(publishedTitles);
   expect(output.rss.map((post) => new Date(post.pubDate).toISOString().slice(0, 10))).toEqual(
@@ -67,9 +67,11 @@ function assertPublication(output: Awaited<ReturnType<typeof publicationOutput>>
   );
   const articlePaths = output.sitemap
     .map((url) => new URL(url).pathname)
-    .filter((path) => /^\/blog\/[^/]+\/$/.test(path));
+    .filter((path) => /^\/articles\/[^/]+\/$/.test(path));
   expect(articlePaths.toSorted()).toEqual(publishedPaths.toSorted());
-  expect(output.sitemap.map((url) => new URL(url).pathname)).not.toContain('/blog/tag/draft-only/');
+  expect(output.sitemap.map((url) => new URL(url).pathname)).not.toContain(
+    '/articles/tag/draft-only/',
+  );
 }
 
 describe('published content across production and development', () => {
@@ -90,19 +92,23 @@ describe('published content across production and development', () => {
   });
 
   test('synonymous tags share one route and list each published article once', async () => {
-    expect((await readdir(join(fixture.dist, 'blog/tag'))).toSorted()).toEqual([
+    expect((await readdir(join(fixture.dist, 'articles/tag'))).toSorted()).toEqual([
       'craft',
       'shared',
       'slow-reading',
     ]);
-    const page = await readHtml(fixture.dist, '/blog/tag/slow-reading/');
-    expect(listPostPaths(page.html())).toEqual(['/blog/newest/', '/blog/middle/', '/blog/oldest/']);
+    const page = await readHtml(fixture.dist, '/articles/tag/slow-reading/');
+    expect(listPostPaths(page.html())).toEqual([
+      '/articles/newest/',
+      '/articles/middle/',
+      '/articles/oldest/',
+    ]);
   });
 
   test('PUB-03: the same fixture exposes drafts through the dev HTTP interface', async () => {
     const server = await startDev(fixture);
     try {
-      const detail = await fetch(`${server.url}/blog/secret-draft/`, {
+      const detail = await fetch(`${server.url}/articles/secret-draft/`, {
         signal: AbortSignal.timeout(10_000),
       });
       expect(detail.status).toBe(200);
@@ -112,7 +118,7 @@ describe('published content across production and development', () => {
       });
       expect(listing.status).toBe(200);
       expect(listPostPaths(await listing.text())).toEqual([
-        '/blog/secret-draft/',
+        '/articles/secret-draft/',
         ...publishedPaths,
       ]);
     } finally {

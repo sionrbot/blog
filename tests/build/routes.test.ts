@@ -40,7 +40,7 @@ test('ROUTE-01: the default production build contains the required site routes a
     const $ = await readHtml(dist, outputPath(new URL(post.url).pathname, base));
     expect($('main h1').text()).toBe(post.title);
     expect(sitemap).toContain(post.url);
-    for (const element of $(`main a[href^="${base.replace(/\/$/, '')}/blog/tag/"]`).toArray()) {
+    for (const element of $(`main a[href^="${base.replace(/\/$/, '')}/articles/tag/"]`).toArray()) {
       const tag = await readHtml(dist, outputPath($(element).attr('href')!, base));
       expect(tag('main h1').text()).toMatch(/^#/);
     }

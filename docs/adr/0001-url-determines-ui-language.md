@@ -13,5 +13,5 @@
 
 - **已确认要求：** [i18n 规格 R1、R2、D1–D5、D7](../i18n-spec.md#confirmed-decisions) 明确语言范围、原文边界、静态导航、URL 优先和内容共享，并说明刷新、收藏、分享保留语言的用途。
 - **工程约定：** [路由与共享渲染](../i18n-spec.md#astro-routing-and-shared-rendering)、[链接与导航](../i18n-spec.md#links-and-navigation) 记录无脚本可用性及导航取舍；这些是规格中的工程方案，不另称为用户逐项确认的要求。
-- **实现：** [Astro 配置](../../astro.config.mjs)、[英文文章入口](../../src/pages/blog/[slug].astro)、[中文文章入口](../../src/pages/zh/blog/[slug].astro) 使用同一套[路径生成](../../src/templates/paths.ts)和[文章模板](../../src/templates/Post.astro)；[语言选择器](../../src/components/common/LanguageSwitcher.astro) 使用普通链接并补充锚点。
+- **实现：** [Astro 配置](../../astro.config.mjs)、[英文文章入口](../../src/pages/articles/[slug].astro)、[中文文章入口](../../src/pages/zh/articles/[slug].astro) 使用同一套[路径生成](../../src/templates/paths.ts)和[文章模板](../../src/templates/Post.astro)；[语言选择器](../../src/components/common/LanguageSwitcher.astro) 使用普通链接并补充锚点。
 - **验证契约：** [语言构建测试](../../tests/build/i18n.test.ts) 和[导航浏览器测试](../../tests/e2e/deterministic/i18n/navigation.e2e.ts)。

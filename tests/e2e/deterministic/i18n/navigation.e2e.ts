@@ -6,11 +6,11 @@ test('article UI switches both ways while original content and anchors survive',
   browser,
   screen,
 }) => {
-  await app.open('/blog/original-english/#original-section');
+  await app.open('/articles/original-english/#original-section');
   await expect(browser.locator('article time')).toHaveText('January 12, 2025');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', '简体中文', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/original-english/#original-section');
+  await expect(browser).toHaveURL('/zh/articles/original-english/#original-section');
   await expect(browser.locator('article time')).toHaveText('2025年1月12日');
   await expect(browser.locator('html')).toHaveAttribute('lang', 'zh-Hans');
   await expect(screen.getByRole('heading', 'An English original', { level: 1 })).toBeVisible();
@@ -21,14 +21,14 @@ test('article UI switches both ways while original content and anchors survive',
   await expect(browser.locator('[data-post-content] a')).toHaveAttribute('href', '/about/');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', 'English', { exact: true }).tap();
-  await expect(browser).toHaveURL('/blog/original-english/#original-section');
+  await expect(browser).toHaveURL('/articles/original-english/#original-section');
   await expect(browser.locator('html')).toHaveAttribute('lang', 'en');
-  await app.open('/blog/original-chinese/');
+  await app.open('/articles/original-chinese/');
   await expect(browser.locator('[data-post-content]')).toContainText('这段中文正文保持不变。');
   await expect(browser.locator('[data-post-content]')).toHaveAttribute('lang', 'zh-Hans');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', '简体中文', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/original-chinese/');
+  await expect(browser).toHaveURL('/zh/articles/original-chinese/');
   await expect(screen.getByRole('heading', '一篇中文原文', { level: 1 })).toBeVisible();
   await expect(browser.locator('[data-post-content]')).toContainText('const message = "中文原文";');
 });
@@ -40,17 +40,17 @@ test('Chinese navigation, tag and pagination retain language and page identity',
 }) => {
   await app.open('/zh/articles/');
   await screen.getByRole('link', 'An English original', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/original-english/');
+  await expect(browser).toHaveURL('/zh/articles/original-english/');
   await screen.getByRole('article').getByRole('link', '#shared', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/tag/shared/');
+  await expect(browser).toHaveURL('/zh/articles/tag/shared/');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', 'English', { exact: true }).tap();
-  await expect(browser).toHaveURL('/blog/tag/shared/');
+  await expect(browser).toHaveURL('/articles/tag/shared/');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', '简体中文', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/tag/shared/');
+  await expect(browser).toHaveURL('/zh/articles/tag/shared/');
   await browser.reload();
-  await expect(browser).toHaveURL('/zh/blog/tag/shared/');
+  await expect(browser).toHaveURL('/zh/articles/tag/shared/');
   await expect(browser.locator('html')).toHaveAttribute('lang', 'zh-Hans');
   await browser.locator('header a[href="/zh/articles/"]').tap();
   await browser.locator('a[href="/zh/articles/2/"]').tap();
@@ -106,11 +106,11 @@ test('static language navigation works when all page scripts are blocked', async
       body: await response.text(),
     });
   });
-  await app.open('/blog/original-english/');
+  await app.open('/articles/original-english/');
   await expect(browser.locator('html')).toHaveAttribute('lang', 'en');
   await browser.locator('[data-language-switcher] summary').tap();
   await screen.getByRole('link', '简体中文', { exact: true }).tap();
-  await expect(browser).toHaveURL('/zh/blog/original-english/');
+  await expect(browser).toHaveURL('/zh/articles/original-english/');
   await expect(browser.locator('[data-post-content]')).toContainText(
     'This English paragraph stays unchanged.',
   );
@@ -161,7 +161,7 @@ test('language links have visible keyboard focus and both UIs fit 360px', async 
     'aria-current',
     'page',
   );
-  for (const route of ['/', '/articles/', '/about/', '/contact/', '/blog/original-chinese/']) {
+  for (const route of ['/', '/articles/', '/about/', '/contact/', '/articles/original-chinese/']) {
     for (const prefix of ['', '/zh']) {
       await app.open(`${prefix}${route}`);
       await expect(screen.getByRole('heading', { level: 1 })).toBeVisible();

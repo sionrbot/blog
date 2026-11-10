@@ -8,7 +8,7 @@ test('a reader can visually read wide content and use the embedded newsletter', 
   browser,
   screen,
 }) => {
-  await app.open('/blog/e2e-rendering/');
+  await app.open('/articles/e2e-rendering/');
   await expect(screen.getByRole('heading', 'E2E rendering specimen')).toBeVisible();
   for (const checkpoint of readingCheckpoints) {
     await positionReadingContent(browser, checkpoint.selector);

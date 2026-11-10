@@ -43,7 +43,7 @@ test.each([
         expect(diagnostics).toContain(entry.field);
       } else {
         expect(result.code, diagnostics).toBe(0);
-        const page = await readHtml(fixture.dist, `/blog/${entry.id}/`);
+        const page = await readHtml(fixture.dist, `/articles/${entry.id}/`);
         expect(page('main h1').text()).toBe('Schema control');
         if (entry.field === 'heroAlt') {
           const hero = page('article img[alt="Schema fixture image"]');
@@ -84,11 +84,11 @@ const [post] = await getCollection('blog');
       lang: 'en',
     });
     expect(listPostPaths((await readHtml(fixture.dist, '/articles/')).html())).toEqual([
-      '/blog/defaults/',
+      '/articles/defaults/',
     ]);
-    const article = await readHtml(fixture.dist, '/blog/defaults/');
+    const article = await readHtml(fixture.dist, '/articles/defaults/');
     expect(article('main h1').text()).toBe('Default fields');
-    expect(article('article a[href^="/blog/tag/"]').length).toBe(0);
+    expect(article('article a[href^="/articles/tag/"]').length).toBe(0);
   } finally {
     await fixture.dispose();
   }

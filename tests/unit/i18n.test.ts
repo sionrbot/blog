@@ -50,10 +50,10 @@ describe('translation dictionaries', () => {
     expect(resolveLocale('zh')).toBe('zh-Hans');
     expect(useT('zh')).toBe(dictionaries['zh-Hans']);
     expect(localePath('zh-Hans')).toBe('zh');
-    expect(localeFromPath('/zh/blog/')).toBe('zh-Hans');
+    expect(localeFromPath('/zh/articles/')).toBe('zh-Hans');
     expect(localeFromPath('/zh')).toBe('zh-Hans');
     expect(localeFromPath('/zhang/')).toBe('en');
-    expect(localeFromPath('/blog/zh/')).toBe('en');
+    expect(localeFromPath('/articles/zh/')).toBe('en');
   });
   it('rejects an invalid configured default', () => {
     expect(() => assertDefaultLocale('ko')).toThrow('Unsupported default UI locale: ko');
@@ -77,7 +77,7 @@ describe('message formatting', () => {
 });
 
 describe('localized page identities', () => {
-  it.each(['/', '/about/', '/blog/example/', '/blog/tag/中文/', '/articles/2/'])(
+  it.each(['/', '/about/', '/articles/example/', '/articles/tag/中文/', '/articles/2/'])(
     'round-trips %s',
     (path) => {
       const chinese = localizedHref(path, 'zh-Hans');
@@ -86,10 +86,10 @@ describe('localized page identities', () => {
     },
   );
   it('preserves fragments and discards unrelated query state', () => {
-    expect(localizedHref('/zh/blog/example/?utm_source=test#heading', 'en')).toBe(
-      '/blog/example/#heading',
+    expect(localizedHref('/zh/articles/example/?utm_source=test#heading', 'en')).toBe(
+      '/articles/example/#heading',
     );
-    expect(canonicalPath('/blog/zh/')).toBe('/blog/zh/');
+    expect(canonicalPath('/articles/zh/')).toBe('/articles/zh/');
   });
   it.each(['https://example.com/', '//example.com/', 'blog/'])(
     'rejects non-site identity %s',
