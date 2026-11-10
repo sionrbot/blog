@@ -120,16 +120,18 @@ describe('release commit checks', () => {
     expect(createReleases).not.toHaveBeenCalled();
   });
 
-  it.each([
-    undefined,
-    [],
-    [null],
-    [{ id: 99, tagName: 'v9.0.0' }],
-    [{ id: 0, tagName: 'v1.5.0' }],
-    [{ id: 1.5, tagName: 'v1.5.0' }],
-    [{ id: '99', tagName: 'v1.5.0' }],
-    [...createdReleases(), ...createdReleases()],
-  ])('rejects unexpected created release identity: %j', async (created) => {
+  it.each(
+    [
+      undefined,
+      [],
+      [null],
+      [{ id: 99, tagName: 'v9.0.0' }],
+      [{ id: 0, tagName: 'v1.5.0' }],
+      [{ id: 1.5, tagName: 'v1.5.0' }],
+      [{ id: '99', tagName: 'v1.5.0' }],
+      [...createdReleases(), ...createdReleases()],
+    ].map((created) => ({ created })),
+  )('rejects unexpected created release identity: %j', async ({ created }) => {
     const prepared = artifacts();
     await expect(
       publishReady(
