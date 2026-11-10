@@ -99,8 +99,8 @@ export class ArtifactClient {
     }
   }
 
-  async binary(path: string): Promise<Buffer> {
-    const response = await this.request(path, { headers: { Accept: 'application/octet-stream' } });
+  async binary(path: string, accept = 'application/octet-stream'): Promise<Buffer> {
+    const response = await this.request(path, { headers: { Accept: accept } });
     return Buffer.from(await response.arrayBuffer());
   }
 
@@ -203,7 +203,11 @@ async function readArtifact(
     throw new Error(`Missing or expired ${prefix} for run ${run.id}, attempt ${run.run_attempt}`);
   }
   const artifact = matches[0];
-  const bytes = await client.binary(`actions/artifacts/${artifact.id}/zip`);
+  // Actions uses the JSON media type to redirect to the archive download.
+  const bytes = await client.binary(
+    `actions/artifacts/${artifact.id}/zip`,
+    'application/vnd.github+json',
+  );
   if (artifact.digest !== `sha256:${sha256(bytes)}`)
     throw new Error('Artifact archive digest mismatch');
   const path = join(directory, `${prefix}.zip`);
