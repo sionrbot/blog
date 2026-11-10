@@ -11,6 +11,7 @@ import {
   candidateReady,
   createFormattedPullRequests,
   createReleaseApi,
+  deferReleaseLabels,
   publishAndRefresh,
   publishReady,
   setInitialRelease,
@@ -435,12 +436,96 @@ it('does not clear tagged when restoring pending fails', async () => {
   expect(fetcher).toHaveBeenCalledOnce();
 });
 
+it('keeps an interrupted release discoverable by a fresh publisher until assets are ready', async () => {
+  const labels = new Set(['autorelease: pending', 'keep']);
+  const connect = () => {
+    const github = {
+      async removeIssueLabels(names: string[], number: number) {
+        expect(number).toBe(25);
+        for (const name of names) labels.delete(name);
+      },
+      async addIssueLabels(names: string[], number: number) {
+        expect(number).toBe(25);
+        for (const name of names) labels.add(name);
+      },
+    };
+    deferReleaseLabels(github);
+    return {
+      // Release Please discovers merged candidates by their pending label.
+      buildReleases: async () => (labels.has('autorelease: pending') ? [candidate] : []),
+      async createReleases() {
+        await github.removeIssueLabels(['autorelease: pending', 'keep'], 25);
+        await github.addIssueLabels(['autorelease: tagged', 'other'], 25);
+      },
+    };
+  };
+  await connect().createReleases();
+  // No cleanup runs: discard the publisher exactly at the former interruption window.
+  expect(labels).toEqual(new Set(['autorelease: pending', 'other']));
+  const restarted = connect();
+  expect(await restarted.buildReleases()).toEqual([candidate]);
+  const prepared = artifacts();
+  await expect(
+    publishReady(
+      restarted,
+      api({
+        prepareArtifacts: async () => prepared,
+        tag: async () => ({ type: 'commit', sha }),
+      }),
+    ),
+  ).resolves.toBe(1);
+  expect(prepared.publish).toHaveBeenCalledOnce();
+});
+
+it.each([403, 204])(
+  'finishes publication labels in order before emitting output (%s)',
+  async (status) => {
+    const directory = await mkdtemp(join(tmpdir(), 'release-label-output-'));
+    const output = join(directory, 'output');
+    vi.stubEnv('GITHUB_OUTPUT', output);
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+      await expect(readFile(output)).rejects.toMatchObject({ code: 'ENOENT' });
+      return init?.method === 'POST' ? Response.json([]) : new Response(null, { status });
+    });
+    try {
+      const publication = createReleaseApi('owner/repo', 'test-token', fetcher).published(
+        candidate,
+      );
+      if (status === 403) {
+        await expect(publication).rejects.toThrow('clear pending');
+        await expect(readFile(output)).rejects.toMatchObject({ code: 'ENOENT' });
+      } else {
+        await publication;
+        expect(await readFile(output, 'utf8')).toContain('release_tag=v1.5.0');
+      }
+      expect(fetcher.mock.calls[0][1]).toMatchObject({
+        method: 'POST',
+        body: JSON.stringify({ labels: ['autorelease: tagged'] }),
+      });
+      expect(fetcher.mock.calls[1][0]).toContain(encodeURIComponent('autorelease: pending'));
+      expect(fetcher.mock.calls[1][1]).toMatchObject({ method: 'DELETE' });
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+it('retains pending if adding the final tagged label fails', async () => {
+  const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 403 }));
+  await expect(
+    createReleaseApi('owner/repo', 'test-token', fetcher).published(candidate),
+  ).rejects.toThrow('mark release PR tagged');
+  expect(fetcher).toHaveBeenCalledOnce();
+});
+
 it('exports the release tag and merge SHA only at the publication boundary', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'release-output-'));
   const output = join(directory, 'output');
   vi.stubEnv('GITHUB_OUTPUT', output);
   try {
-    await createReleaseApi('owner/repo', 'test-token').published(candidate);
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json([]));
+    await createReleaseApi('owner/repo', 'test-token', fetcher).published(candidate);
     expect(await readFile(output, 'utf8')).toBe(`release_tag=v1.5.0\nrelease_sha=${sha}\n`);
   } finally {
     vi.unstubAllEnvs();

@@ -25,6 +25,22 @@ export interface ReleaseApi {
   jsonFile(path: string, sha: string): Promise<Record<string, unknown>>;
 }
 
+export function deferReleaseLabels(
+  github: Pick<GitHub, 'removeIssueLabels' | 'addIssueLabels'>,
+): void {
+  // Keep merged candidates discoverable across runner loss until all assets are ready.
+  const remove = github.removeIssueLabels.bind(github);
+  const add = github.addIssueLabels.bind(github);
+  github.removeIssueLabels = async (labels, number) => {
+    const remaining = labels.filter((label) => label !== 'autorelease: pending');
+    if (remaining.length) await remove(remaining, number);
+  };
+  github.addIssueLabels = async (labels, number) => {
+    const remaining = labels.filter((label) => label !== 'autorelease: tagged');
+    if (remaining.length) await add(remaining, number);
+  };
+}
+
 export async function tagCommit(api: ReleaseApi, name: string): Promise<string | null> {
   let object = await api.tag(name);
   const seen = new Set<string>();
@@ -157,8 +173,8 @@ export async function publishReady<T extends ReleaseCandidate>(
     await api.published(candidate);
     return 1;
   } catch (error) {
-    // Release Please marks the PR tagged before assets are attached. Restore the
-    // pending candidate on any partial failure so publish can retry idempotently.
+    // Restore pending if final label transitions partially failed. Asset failures
+    // retain pending throughout, including when a runner exits without cleanup.
     try {
       await api.retryPublication(candidate);
     } catch (recoveryError) {
@@ -263,6 +279,25 @@ export function createReleaseApi(
       if (!/^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(tag)) {
         throw new Error('Invalid release output tag');
       }
+      const labels = `issues/${candidate.pullRequest.number}/labels`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      const added = await fetcher(`${base}/${labels}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ labels: ['autorelease: tagged'] }),
+      });
+      if (!added.ok) throw new Error('Could not mark release PR tagged');
+      const removed = await fetcher(
+        `${base}/${labels}/${encodeURIComponent('autorelease: pending')}`,
+        { method: 'DELETE', headers },
+      );
+      if (!removed.ok && removed.status !== 404)
+        throw new Error('Could not clear pending release PR label');
       if (process.env.GITHUB_OUTPUT) {
         await appendFile(
           process.env.GITHUB_OUTPUT,
@@ -308,6 +343,7 @@ async function main(): Promise<void> {
     // GitHub caches branch files. A fresh client is needed as well as a fresh
     // Manifest when main advances while a release is being published.
     const github = await GitHub.create({ owner, repo, token });
+    deferReleaseLabels(github);
     // Release publishing needs label transitions, but no automatic PR conversation messages.
     github.commentOnIssue = async () => '';
     return Manifest.fromManifest(github, 'main');

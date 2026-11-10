@@ -147,8 +147,12 @@ Use **Actions → Release → Run workflow**, on `main`, with one of these modes
   PR evidence. This does not bypass failed checks, expired artifacts, or source
   mismatches.
 
-If publication or asset attachment fails, the publisher restores
-`autorelease: pending` and removes `autorelease: tagged` so `publish` can retry.
+The publisher keeps `autorelease: pending` until every deployment asset is
+attached. Release Please's early pending-to-tagged transition is deferred, so a
+runner interruption during publication leaves a discoverable retry candidate.
+After asset completion, the publisher adds `autorelease: tagged` and removes
+`autorelease: pending`. If a caught publication error occurs, it restores the
+pending label and removes the tagged label so `publish` can retry.
 A matching existing tag and already uploaded matching assets are reused; conflicting
 tags or assets require investigation. If label restoration itself fails, inspect
 the reported error and reconcile the labels before retrying. A Release can exist
