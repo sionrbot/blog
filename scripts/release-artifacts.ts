@@ -12,7 +12,7 @@ interface Candidate {
 
 export interface PreparedReleaseArtifacts {
   releaseExists: boolean;
-  publish(): Promise<void>;
+  publish(createdReleaseId?: number): Promise<void>;
   dispose(): Promise<void>;
 }
 
@@ -320,9 +320,15 @@ export async function prepareReleaseArtifacts(
     return {
       releaseExists: existingRelease !== undefined,
       dispose,
-      async publish() {
-        const release = await findRelease();
-        if (!release || release.prerelease) throw new Error('Expected a stable Release');
+      async publish(createdReleaseId?: number) {
+        // The create response identifies the draft before GitHub's release list
+        // catches up. Retries retain the identity discovered during preparation.
+        const releaseId = createdReleaseId ?? existingRelease?.id ?? (await findRelease())?.id;
+        if (typeof releaseId !== 'number' || !Number.isSafeInteger(releaseId) || releaseId <= 0)
+          throw new Error('Expected a valid release ID');
+        const release = await client.json<PublishedRelease>(`releases/${releaseId}`);
+        if (release.id !== releaseId || release.tag_name !== record.tag || release.prerelease)
+          throw new Error('Expected a stable Release with matching identity');
         const files: Record<string, Buffer> = {
           'pages.tar': bundleFiles['pages.tar'],
           'workers.tar': bundleFiles['workers.tar'],

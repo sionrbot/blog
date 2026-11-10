@@ -79,6 +79,8 @@ for an earlier PR head or a different combined tree cannot authorize publication
    Only after all uploads pass digest verification does it publish the Release
    and verify the resulting `vX.Y.Z` tag. This supports immutable releases, which
    prohibit attaching assets after publication.
+   Newly created drafts are addressed by the ID returned from creation, so
+   publication does not depend on the release list updating immediately.
 6. After the assets are ready, the Release workflow calls the deployment workflow
    for that tag. Pages and Workers consume the verified archives. Confirm both
    deployments separately before synchronizing the local repository.
