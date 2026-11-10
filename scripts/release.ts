@@ -1,19 +1,8 @@
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { appendFile } from 'node:fs/promises';
+import { prepareReleaseArtifacts, type PreparedReleaseArtifacts } from './release-artifacts.ts';
 import { Errors, GitHub, Manifest, type ReleasePullRequest } from 'release-please';
-
-export const requiredWorkflows = ['ci.yml', 'e2e.yml'] as const;
-
-export interface WorkflowRun {
-  id: number;
-  run_number: number;
-  run_attempt: number;
-  head_sha: string;
-  head_branch: string;
-  event: string;
-  status: string;
-  conclusion: string | null;
-}
 
 interface GitObject {
   type: string;
@@ -28,16 +17,28 @@ export interface ReleaseCandidate {
 }
 
 export interface ReleaseApi {
-  runs(workflow: string, sha: string): Promise<WorkflowRun[]>;
+  prepareArtifacts(candidate: ReleaseCandidate): Promise<PreparedReleaseArtifacts | null>;
+  retryPublication(candidate: ReleaseCandidate): Promise<void>;
+  published(candidate: ReleaseCandidate): Promise<void>;
   tag(name: string): Promise<GitObject | null>;
   taggedObject(sha: string): Promise<GitObject>;
   jsonFile(path: string, sha: string): Promise<Record<string, unknown>>;
 }
 
-export function latestPushRun(runs: WorkflowRun[], sha: string): WorkflowRun | undefined {
-  return runs
-    .filter((run) => run.head_sha === sha && run.head_branch === 'main' && run.event === 'push')
-    .sort((a, b) => b.run_number - a.run_number || b.run_attempt - a.run_attempt || b.id - a.id)[0];
+export function deferReleaseLabels(
+  github: Pick<GitHub, 'removeIssueLabels' | 'addIssueLabels'>,
+): void {
+  // Keep merged candidates discoverable across runner loss until all assets are ready.
+  const remove = github.removeIssueLabels.bind(github);
+  const add = github.addIssueLabels.bind(github);
+  github.removeIssueLabels = async (labels, number) => {
+    const remaining = labels.filter((label) => label !== 'autorelease: pending');
+    if (remaining.length) await remove(remaining, number);
+  };
+  github.addIssueLabels = async (labels, number) => {
+    const remaining = labels.filter((label) => label !== 'autorelease: tagged');
+    if (remaining.length) await add(remaining, number);
+  };
 }
 
 export async function tagCommit(api: ReleaseApi, name: string): Promise<string | null> {
@@ -61,13 +62,18 @@ export async function verifyTag(api: ReleaseApi, name: string, sha: string): Pro
 export async function candidateReady(
   api: ReleaseApi,
   candidate: ReleaseCandidate,
-): Promise<boolean> {
+): Promise<PreparedReleaseArtifacts | null> {
   const { sha, tag, pullRequest } = candidate;
   if (!/^[a-f0-9]{40}$/.test(sha) || sha !== pullRequest.sha || candidate.path !== '.') {
     throw new Error(`Invalid release commit or package for PR #${pullRequest.number}`);
   }
   const version = tag.version.toString();
-  if (tag.toString() !== `v${version}`) throw new Error('Unexpected release tag format');
+  if (
+    tag.toString() !== `v${version}` ||
+    !/^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(tag.toString())
+  ) {
+    throw new Error('Unexpected release tag format');
+  }
   const [pkg, manifest] = await Promise.all([
     api.jsonFile('package.json', sha),
     api.jsonFile('.release-please-manifest.json', sha),
@@ -76,11 +82,7 @@ export async function candidateReady(
     throw new Error(`Version files at ${sha} do not match ${tag.toString()}`);
   }
   await verifyTag(api, tag.toString(), sha);
-  const runs = await Promise.all(requiredWorkflows.map((workflow) => api.runs(workflow, sha)));
-  return runs.every((workflowRuns) => {
-    const run = latestPushRun(workflowRuns, sha);
-    return run?.status === 'completed' && run.conclusion === 'success';
-  });
+  return api.prepareArtifacts(candidate);
 }
 
 export function setInitialRelease(manifest: {
@@ -143,32 +145,48 @@ export async function publishReady<T extends ReleaseCandidate>(
   // from one concurrent release hide another candidate's partial failure.
   if (candidates.length > 1)
     throw new Error('Multiple pending releases require manual reconciliation');
-  const approved: T[] = [];
-  for (const candidate of candidates) {
-    if (await candidateReady(api, candidate)) approved.push(candidate);
-    else console.log(`Waiting for CI and E2E at ${candidate.sha} (${candidate.tag.toString()}).`);
-  }
-  if (approved.length === 0) {
+  const candidate = candidates[0];
+  if (!candidate) {
     console.log('No release candidates are ready.');
     return 0;
   }
-  // release-please 17.11.2 calls buildReleases again inside createReleases.
-  // Freeze this instance's candidates so a newly merged PR cannot bypass the SHA checks above.
-  manifest.buildReleases = async () => approved;
-  try {
-    await manifest.createReleases();
-  } catch (error) {
-    // 17.11.2 migrates pending/tagged labels, then throws this exact error when
-    // the sole release already exists. Promise.all preserves it without wrapping.
-    // Verify the actual tag below before accepting the retry as successful.
-    if (!(error instanceof Errors.DuplicateReleaseError)) throw error;
+  const prepared = await candidateReady(api, candidate);
+  if (!prepared) {
+    console.log(`Waiting for validated PR artifacts for ${candidate.tag.toString()}.`);
+    return 0;
   }
-  for (const candidate of approved) {
+  // release-please rebuilds internally. Keep exactly the candidate whose PR
+  // evidence and production artifacts were validated before publication.
+  manifest.buildReleases = async () => [candidate];
+  try {
+    try {
+      await manifest.createReleases();
+    } catch (error) {
+      // A retry may find the tag and Release already created. Assets still need
+      // promotion, and a matching tag is mandatory before accepting the retry.
+      if (!(error instanceof Errors.DuplicateReleaseError)) throw error;
+    }
     if (!(await verifyTag(api, candidate.tag.toString(), candidate.sha))) {
       throw new Error(`Published release has no tag: ${candidate.tag.toString()}`);
     }
+    await prepared.publish();
+    await api.published(candidate);
+    return 1;
+  } catch (error) {
+    // Restore pending if final label transitions partially failed. Asset failures
+    // retain pending throughout, including when a runner exits without cleanup.
+    try {
+      await api.retryPublication(candidate);
+    } catch (recoveryError) {
+      throw new AggregateError(
+        [error, recoveryError],
+        'Release failed and could not restore its pending label',
+      );
+    }
+    throw error;
+  } finally {
+    await prepared.dispose();
   }
-  return approved.length;
 }
 
 export async function publishAndRefresh<T extends ReleaseCandidate>(
@@ -220,22 +238,73 @@ export function createReleaseApi(
     return result;
   }
   return {
-    async runs(workflow, sha) {
-      const runs: WorkflowRun[] = [];
-      for (let page = 1; ; page++) {
-        const query = new URLSearchParams({
-          head_sha: sha,
-          branch: 'main',
-          event: 'push',
-          per_page: '100',
-          page: String(page),
-        });
-        const result = await required<{ workflow_runs: WorkflowRun[] }>(
-          `actions/workflows/${encodeURIComponent(workflow)}/runs?${query}`,
+    prepareArtifacts(candidate) {
+      return prepareReleaseArtifacts(repository, token, candidate, fetcher);
+    },
+    async retryPublication(candidate) {
+      // Add pending first: an interrupted recovery must retain a discoverable
+      // candidate. Release Please locates merged candidates by pending labels.
+      const labels = `issues/${candidate.pullRequest.number}/labels`;
+      const added = await fetcher(`${base}/${labels}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({ labels: ['autorelease: pending'] }),
+      });
+      if (!added.ok)
+        throw new Error(`Could not restore pending release PR #${candidate.pullRequest.number}`);
+      const removed = await fetcher(
+        `${base}/${labels}/${encodeURIComponent('autorelease: tagged')}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        },
+      );
+      if (!removed.ok && removed.status !== 404) {
+        throw new Error(
+          `Could not remove tagged label from release PR #${candidate.pullRequest.number}`,
         );
-        runs.push(...result.workflow_runs);
-        if (result.workflow_runs.length < 100) return runs;
       }
+    },
+    async published(candidate) {
+      const tag = candidate.tag.toString();
+      if (!/^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(tag)) {
+        throw new Error('Invalid release output tag');
+      }
+      const labels = `issues/${candidate.pullRequest.number}/labels`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      const added = await fetcher(`${base}/${labels}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ labels: ['autorelease: tagged'] }),
+      });
+      if (!added.ok) throw new Error('Could not mark release PR tagged');
+      const removed = await fetcher(
+        `${base}/${labels}/${encodeURIComponent('autorelease: pending')}`,
+        { method: 'DELETE', headers },
+      );
+      if (!removed.ok && removed.status !== 404)
+        throw new Error('Could not clear pending release PR label');
+      if (process.env.GITHUB_OUTPUT) {
+        await appendFile(
+          process.env.GITHUB_OUTPUT,
+          `release_tag=${tag}\nrelease_sha=${candidate.sha}\n`,
+        );
+      }
+      console.log(`Published ${tag} with validated deployment artifacts.`);
     },
     async tag(name) {
       const ref = await request<{ object: GitObject }>(
@@ -274,6 +343,7 @@ async function main(): Promise<void> {
     // GitHub caches branch files. A fresh client is needed as well as a fresh
     // Manifest when main advances while a release is being published.
     const github = await GitHub.create({ owner, repo, token });
+    deferReleaseLabels(github);
     // Release publishing needs label transitions, but no automatic PR conversation messages.
     github.commentOnIssue = async () => '';
     return Manifest.fromManifest(github, 'main');

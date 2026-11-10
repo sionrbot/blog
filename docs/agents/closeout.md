@@ -10,17 +10,25 @@ local branch are separate conditions.
    review and required checks cover that SHA before merging. If the head changes,
    repeat the review and checks affected by the change. Merge only within the
    user's authorization and use an expected-head check when supported.
-2. Record the actual merge SHA. Inspect the latest CI, E2E, and deployment runs
-   for that exact commit and the intended event. A green run for another commit
-   does not establish success for this one. Check failed or missing jobs instead
-   of treating a completed workflow as successful.
+2. Record the actual merge SHA and the final PR head SHA. Inspect the latest
+   PR-triggered CI and E2E runs for that head. These workflows do not run again
+   on `main`; their absence on the merge commit is expected. Check failures,
+   cancellations, and missing required jobs in the PR runs instead of treating
+   workflow completion as success.
 3. Follow the release lifecycle in [Releasing Sionrbot blog](../releasing.md).
-   Determine whether this change has a release PR, a merged release awaiting
-   publication, or no independent release. Inspect any resulting release merge
-   SHA separately. Confirm the expected tag and published Release, and check
-   deployments separately: publication does not certify either hosting target.
-   Wait for work already authorized to finish. An open release PR does not grant
-   permission to merge it; report that boundary when publishing is outside scope.
+   Determine whether this change is waiting for a Release PR, is part of a merged
+   release awaiting publication, or has no independent release. For a Release PR,
+   record its head and merge SHAs separately. Verify the published tag resolves
+   to that merge SHA and `release-manifest.json` records successful CI/E2E PR
+   evidence with the same Git tree. Confirm both archive digests and the two
+   deployment jobs for that release tag. Deployment may run within the Release
+   workflow through a reusable workflow, so inspect its jobs rather than expecting
+   a separate push-triggered deployment run.
+4. Wait for authorized release and deployment work to reach its endpoint, then
+   synchronize locally. An open Release PR does not grant permission to merge it;
+   report that boundary when publication is outside scope. Publication alone
+   does not certify either hosting target, and ordinary feature merges do not
+   deploy automatically.
 
 Proceed to final synchronization after the relevant release and deployment work
 has reached its authorized endpoint. If checks fail or authorized work remains
@@ -70,7 +78,8 @@ Replace the example PR number with the delivered PR. Optional `--remote` and
 `main`. Git, an authenticated GitHub CLI, and remote read access are required.
 
 The script emits JSON containing repository state, live remote state, PR metadata,
-and workflow runs for assessment. It does not fetch, change branches, edit files,
+and separate workflow snapshots for the PR head, merge commit, and current remote
+base. Run it again with the Release PR number when checking release delivery. It does not fetch, change branches, edit files,
 delete refs, merge PRs, or publish releases. Exit codes describe the snapshot:
 
 | Code | Meaning                                                                   |
@@ -81,7 +90,7 @@ delete refs, merge PRs, or publish releases. Exit codes describe the snapshot:
 
 A successful exit is not approval to delete a branch and does not certify CI,
 E2E, deployment, or release completion. Assess those independently using the
-exact commits recorded above.
+recorded PR heads, merge commits, release tag, and published manifest.
 
 Compare the local target SHA with the live remote branch SHA, not only a cached
 tracking ref. If the remote advanced during closeout, inspect the new commits and

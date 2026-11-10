@@ -1,3 +1,6 @@
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { Errors } from 'release-please';
 import { DefaultChangelogNotes } from 'release-please/build/src/changelog-notes/default.js';
@@ -8,14 +11,13 @@ import {
   candidateReady,
   createFormattedPullRequests,
   createReleaseApi,
-  latestPushRun,
+  deferReleaseLabels,
   publishAndRefresh,
   publishReady,
   setInitialRelease,
   tagCommit,
   type ReleaseApi,
   type ReleaseCandidate,
-  type WorkflowRun,
 } from '../../scripts/release';
 
 const sha = 'a'.repeat(40);
@@ -26,19 +28,11 @@ const candidate: ReleaseCandidate = {
   pullRequest: { number: 25, sha },
   tag: { toString: () => 'v1.5.0', version: { toString: () => '1.5.0' } },
 };
-const run = (overrides: Partial<WorkflowRun> = {}): WorkflowRun => ({
-  id: 1,
-  run_number: 1,
-  run_attempt: 1,
-  head_sha: sha,
-  head_branch: 'main',
-  event: 'push',
-  status: 'completed',
-  conclusion: 'success',
-  ...overrides,
-});
+const artifacts = () => ({ publish: vi.fn(async () => {}), dispose: vi.fn(async () => {}) });
 const api = (overrides: Partial<ReleaseApi> = {}): ReleaseApi => ({
-  runs: async () => [run()],
+  prepareArtifacts: async () => artifacts(),
+  retryPublication: async () => {},
+  published: async () => {},
   tag: async () => null,
   taggedObject: async () => ({ type: 'commit', sha }),
   jsonFile: async (path) => (path === 'package.json' ? { version: '1.5.0' } : { '.': '1.5.0' }),
@@ -46,46 +40,22 @@ const api = (overrides: Partial<ReleaseApi> = {}): ReleaseApi => ({
 });
 
 describe('release commit checks', () => {
-  it('requires both workflows to pass for the exact merge commit', async () => {
-    const runs = vi.fn(async () => [run()]);
-    await expect(candidateReady(api({ runs }), candidate)).resolves.toBe(true);
-    expect(runs.mock.calls).toEqual([
-      ['ci.yml', sha],
-      ['e2e.yml', sha],
-    ]);
+  it('requires validated Release PR artifacts after source metadata checks', async () => {
+    const prepared = artifacts();
+    const prepareArtifacts = vi.fn(async () => prepared);
+    await expect(candidateReady(api({ prepareArtifacts }), candidate)).resolves.toBe(prepared);
+    expect(prepareArtifacts).toHaveBeenCalledExactlyOnceWith(candidate);
     await expect(
-      candidateReady(
-        api({
-          runs: async (workflow) =>
-            workflow === 'ci.yml' ? [run()] : [run({ head_sha: otherSha })],
-        }),
-        candidate,
-      ),
-    ).resolves.toBe(false);
+      candidateReady(api({ prepareArtifacts: async () => null }), candidate),
+    ).resolves.toBeNull();
   });
 
-  it('does not accept PR runs, another branch, or an older successful run', () => {
-    expect(
-      latestPushRun([run({ event: 'pull_request' }), run({ head_branch: 'topic' })], sha),
-    ).toBeUndefined();
-    expect(
-      latestPushRun([run(), run({ id: 2, run_number: 2, conclusion: 'failure' })], sha)?.conclusion,
-    ).toBe('failure');
-    expect(
-      latestPushRun([run(), run({ run_attempt: 2, status: 'in_progress', conclusion: null })], sha)
-        ?.status,
-    ).toBe('in_progress');
-  });
-
-  it('waits for a failed or running latest attempt', async () => {
-    for (const latest of [
-      run({ run_attempt: 2, conclusion: 'failure' }),
-      run({ run_attempt: 2, status: 'in_progress', conclusion: null }),
-    ]) {
-      await expect(
-        candidateReady(api({ runs: async () => [run(), latest] }), candidate),
-      ).resolves.toBe(false);
-    }
+  it('does not prepare artifacts for mismatched version metadata', async () => {
+    const prepareArtifacts = vi.fn(async () => artifacts());
+    await expect(
+      candidateReady(api({ prepareArtifacts, jsonFile: async () => ({}) }), candidate),
+    ).rejects.toThrow('Version files');
+    expect(prepareArtifacts).not.toHaveBeenCalled();
   });
 
   it('rejects mismatched merge commits and version files', async () => {
@@ -138,7 +108,7 @@ describe('release commit checks', () => {
     await expect(
       publishReady(
         { buildReleases: async () => [candidate], createReleases },
-        api({ runs: async () => [] }),
+        api({ prepareArtifacts: async () => null }),
       ),
     ).resolves.toBe(0);
     expect(createReleases).not.toHaveBeenCalled();
@@ -168,6 +138,103 @@ describe('release commit checks', () => {
         api({ tag: async () => ({ type: 'commit', sha }) }),
       ),
     ).rejects.toThrow('Label update failed');
+  });
+
+  it('promotes artifacts only after tag verification and reports publication afterwards', async () => {
+    const prepared = artifacts();
+    const published = vi.fn(async () => {
+      expect(prepared.publish).toHaveBeenCalledOnce();
+    });
+    await expect(
+      publishReady(
+        {
+          buildReleases: async () => [candidate],
+          createReleases: async () => {},
+        },
+        api({
+          prepareArtifacts: async () => prepared,
+          tag: async () => ({ type: 'commit', sha }),
+          published,
+        }),
+      ),
+    ).resolves.toBe(1);
+    expect(published).toHaveBeenCalledExactlyOnceWith(candidate);
+    expect(prepared.dispose).toHaveBeenCalledOnce();
+  });
+
+  it.each(['create', 'tag', 'assets'])(
+    'restores a discoverable pending candidate and disposes artifacts after %s failure',
+    async (stage) => {
+      const prepared = artifacts();
+      if (stage === 'assets') prepared.publish.mockRejectedValue(new Error('Asset upload failed'));
+      const retryPublication = vi.fn(async () => {});
+      const published = vi.fn(async () => {});
+      await expect(
+        publishReady(
+          {
+            buildReleases: async () => [candidate],
+            createReleases: async () => {
+              if (stage === 'create') throw new Error('Create failed');
+            },
+          },
+          api({
+            prepareArtifacts: async () => prepared,
+            tag: async () => (stage === 'tag' ? null : { type: 'commit', sha }),
+            retryPublication,
+            published,
+          }),
+        ),
+      ).rejects.toThrow();
+      expect(retryPublication).toHaveBeenCalledExactlyOnceWith(candidate);
+      expect(prepared.dispose).toHaveBeenCalledOnce();
+      expect(published).not.toHaveBeenCalled();
+      if (stage !== 'assets') expect(prepared.publish).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps the original publication failure when pending-label recovery also fails', async () => {
+    const prepared = artifacts();
+    const original = new Error('Upload failed');
+    const recovery = new Error('Labels failed');
+    prepared.publish.mockRejectedValue(original);
+    await expect(
+      publishReady(
+        {
+          buildReleases: async () => [candidate],
+          createReleases: async () => {},
+        },
+        api({
+          prepareArtifacts: async () => prepared,
+          tag: async () => ({ type: 'commit', sha }),
+          retryPublication: async () => {
+            throw recovery;
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({ errors: [original, recovery] });
+    expect(prepared.dispose).toHaveBeenCalledOnce();
+  });
+
+  it('repairs assets on an existing matching Release without rebuilding', async () => {
+    const prepared = artifacts();
+    const duplicate = new Error('Already released');
+    Object.setPrototypeOf(duplicate, Errors.DuplicateReleaseError.prototype);
+    await expect(
+      publishReady(
+        {
+          buildReleases: async () => [candidate],
+          createReleases: async () => {
+            throw duplicate;
+          },
+        },
+        api({
+          prepareArtifacts: async () => prepared,
+          tag: async () => ({ type: 'commit', sha }),
+        }),
+      ),
+    ).resolves.toBe(1);
+    expect(prepared.publish).toHaveBeenCalledOnce();
+    expect(prepared.dispose).toHaveBeenCalledOnce();
   });
 
   it('rejects multiple pending releases before any publishing begins', async () => {
@@ -216,7 +283,7 @@ describe('release commit checks', () => {
           buildReleases: async () => [candidate],
           createReleases: vi.fn(),
         },
-        api({ runs: async () => [] }),
+        api({ prepareArtifacts: async () => null }),
         reload,
       ),
     ).resolves.toBe(0);
@@ -238,7 +305,7 @@ describe('release commit checks', () => {
             buildReleases: async () => candidates,
             createReleases: vi.fn(),
           },
-          api({ runs: async () => [] }),
+          api({ prepareArtifacts: async () => null }),
           reload,
           true,
         ),
@@ -345,19 +412,123 @@ it('formats real release-please updates before creating the release PR', async (
   expect(scan).toHaveBeenCalledTimes(1);
 });
 
-it('paginates workflow runs without filtering out unsuccessful states', async () => {
+it('restores the pending candidate before clearing the tagged label for retries', async () => {
   const fetcher = vi
     .fn<typeof fetch>()
-    .mockResolvedValueOnce(
-      Response.json({ workflow_runs: Array.from({ length: 100 }, () => run()) }),
-    )
-    .mockResolvedValueOnce(
-      Response.json({ workflow_runs: [run({ run_number: 2, conclusion: 'failure' })] }),
-    );
+    .mockResolvedValueOnce(Response.json([]))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
   const client = createReleaseApi('owner/repo', 'test-token', fetcher);
-  const runs = await client.runs('ci.yml', sha);
-  expect(runs).toHaveLength(101);
-  expect(latestPushRun(runs, sha)?.conclusion).toBe('failure');
-  expect(fetcher.mock.calls[1][0]).toContain('page=2');
-  expect(fetcher.mock.calls[0][0]).not.toContain('status=');
+  await client.retryPublication(candidate);
+  expect(fetcher.mock.calls[0][0]).toBe('https://api.github.com/repos/owner/repo/issues/25/labels');
+  expect(fetcher.mock.calls[0][1]).toMatchObject({
+    method: 'POST',
+    body: JSON.stringify({ labels: ['autorelease: pending'] }),
+  });
+  expect(fetcher.mock.calls[1][0]).toContain(encodeURIComponent('autorelease: tagged'));
+  expect(fetcher.mock.calls[1][1]).toMatchObject({ method: 'DELETE' });
+});
+
+it('does not clear tagged when restoring pending fails', async () => {
+  const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 403 }));
+  await expect(
+    createReleaseApi('owner/repo', 'test-token', fetcher).retryPublication(candidate),
+  ).rejects.toThrow('restore pending');
+  expect(fetcher).toHaveBeenCalledOnce();
+});
+
+it('keeps an interrupted release discoverable by a fresh publisher until assets are ready', async () => {
+  const labels = new Set(['autorelease: pending', 'keep']);
+  const connect = () => {
+    const github = {
+      async removeIssueLabels(names: string[], number: number) {
+        expect(number).toBe(25);
+        for (const name of names) labels.delete(name);
+      },
+      async addIssueLabels(names: string[], number: number) {
+        expect(number).toBe(25);
+        for (const name of names) labels.add(name);
+      },
+    };
+    deferReleaseLabels(github);
+    return {
+      // Release Please discovers merged candidates by their pending label.
+      buildReleases: async () => (labels.has('autorelease: pending') ? [candidate] : []),
+      async createReleases() {
+        await github.removeIssueLabels(['autorelease: pending', 'keep'], 25);
+        await github.addIssueLabels(['autorelease: tagged', 'other'], 25);
+      },
+    };
+  };
+  await connect().createReleases();
+  // No cleanup runs: discard the publisher exactly at the former interruption window.
+  expect(labels).toEqual(new Set(['autorelease: pending', 'other']));
+  const restarted = connect();
+  expect(await restarted.buildReleases()).toEqual([candidate]);
+  const prepared = artifacts();
+  await expect(
+    publishReady(
+      restarted,
+      api({
+        prepareArtifacts: async () => prepared,
+        tag: async () => ({ type: 'commit', sha }),
+      }),
+    ),
+  ).resolves.toBe(1);
+  expect(prepared.publish).toHaveBeenCalledOnce();
+});
+
+it.each([403, 204])(
+  'finishes publication labels in order before emitting output (%s)',
+  async (status) => {
+    const directory = await mkdtemp(join(tmpdir(), 'release-label-output-'));
+    const output = join(directory, 'output');
+    vi.stubEnv('GITHUB_OUTPUT', output);
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+      await expect(readFile(output)).rejects.toMatchObject({ code: 'ENOENT' });
+      return init?.method === 'POST' ? Response.json([]) : new Response(null, { status });
+    });
+    try {
+      const publication = createReleaseApi('owner/repo', 'test-token', fetcher).published(
+        candidate,
+      );
+      if (status === 403) {
+        await expect(publication).rejects.toThrow('clear pending');
+        await expect(readFile(output)).rejects.toMatchObject({ code: 'ENOENT' });
+      } else {
+        await publication;
+        expect(await readFile(output, 'utf8')).toContain('release_tag=v1.5.0');
+      }
+      expect(fetcher.mock.calls[0][1]).toMatchObject({
+        method: 'POST',
+        body: JSON.stringify({ labels: ['autorelease: tagged'] }),
+      });
+      expect(fetcher.mock.calls[1][0]).toContain(encodeURIComponent('autorelease: pending'));
+      expect(fetcher.mock.calls[1][1]).toMatchObject({ method: 'DELETE' });
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+it('retains pending if adding the final tagged label fails', async () => {
+  const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 403 }));
+  await expect(
+    createReleaseApi('owner/repo', 'test-token', fetcher).published(candidate),
+  ).rejects.toThrow('mark release PR tagged');
+  expect(fetcher).toHaveBeenCalledOnce();
+});
+
+it('exports the release tag and merge SHA only at the publication boundary', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'release-output-'));
+  const output = join(directory, 'output');
+  vi.stubEnv('GITHUB_OUTPUT', output);
+  try {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json([]));
+    await createReleaseApi('owner/repo', 'test-token', fetcher).published(candidate);
+    expect(await readFile(output, 'utf8')).toBe(`release_tag=v1.5.0\nrelease_sha=${sha}\n`);
+  } finally {
+    vi.unstubAllEnvs();
+    await rm(directory, { recursive: true, force: true });
+  }
 });

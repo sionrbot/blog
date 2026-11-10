@@ -39,8 +39,11 @@ See [docs/deploy.md](docs/deploy.md).
 
 ## Releases
 
-Release PRs maintain version numbers and changelog entries. Merging a release PR
-publishes a tag and GitHub Release after its merge commit passes CI and E2E.
+Release PRs maintain version numbers and changelog entries. CI and E2E validate
+the Release PR and prepare production archives before merge. Merging it publishes
+a tag and GitHub Release after verifying the merged source matches that evidence,
+then deploys the same archives to GitHub Pages and Cloudflare Workers. Ordinary
+`main` pushes do not deploy.
 See [docs/releasing.md](docs/releasing.md) for setup, commit conventions, and retries.
 
 ## Test

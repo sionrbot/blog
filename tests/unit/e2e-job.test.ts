@@ -7,10 +7,9 @@ const passed = {
   pnpm: { outcome: 'success' },
   dependencies: { outcome: 'success' },
   browsers: { outcome: 'success' },
-  browser_build: { outcome: 'success' },
+  baseline_build: { outcome: 'success' },
   browser: { outcome: 'success' },
   browser_artifacts: { outcome: 'success' },
-  agent_build: { outcome: 'success' },
   agent: { outcome: 'success' },
   agent_artifacts: { outcome: 'success' },
 };
@@ -19,20 +18,26 @@ describe('combined E2E job gate', () => {
   it.each(['default', 'rendering', 'configured-forms'])(
     'accepts complete %s coverage',
     (variant) => {
-      expect(e2eJobFailures(variant, passed, false)).toEqual([]);
+      const steps = {
+        ...passed,
+        baseline_build: { outcome: variant === 'default' ? 'success' : 'skipped' },
+      };
+      expect(e2eJobFailures(variant, steps, false)).toEqual([]);
     },
   );
 
   it('allows only the deliberate i18n AI skip', () => {
     const steps = {
       ...passed,
-      agent_build: { outcome: 'skipped' },
+      baseline_build: { outcome: 'skipped' },
       agent: { outcome: 'skipped' },
       agent_artifacts: { outcome: 'skipped' },
     };
     expect(e2eJobFailures('i18n', steps, false)).toEqual([]);
     expect(e2eJobFailures('default', steps, false)).toHaveLength(3);
-    expect(e2eJobFailures('i18n', passed, false)).toHaveLength(3);
+    expect(
+      e2eJobFailures('i18n', { ...passed, baseline_build: { outcome: 'skipped' } }, false),
+    ).toHaveLength(2);
   });
 
   it.each(Object.keys(passed))('rejects failure, cancellation, skip or omission of %s', (id) => {
@@ -45,7 +50,7 @@ describe('combined E2E job gate', () => {
 
   it('does not let a passing AI stage hide a browser failure', () => {
     expect(
-      e2eJobFailures('rendering', { ...passed, browser: { outcome: 'failure' } }, false),
+      e2eJobFailures('default', { ...passed, browser: { outcome: 'failure' } }, false),
     ).toEqual(['browser: expected success, got failure']);
   });
 
@@ -62,3 +67,15 @@ describe('combined E2E job gate', () => {
     expect(() => e2eJobFailures('unknown', passed, false)).toThrow('Unknown E2E variant');
   });
 });
+
+// A missing fixture-build skip must not hide a workflow wiring mistake.
+it.each(['rendering', 'configured-forms', 'i18n'])(
+  'rejects unexpected root build outcomes for %s',
+  (variant) => {
+    for (const outcome of ['success', 'failure', 'cancelled', undefined]) {
+      expect(e2eJobFailures(variant, { ...passed, baseline_build: { outcome } }, false)).toContain(
+        'baseline_build: expected skipped for fixture variant',
+      );
+    }
+  },
+);
