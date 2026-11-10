@@ -159,14 +159,27 @@ export async function publishReady<T extends ReleaseCandidate>(
   // a draft so immutable releases are not locked before assets are attached.
   manifest.buildReleases = async () => [{ ...candidate, draft: true }];
   try {
+    let createdReleaseId: number | undefined;
     try {
-      if (!prepared.releaseExists) await manifest.createReleases();
+      if (!prepared.releaseExists) {
+        const created = await manifest.createReleases();
+        if (
+          !Array.isArray(created) ||
+          created.length !== 1 ||
+          !created[0] ||
+          created[0].tagName !== candidate.tag.toString() ||
+          !Number.isSafeInteger(created[0].id) ||
+          created[0].id <= 0
+        )
+          throw new Error('Unexpected created release identity');
+        createdReleaseId = created[0].id;
+      }
     } catch (error) {
       // A concurrent attempt may have created the draft. Promotion revalidates
       // the release identity and asset digests before publishing or accepting it.
       if (!(error instanceof Errors.DuplicateReleaseError)) throw error;
     }
-    await prepared.publish();
+    await prepared.publish(createdReleaseId);
     if (!(await verifyTag(api, candidate.tag.toString(), candidate.sha))) {
       throw new Error(`Published release has no tag: ${candidate.tag.toString()}`);
     }

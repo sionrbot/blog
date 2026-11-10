@@ -115,6 +115,7 @@ async function fixture({
       { id: 200, name: 'e2e-evidence-1', expired: false, digest: `sha256:${sha256(e2eZip)}` },
     ],
     release: { id: 99, tag_name: tag, draft: true, prerelease: false, target_commitish: mergeSha },
+    listRelease: true,
     publications: 0,
     failPublication: false,
     assets: [] as { id: number; name: string; state: string; digest: string }[],
@@ -151,7 +152,8 @@ async function fixture({
       return Response.json(state.release);
     }
     const json: Record<string, unknown> = {
-      releases: [state.release],
+      releases: state.listRelease ? [state.release] : [],
+      'releases/99': state.release,
       'pulls/42': state.pr,
       'actions/workflows/ci.yml/runs': { workflow_runs: state.ci },
       'actions/workflows/e2e.yml/runs': { workflow_runs: state.e2e },
@@ -238,6 +240,54 @@ describe('release evidence contract', () => {
 });
 
 describe('prepare release artifacts', () => {
+  it('publishes a newly created release by ID before it appears in listing', async () => {
+    const f = await fixture();
+    f.state.listRelease = false;
+    const prepared = await prepareReleaseArtifacts(repository, 'token', candidate, f.fetcher);
+    try {
+      expect(prepared!.releaseExists).toBe(false);
+      await prepared!.publish(99);
+      expect(f.state.publications).toBe(1);
+      expect(f.state.requests.filter((path) => path === 'releases')).toHaveLength(1);
+      expect(f.state.requests).toContain('releases/99');
+    } finally {
+      await prepared!.dispose();
+    }
+  });
+
+  it('retains a discovered draft ID when a later listing would omit it', async () => {
+    const f = await fixture();
+    const prepared = await prepareReleaseArtifacts(repository, 'token', candidate, f.fetcher);
+    try {
+      expect(prepared!.releaseExists).toBe(true);
+      f.state.listRelease = false;
+      await prepared!.publish();
+      expect(f.state.publications).toBe(1);
+      expect(f.state.requests.filter((path) => path === 'releases')).toHaveLength(1);
+    } finally {
+      await prepared!.dispose();
+    }
+  });
+
+  it.each(['id', 'tag', 'target'])(
+    'rejects a release fetched by ID with a conflicting %s before upload',
+    async (field) => {
+      const f = await fixture();
+      f.state.listRelease = false;
+      const prepared = await prepareReleaseArtifacts(repository, 'token', candidate, f.fetcher);
+      try {
+        if (field === 'id') f.state.release.id = 98;
+        if (field === 'tag') f.state.release.tag_name = 'v9.0.0';
+        if (field === 'target') f.state.release.target_commitish = headSha;
+        await expect(prepared!.publish(99)).rejects.toThrow();
+        expect(f.state.uploads).toEqual([]);
+        expect(f.state.publications).toBe(0);
+      } finally {
+        await prepared!.dispose();
+      }
+    },
+  );
+
   it.each(['unmerged', 'sha', 'base', 'base-repository', 'head-repository', 'branch'])(
     'rejects an invalid release PR: %s',
     async (change) => {

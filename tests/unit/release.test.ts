@@ -28,6 +28,7 @@ const candidate: ReleaseCandidate = {
   pullRequest: { number: 25, sha },
   tag: { toString: () => 'v1.5.0', version: { toString: () => '1.5.0' } },
 };
+const createdReleases = () => [{ id: 99, tagName: candidate.tag.toString() }];
 const artifacts = () => ({
   releaseExists: false,
   publish: vi.fn(async () => {}),
@@ -96,6 +97,7 @@ describe('release commit checks', () => {
       async createReleases() {
         expect(await this.buildReleases()).toEqual([{ ...candidate, draft: true }]);
         published = true;
+        return createdReleases();
       },
     };
     await expect(
@@ -116,6 +118,29 @@ describe('release commit checks', () => {
       ),
     ).resolves.toBe(0);
     expect(createReleases).not.toHaveBeenCalled();
+  });
+
+  it.each(
+    [
+      undefined,
+      [],
+      [null],
+      [{ id: 99, tagName: 'v9.0.0' }],
+      [{ id: 0, tagName: 'v1.5.0' }],
+      [{ id: 1.5, tagName: 'v1.5.0' }],
+      [{ id: '99', tagName: 'v1.5.0' }],
+      [...createdReleases(), ...createdReleases()],
+    ].map((created) => ({ created })),
+  )('rejects unexpected created release identity: %j', async ({ created }) => {
+    const prepared = artifacts();
+    await expect(
+      publishReady(
+        { buildReleases: async () => [candidate], createReleases: async () => created },
+        api({ prepareArtifacts: async () => prepared }),
+      ),
+    ).rejects.toThrow('Unexpected created release identity');
+    expect(prepared.publish).not.toHaveBeenCalled();
+    expect(prepared.dispose).toHaveBeenCalledOnce();
   });
 
   it('recovers only a duplicate release with the expected tag', async () => {
@@ -162,6 +187,7 @@ describe('release commit checks', () => {
           async createReleases() {
             expect(await this.buildReleases()).toEqual([{ ...candidate, draft: true }]);
             createdDraft = true;
+            return createdReleases();
           },
         },
         api({
@@ -172,6 +198,7 @@ describe('release commit checks', () => {
       ),
     ).resolves.toBe(1);
     expect(published).toHaveBeenCalledExactlyOnceWith(candidate);
+    expect(prepared.publish).toHaveBeenCalledExactlyOnceWith(99);
     expect(prepared.dispose).toHaveBeenCalledOnce();
   });
 
@@ -188,6 +215,7 @@ describe('release commit checks', () => {
             buildReleases: async () => [candidate],
             createReleases: async () => {
               if (stage === 'create') throw new Error('Create failed');
+              return createdReleases();
             },
           },
           api({
@@ -214,7 +242,7 @@ describe('release commit checks', () => {
       publishReady(
         {
           buildReleases: async () => [candidate],
-          createReleases: async () => {},
+          createReleases: async () => createdReleases(),
         },
         api({
           prepareArtifacts: async () => prepared,
@@ -299,6 +327,7 @@ describe('release commit checks', () => {
           buildReleases: async () => [candidate],
           createReleases: async () => {
             published = true;
+            return createdReleases();
           },
         },
         api({ tag: async () => (published ? { type: 'commit', sha } : null) }),
@@ -491,6 +520,7 @@ it('keeps an interrupted release discoverable by a fresh publisher until assets 
       async createReleases() {
         await github.removeIssueLabels(['autorelease: pending', 'keep'], 25);
         await github.addIssueLabels(['autorelease: tagged', 'other'], 25);
+        return createdReleases();
       },
     };
   };
