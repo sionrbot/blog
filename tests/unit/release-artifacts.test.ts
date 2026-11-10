@@ -114,7 +114,9 @@ async function fixture({
     e2eArtifacts: [
       { id: 200, name: 'e2e-evidence-1', expired: false, digest: `sha256:${sha256(e2eZip)}` },
     ],
-    release: { id: 99, tag_name: tag, draft: false, prerelease: false },
+    release: { id: 99, tag_name: tag, draft: true, prerelease: false, target_commitish: mergeSha },
+    publications: 0,
+    failPublication: false,
     assets: [] as { id: number; name: string; state: string; digest: string }[],
     bytes: new Map<number, Buffer>(),
     uploads: [] as string[],
@@ -126,6 +128,7 @@ async function fixture({
     const path = url.pathname.replace(`/repos/${repository}/`, '');
     state.requests.push(path);
     if (url.hostname === 'uploads.github.com') {
+      if (!state.release.draft) return new Response('Immutable release', { status: 422 });
       const name = url.searchParams.get('name')!;
       const bytes = Buffer.from(init?.body as Uint8Array);
       const asset = {
@@ -139,7 +142,16 @@ async function fixture({
       state.uploads.push(name);
       return Response.json(asset);
     }
+    if (path === 'releases/99' && init?.method === 'PATCH') {
+      if (state.failPublication) return new Response('Temporary failure', { status: 503 });
+      expect(state.uploads).toContain('release-manifest.json');
+      expect(JSON.parse(init.body as string)).toEqual({ draft: false, make_latest: 'true' });
+      state.release.draft = false;
+      state.publications++;
+      return Response.json(state.release);
+    }
     const json: Record<string, unknown> = {
+      releases: [state.release],
       'pulls/42': state.pr,
       'actions/workflows/ci.yml/runs': { workflow_runs: state.ci },
       'actions/workflows/e2e.yml/runs': { workflow_runs: state.e2e },
@@ -175,6 +187,7 @@ async function fixture({
     state.bytes.set(id, bytes);
   }
   function published() {
+    state.release.draft = false;
     addAsset('pages.tar', pages);
     addAsset('workers.tar', workers);
     addAsset('release-manifest.json', Buffer.from(JSON.stringify(record)));
@@ -289,6 +302,7 @@ describe('prepare release artifacts', () => {
       expect(f.state.uploads).toEqual(['pages.tar', 'workers.tar', 'release-manifest.json']);
       await prepared!.publish();
       expect(f.state.uploads).toHaveLength(3);
+      expect(f.state.publications).toBe(1);
       const output = await temporary();
       expect(await downloadRelease(repository, 'token', tag, output, f.fetcher)).toEqual(f.record);
       expect(await readFile(join(output, 'pages.tar'))).toEqual(pages);
@@ -308,6 +322,39 @@ describe('prepare release artifacts', () => {
       await prepared?.dispose();
     }
   });
+  it('resumes a fully uploaded draft after publication fails without uploading again', async () => {
+    const f = await fixture();
+    f.state.failPublication = true;
+    const prepared = await prepareReleaseArtifacts(repository, 'token', candidate, f.fetcher);
+    try {
+      expect(prepared!.releaseExists).toBe(true);
+      await expect(prepared!.publish()).rejects.toThrow('503');
+      expect(f.state.release.draft).toBe(true);
+      expect(f.state.uploads).toHaveLength(3);
+      f.state.failPublication = false;
+      await prepared!.publish();
+      expect(f.state.uploads).toHaveLength(3);
+      expect(f.state.publications).toBe(1);
+    } finally {
+      await prepared?.dispose();
+    }
+  });
+  it.each(['wrong-target', 'published-incomplete'])(
+    'refuses unsafe publication before any upload: %s',
+    async (change) => {
+      const f = await fixture();
+      if (change === 'wrong-target') f.state.release.target_commitish = headSha;
+      else f.state.release.draft = false;
+      const prepared = await prepareReleaseArtifacts(repository, 'token', candidate, f.fetcher);
+      try {
+        await expect(prepared!.publish()).rejects.toThrow();
+        expect(f.state.uploads).toEqual([]);
+        expect(f.state.publications).toBe(0);
+      } finally {
+        await prepared?.dispose();
+      }
+    },
+  );
 });
 
 describe('release download', () => {

@@ -28,7 +28,11 @@ const candidate: ReleaseCandidate = {
   pullRequest: { number: 25, sha },
   tag: { toString: () => 'v1.5.0', version: { toString: () => '1.5.0' } },
 };
-const artifacts = () => ({ publish: vi.fn(async () => {}), dispose: vi.fn(async () => {}) });
+const artifacts = () => ({
+  releaseExists: false,
+  publish: vi.fn(async () => {}),
+  dispose: vi.fn(async () => {}),
+});
 const api = (overrides: Partial<ReleaseApi> = {}): ReleaseApi => ({
   prepareArtifacts: async () => artifacts(),
   retryPublication: async () => {},
@@ -90,7 +94,7 @@ describe('release commit checks', () => {
     const manifest = {
       buildReleases: scan,
       async createReleases() {
-        expect(await this.buildReleases()).toEqual([candidate]);
+        expect(await this.buildReleases()).toEqual([{ ...candidate, draft: true }]);
         published = true;
       },
     };
@@ -140,8 +144,14 @@ describe('release commit checks', () => {
     ).rejects.toThrow('Label update failed');
   });
 
-  it('promotes artifacts only after tag verification and reports publication afterwards', async () => {
+  it('publishes draft assets before requiring a tag and reports publication afterwards', async () => {
     const prepared = artifacts();
+    let createdDraft = false;
+    let released = false;
+    prepared.publish.mockImplementation(async () => {
+      expect(createdDraft).toBe(true);
+      released = true;
+    });
     const published = vi.fn(async () => {
       expect(prepared.publish).toHaveBeenCalledOnce();
     });
@@ -149,11 +159,14 @@ describe('release commit checks', () => {
       publishReady(
         {
           buildReleases: async () => [candidate],
-          createReleases: async () => {},
+          async createReleases() {
+            expect(await this.buildReleases()).toEqual([{ ...candidate, draft: true }]);
+            createdDraft = true;
+          },
         },
         api({
           prepareArtifacts: async () => prepared,
-          tag: async () => ({ type: 'commit', sha }),
+          tag: async () => (released ? { type: 'commit', sha } : null),
           published,
         }),
       ),
@@ -188,7 +201,7 @@ describe('release commit checks', () => {
       expect(retryPublication).toHaveBeenCalledExactlyOnceWith(candidate);
       expect(prepared.dispose).toHaveBeenCalledOnce();
       expect(published).not.toHaveBeenCalled();
-      if (stage !== 'assets') expect(prepared.publish).not.toHaveBeenCalled();
+      if (stage === 'create') expect(prepared.publish).not.toHaveBeenCalled();
     },
   );
 
@@ -233,6 +246,28 @@ describe('release commit checks', () => {
         }),
       ),
     ).resolves.toBe(1);
+    expect(prepared.publish).toHaveBeenCalledOnce();
+    expect(prepared.dispose).toHaveBeenCalledOnce();
+  });
+
+  it('resumes an existing draft without creating a second draft', async () => {
+    const prepared = artifacts();
+    prepared.releaseExists = true;
+    let released = false;
+    prepared.publish.mockImplementation(async () => {
+      released = true;
+    });
+    const createReleases = vi.fn();
+    await expect(
+      publishReady(
+        { buildReleases: async () => [candidate], createReleases },
+        api({
+          prepareArtifacts: async () => prepared,
+          tag: async () => (released ? { type: 'commit', sha } : null),
+        }),
+      ),
+    ).resolves.toBe(1);
+    expect(createReleases).not.toHaveBeenCalled();
     expect(prepared.publish).toHaveBeenCalledOnce();
     expect(prepared.dispose).toHaveBeenCalledOnce();
   });

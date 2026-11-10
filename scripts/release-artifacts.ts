@@ -11,6 +11,7 @@ interface Candidate {
 }
 
 export interface PreparedReleaseArtifacts {
+  releaseExists: boolean;
   publish(): Promise<void>;
   dispose(): Promise<void>;
 }
@@ -46,6 +47,7 @@ interface PublishedRelease {
   tag_name: string;
   draft: boolean;
   prerelease: boolean;
+  target_commitish: string;
 }
 
 export interface ReleaseRecord {
@@ -306,23 +308,54 @@ export async function prepareReleaseArtifacts(
       bundle,
       e2e: e2eEvidence,
     };
+    const findRelease = async () => {
+      // Authenticated listing includes drafts, which may not yet have a public tag.
+      const matches = (await client.list<PublishedRelease>('releases')).filter(
+        (release) => release.tag_name === record.tag,
+      );
+      if (matches.length > 1) throw new Error(`Duplicate releases for ${record.tag}`);
+      return matches[0];
+    };
+    const existingRelease = await findRelease();
     return {
+      releaseExists: existingRelease !== undefined,
       dispose,
       async publish() {
-        const release = await client.json<PublishedRelease>(
-          `releases/tags/${encodeURIComponent(record.tag)}`,
-        );
-        if (release.draft || release.prerelease || release.tag_name !== record.tag) {
-          throw new Error('Expected a published stable Release');
+        const release = await findRelease();
+        if (!release || release.prerelease) throw new Error('Expected a stable Release');
+        const files: Record<string, Buffer> = {
+          'pages.tar': bundleFiles['pages.tar'],
+          'workers.tar': bundleFiles['workers.tar'],
+          'release-manifest.json': Buffer.from(`${JSON.stringify(record, null, 2)}\n`),
+        };
+        if (!release.draft) {
+          // Published immutable releases cannot be repaired. An identical retry is safe.
+          const assets = await client.list<Asset>(`releases/${release.id}/assets`);
+          for (const [name, bytes] of Object.entries(files)) {
+            const matches = assets.filter((asset) => asset.name === name);
+            if (
+              matches.length !== 1 ||
+              matches[0].state !== 'uploaded' ||
+              matches[0].digest !== `sha256:${sha256(bytes)}`
+            )
+              throw new Error(`Published release has missing or conflicting asset: ${name}`);
+          }
+          return;
         }
-        // The readiness record is attached last. Deploy cannot start with a partial asset set.
-        for (const name of ['pages.tar', 'workers.tar'])
-          await client.upload(release.id, name, bundleFiles[name]);
-        await client.upload(
-          release.id,
-          'release-manifest.json',
-          Buffer.from(`${JSON.stringify(record, null, 2)}\n`),
-        );
+        if (release.target_commitish !== record.sha)
+          throw new Error('Draft release targets a different commit');
+        // Upload and verify every asset before publishing locks the release.
+        for (const [name, bytes] of Object.entries(files))
+          await client.upload(release.id, name, bytes);
+        const published = (await (
+          await client.request(`releases/${release.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ draft: false, make_latest: 'true' }),
+          })
+        ).json()) as PublishedRelease;
+        if (published.draft || published.prerelease || published.tag_name !== record.tag)
+          throw new Error('Release publication did not complete');
       },
     };
   } catch (error) {
