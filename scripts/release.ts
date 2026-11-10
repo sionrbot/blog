@@ -155,21 +155,21 @@ export async function publishReady<T extends ReleaseCandidate>(
     console.log(`Waiting for validated PR artifacts for ${candidate.tag.toString()}.`);
     return 0;
   }
-  // release-please rebuilds internally. Keep exactly the candidate whose PR
-  // evidence and production artifacts were validated before publication.
-  manifest.buildReleases = async () => [candidate];
+  // release-please rebuilds internally. Freeze the validated candidate and force
+  // a draft so immutable releases are not locked before assets are attached.
+  manifest.buildReleases = async () => [{ ...candidate, draft: true }];
   try {
     try {
-      await manifest.createReleases();
+      if (!prepared.releaseExists) await manifest.createReleases();
     } catch (error) {
-      // A retry may find the tag and Release already created. Assets still need
-      // promotion, and a matching tag is mandatory before accepting the retry.
+      // A concurrent attempt may have created the draft. Promotion revalidates
+      // the release identity and asset digests before publishing or accepting it.
       if (!(error instanceof Errors.DuplicateReleaseError)) throw error;
     }
+    await prepared.publish();
     if (!(await verifyTag(api, candidate.tag.toString(), candidate.sha))) {
       throw new Error(`Published release has no tag: ${candidate.tag.toString()}`);
     }
-    await prepared.publish();
     await api.published(candidate);
     return 1;
   } catch (error) {

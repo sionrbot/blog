@@ -73,9 +73,12 @@ for an earlier PR head or a different combined tree cannot authorize publication
    version, artifact digests, and tested Git trees. Both tested trees must equal
    the actual merge commit's tree. Squash merge may change the commit SHA;
    identical tree IDs establish identical tracked content.
-5. The publisher creates `vX.Y.Z` and the matching GitHub Release, then attaches
+5. The publisher creates a draft GitHub Release targeting the approved commit, then attaches
    `pages.tar`, `workers.tar`, and `release-manifest.json`. The manifest is attached
    last and records the approved source, test runs, and archive SHA-256 digests.
+   Only after all uploads pass digest verification does it publish the Release
+   and verify the resulting `vX.Y.Z` tag. This supports immutable releases, which
+   prohibit attaching assets after publication.
 6. After the assets are ready, the Release workflow calls the deployment workflow
    for that tag. Pages and Workers consume the verified archives. Confirm both
    deployments separately before synchronizing the local repository.
@@ -153,9 +156,9 @@ runner interruption during publication leaves a discoverable retry candidate.
 After asset completion, the publisher adds `autorelease: tagged` and removes
 `autorelease: pending`. If a caught publication error occurs, it restores the
 pending label and removes the tagged label so `publish` can retry.
-A matching existing tag and already uploaded matching assets are reused; conflicting
+A matching existing draft and already uploaded matching assets are reused; conflicting
 tags or assets require investigation. If label restoration itself fails, inspect
-the reported error and reconcile the labels before retrying. A Release can exist
+the reported error and reconcile the labels before retrying. A draft can exist
 before its assets are complete, so verify `release-manifest.json` and the two
 archives rather than treating the Release page alone as delivery completion.
 
@@ -164,6 +167,12 @@ retire it by removing `autorelease: pending` from its merged PR, then run `pr` t
 prepare the next version. The pending label otherwise blocks a new Release PR.
 Retiring an unpublished candidate may skip a version number. Preserve any published
 tag and assets; published releases require a subsequent version for source changes.
+
+If a legacy publisher created an immutable Release without deployment assets,
+it cannot be repaired in place. Preserve the release and tag, remove the pending
+label from that merged Release PR after confirming the missing assets, and merge
+a publisher fix to prepare a subsequent version. Do not disable immutability or
+recreate the published tag. The incomplete version must not be deployed.
 
 If only hosting deployment fails, use the deployment workflow's manual trigger
 with the latest published stable `release_tag`; it reuses the same release assets.
