@@ -152,6 +152,13 @@ async function fixture({
       [`commits/${tag}`]: state.tagged,
     };
     if (path in json) return Response.json(json[path]);
+    const accept = new Headers(init?.headers).get('Accept');
+    if (path.startsWith('actions/artifacts/') && accept !== 'application/vnd.github+json') {
+      return new Response('Unsupported Accept header for Actions artifacts', { status: 415 });
+    }
+    if (path.startsWith('releases/assets/') && accept !== 'application/octet-stream') {
+      return new Response('Release asset metadata instead of binary', { status: 415 });
+    }
     const binary =
       path === 'actions/artifacts/100/zip'
         ? bundleZip
