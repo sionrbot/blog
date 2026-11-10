@@ -2,15 +2,18 @@ name: E2E
 
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Replace superseded PR runs; manual runs retain independent execution histories.
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # The browser and Lighthouse baseline serves dist at the domain root.
-# The Pages deployment workflow builds the configured production subpath.
+# Release bundles separately build each configured production target.
 env:
   SITE_URL: https://sionrbot.github.io
 
@@ -54,7 +57,9 @@ jobs:
             console.log(`${browser.name()}: ${browser.executablePath()}`);
           }
           NODE
-      - id: browser_build
+      # Only default consumes root dist; fixture variants build isolated sites.
+      - id: baseline_build
+        if: ${{ matrix.variant == 'default' }}
         run: pnpm build
       - id: browser
         timeout-minutes: 20
@@ -63,7 +68,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-${{ matrix.variant }}
+          name: e2e-${{ matrix.variant }}-${{ github.run_attempt }}
           path: |
             .e2e/runs/*/deterministic/
             tests/test-results/build/
@@ -71,13 +76,10 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      # Keep independent builds and runner/fixture lifecycles; only setup is shared.
+      # Both default suites read the same dist. Fixture/runner lifecycles stay isolated.
       # An explicit status function allows AI coverage after a browser failure.
-      - id: agent_build
-        if: ${{ !cancelled() && matrix.variant != 'i18n' && steps.browsers.outcome == 'success' }}
-        run: pnpm build
       - id: agent
-        if: ${{ !cancelled() && matrix.variant != 'i18n' && steps.agent_build.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.variant != 'i18n' && steps.browsers.outcome == 'success' && (matrix.variant != 'default' || steps.baseline_build.outcome == 'success') }}
         timeout-minutes: 20
         run: pnpm run test:e2e:ai -- --variant ${{ matrix.variant }} --target desktop,narrow --max-failures 2 --max-duration 600000
         env:
@@ -87,7 +89,7 @@ jobs:
         if: ${{ !cancelled() && matrix.variant != 'i18n' }}
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-ai-${{ matrix.variant }}
+          name: e2e-ai-${{ matrix.variant }}-${{ github.run_attempt }}
           path: |
             .e2e/runs/*/ai/
             tests/test-results/build/
@@ -101,3 +103,26 @@ jobs:
           E2E_VARIANT: ${{ matrix.variant }}
           E2E_CANCELLED: ${{ job.status == 'cancelled' }}
           E2E_STEPS: ${{ toJSON(steps) }}
+
+  evidence:
+    needs: variant
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'release-please--branches--main--components--sionrbot-blog' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # The matrix dependency must succeed in all four variants before attesting.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - name: Record E2E evidence
+        run: node scripts/release-evidence.ts e2e e2e-evidence
+      - uses: actions/upload-artifact@v7
+        with:
+          name: e2e-evidence-${{ github.run_attempt }}
+          path: e2e-evidence/
+          if-no-files-found: error
+          retention-days: 90

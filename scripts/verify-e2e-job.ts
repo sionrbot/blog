@@ -19,13 +19,16 @@ export function e2eJobFailures(
     'pnpm',
     'dependencies',
     'browsers',
-    'browser_build',
     'browser',
     'browser_artifacts',
   ];
-  const agent = ['agent_build', 'agent', 'agent_artifacts'];
-  if (variant !== 'i18n') required.push(...agent);
   const failures = cancelled ? ['Job cancelled'] : [];
+  const agent = ['agent', 'agent_artifacts'];
+  if (variant === 'default') required.push('baseline_build');
+  else if (steps.baseline_build?.outcome !== 'skipped') {
+    failures.push('baseline_build: expected skipped for fixture variant');
+  }
+  if (variant !== 'i18n') required.push(...agent);
   for (const id of required) {
     if (steps[id]?.outcome !== 'success') {
       failures.push(`${id}: expected success, got ${steps[id]?.outcome ?? 'missing'}`);

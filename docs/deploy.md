@@ -35,15 +35,24 @@ repository: GitHub derives the public path from the repository name. Changing
 separate deployment or a root-hosted test build.
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the build
-source. `.github/workflows/deploy.yml` validates and builds the site on pushes to
-`main` that change `src/**`, `public/**`, `astro.config.mjs`, `tsconfig.json`,
-`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.npmrc`, or the deployment
-workflow itself. It then uploads `dist/` and deploys it to the `github-pages`
-environment. Changes limited to documentation, tests, or other CI workflows do
-not trigger an automatic deployment.
-The workflow can also be started from **Actions → Deploy to GitHub Pages and Cloudflare Workers → Run
-workflow**. Deployment uses GitHub's generated token; no personal token or domain
-configuration is needed.
+source. CI builds and validates the Pages archive on the Release PR. After merge,
+the Release workflow verifies the PR evidence and publishes the archive with the
+release, then calls `.github/workflows/deploy.yml`. The deploy workflow verifies
+the release manifest, tag, source tree, and archive digests, extracts `pages.tar`,
+and uploads it to the `github-pages` environment. It does not rebuild the site.
+
+Production deployment follows published releases, not ordinary `main` pushes.
+Pages and Workers each receive their platform-specific archive from the same
+release. Source checks, E2E, build tests, and production packaging happen before
+merge; deployment only verifies and transfers those outputs.
+
+To retry deployment, use **Actions → Deploy release to GitHub Pages and Cloudflare Workers
+→ Run workflow**, select `main`, and supply `release_tag` such as `v1.8.0`.
+Only the latest published stable release is accepted, preventing an older queued
+run from replacing a newer release. Its `pages.tar`, `workers.tar`, and
+`release-manifest.json` must all be present and valid. Legacy releases without
+these assets cannot be deployed through this workflow. GitHub Pages uses the
+generated token; no personal token or domain configuration is needed.
 
 Use the workflow's deployment URL to open the site. The Chinese UI is under
 `/blog/zh/`. Preview locally with `pnpm preview` and open the same
@@ -52,19 +61,21 @@ unknown URLs; it does not automatically choose the Chinese error page.
 
 ## Cloudflare Workers
 
-The same deployment workflow publishes an independent build to
-https://sionrbot-blog.pgsnotfound404.workers.dev. Both platforms share the existing
-push path filters and manual trigger. Changes only to `cloudflare.config.ts` or
-`wrangler.config.ts` require a manual workflow run. The Workers job runs
-independently of the GitHub Pages jobs.
+The same deployment workflow publishes the prebuilt Workers archive to
+https://sionrbot-blog.pgsnotfound404.workers.dev. CI creates this archive with the
+Workers URL because its domain and root path differ from Pages. After release
+verification, the Workers job runs independently of the Pages jobs. It checks out
+the recorded release source for the deployment tool and configuration, restores
+`.cloudflare/output/`, and runs `cf deploy --prebuilt`.
 
 Set repository Actions secrets `CLOUDFLARE_API_TOKEN` and
 `CLOUDFLARE_ACCOUNT_ID`. The token needs Workers Scripts Write for the target
 account. This static deployment uses the workers.dev hostname and no DNS, KV,
 R2, or server-side Astro adapter.
 
-Build and validate using the Workers URL so navigation, assets, feeds, and SEO
-metadata use the root path. Keep `site.url` unchanged for GitHub Pages:
+For a local build or a separate local deployment, use the Workers URL so navigation,
+assets, feeds, and SEO metadata use the root path. Keep `site.url` unchanged for
+GitHub Pages. These build commands are not repeated by the release deployment job:
 
 ```sh
 export SITE_URL=https://sionrbot-blog.pgsnotfound404.workers.dev
@@ -107,4 +118,32 @@ Build command: `pnpm build`. Publish directory: `dist`.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every push to `main` and on pull requests: install, `pnpm check` (including Astro type generation), `pnpm exec vp check`, `pnpm lint`, `pnpm build`, a Lighthouse run, and an internal link check against `dist`. Use it as a reference for what a deploy pipeline should verify before shipping.
+`.github/workflows/ci.yml` and `.github/workflows/e2e.yml` run on pull requests and
+manual dispatch, not on `main` pushes. Superseded runs for the same PR are
+cancelled. Release publication requires successful PR-triggered runs; manual runs
+do not produce release evidence.
+
+The CI build job installs dependencies, runs Astro checks (including type
+generation), Vite+ checks, ESLint, translation checks, unit tests and timezone
+tests, then builds the root-hosted baseline once. Vite+ already runs Oxlint, so
+CI invokes ESLint directly instead of repeating Oxlint through `pnpm lint`.
+
+Build tests and Lighthouse/internal-link checks download the same baseline
+artifact by immutable ID and run in parallel. Baseline artifacts are retained for
+seven days. The final `quality` check requires all those jobs to succeed.
+
+For the same-repository Release PR targeting `main`, `release-builds` separately
+builds Pages and Workers output, runs the deployment build tests for each target,
+and packages the Workers output with `cf-wrangler build` and a dry-run deployment.
+That job must also succeed before `quality` passes. It uploads the production
+archives and source evidence as `release-bundle-<attempt>`, retained for 90 days.
+Other PRs deliberately skip this job.
+
+E2E's default variant builds the baseline once for deterministic and AI tests.
+Other variants build isolated fixtures inside the runner. Runner and fixture
+lifecycles remain independent between suites. After every variant succeeds, a
+Release PR receives `e2e-evidence-<attempt>`, also retained for 90 days.
+
+CI baseline, Pages, and Workers builds use different deployment URLs; their
+output must not be interchanged. [Releasing](releasing.md) defines how the
+publisher matches the PR runs and source trees to the merged release commit.

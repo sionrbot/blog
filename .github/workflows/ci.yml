@@ -1,18 +1,27 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Replace superseded PR runs; manual runs retain independent execution histories.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # The browser and Lighthouse baseline serves dist at the domain root.
-# The Pages deployment workflow builds the configured production subpath.
+# Release bundles separately build each configured production target.
 env:
   SITE_URL: https://sionrbot.github.io
 
 jobs:
-  quality:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      dist-id: ${{ steps.dist.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -24,12 +33,56 @@ jobs:
       # Astro generates content collection types needed by the Vite+ type checker.
       - run: pnpm check
       - run: pnpm exec vp check
-      - run: pnpm lint
+      # vp check already runs Oxlint; only the Astro ESLint rules remain.
+      - run: pnpm exec eslint .
       - run: pnpm run i18n:check
       - run: pnpm run test:unit
       - run: pnpm run test:unit:tz
       - run: pnpm build
+      - id: dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-dist-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+
+  build-tests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build.outputs.dist-id }}
+          path: dist/
       - run: pnpm run test:build
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-test-diagnostics-${{ github.run_attempt }}
+          path: tests/test-results/build/
+          if-no-files-found: warn
+
+  site-audit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build.outputs.dist-id }}
+          path: dist/
       # Thresholds (mobile 95+) live in lighthouserc.cjs
       - run: pnpm dlx @lhci/cli@0.15.1 autorun
       # Check internal links only; external links are skipped
@@ -37,15 +90,72 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: lighthouse
+          name: lighthouse-${{ github.run_attempt }}
           path: .lighthouseci
           # .lighthouseci is a dotted directory, and upload-artifact skips hidden
           # files by default -- without this the report is silently never uploaded.
           include-hidden-files: true
           if-no-files-found: warn
-      - if: failure()
-        uses: actions/upload-artifact@v7
+
+  release-builds:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'release-please--branches--main--components--sionrbot-blog' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      CF_SEND_TELEMETRY: 'false'
+    steps:
+      # Keep the default PR merge checkout: evidence records the tested source tree.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          name: build-test-diagnostics
-          path: tests/test-results/build/
-          if-no-files-found: warn
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - name: Build and verify Pages production output
+        run: |
+          env -u SITE_URL pnpm build
+          env -u SITE_URL pnpm exec vp test --project build tests/build/base-path.test.ts tests/build/routes.test.ts tests/build/seo.test.ts
+          mkdir -p release-bundle
+          tar -cf release-bundle/pages.tar -C dist .
+      - name: Build and verify Workers production output
+        env:
+          SITE_URL: https://sionrbot-blog.pgsnotfound404.workers.dev
+        run: |
+          pnpm build
+          pnpm exec vp test --project build tests/build/base-path.test.ts tests/build/routes.test.ts tests/build/seo.test.ts
+          pnpm exec cf-wrangler build
+          pnpm exec cf deploy --prebuilt --dry-run
+          tar -cf release-bundle/workers.tar -C .cloudflare/output .
+      - name: Record release bundle evidence
+        run: node scripts/release-evidence.ts bundle release-bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-bundle-${{ github.run_attempt }}
+          path: release-bundle/
+          if-no-files-found: error
+          retention-days: 90
+
+  # Preserve the required check name; only non-release runs may skip release builds.
+  quality:
+    if: ${{ always() }}
+    needs: [build, build-tests, site-audit, release-builds]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all CI jobs
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          RELEASE_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'release-please--branches--main--components--sionrbot-blog' && github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          node --input-type=module <<'NODE'
+          const jobs = JSON.parse(process.env.RESULTS);
+          for (const [name, job] of Object.entries(jobs)) {
+            if (name === 'release-builds' && process.env.RELEASE_PR !== 'true') {
+              if (job.result !== 'skipped') throw new Error(`${name}: expected skipped, got ${job.result}`);
+              continue;
+            }
+            if (job.result !== 'success') throw new Error(`${name}: ${job.result}`);
+          }
+          NODE

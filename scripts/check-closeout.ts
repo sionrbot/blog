@@ -105,20 +105,34 @@ function main(): void {
     'refs/heads/',
   ]);
   const remoteBranches = run('git', ['ls-remote', '--heads', remote]);
-  const workflowRuns = JSON.parse(
-    run('gh', [
-      'run',
-      'list',
-      '--repo',
-      repository,
-      '--commit',
-      remoteBefore,
-      '--limit',
-      '100',
-      '--json',
-      'databaseId,workflowName,event,headSha,status,conclusion,url',
-    ]),
-  );
+  // PR checks belong to the PR head; release/deploy runs may belong to main.
+  // Keep these observations separate instead of requiring post-merge CI reruns.
+  const runsByCommit = new Map<string, unknown>();
+  const workflowRunsFor = (sha: string) => {
+    if (!runsByCommit.has(sha)) {
+      runsByCommit.set(
+        sha,
+        JSON.parse(
+          run('gh', [
+            'run',
+            'list',
+            '--repo',
+            repository,
+            '--commit',
+            sha,
+            '--limit',
+            '100',
+            '--json',
+            'databaseId,workflowName,event,headSha,status,conclusion,url',
+          ]),
+        ),
+      );
+    }
+    return runsByCommit.get(sha);
+  };
+  const workflowRuns = workflowRunsFor(remoteBefore);
+  const prWorkflowRuns = workflowRunsFor(pr.headRefOid);
+  const mergeWorkflowRuns = pr.mergeCommit ? workflowRunsFor(pr.mergeCommit.oid) : [];
   const localBaseAfter = run('git', ['rev-parse', '--verify', `refs/heads/${base}`]);
   const branchAfter = run('git', ['branch', '--show-current']);
   const changesAfter = run('git', ['status', '--porcelain=v1', '--untracked-files=all']);
@@ -145,6 +159,8 @@ function main(): void {
     branches,
     remoteBranches,
     workflowRuns,
+    prWorkflowRuns,
+    mergeWorkflowRuns,
   };
   const ready = repositoryReady(snapshot);
   console.log(
@@ -153,7 +169,7 @@ function main(): void {
         ...snapshot,
         repositoryReady: ready,
         scope:
-          'Repository snapshot only. Review exact-SHA CI, E2E, deployments, release publication and task branch cleanup separately. Runs are limited to 100; absence is not success.',
+          'Repository snapshot only. Review PR-head CI/E2E, release-manifest source trees, release-tag deployments and branch cleanup separately. Each commit query is limited to 100 runs. Main pushes do not rerun CI/E2E; required PR checks must still be verified.',
       },
       null,
       2,

@@ -1,8 +1,11 @@
 # Releasing Sionrbot blog
 
-Releases identify tested source snapshots of the blog. Release Please prepares a
-version PR; merging it authorizes publication after the merge commit passes CI and
-E2E. Website deployments continue to follow `main` independently.
+Release Please prepares a version PR. CI and E2E validate that PR before merge;
+CI also builds the Pages and Workers deployment archives. Merging the Release PR
+authorizes publication only when its validated source tree matches the actual
+merge commit. Release and deployment reuse those archives without repeating
+source checks, browser tests, or builds. Ordinary `main` pushes maintain the
+Release PR; production changes only when a release is deployed.
 
 ## Configure the release credential
 
@@ -41,38 +44,68 @@ Use a Conventional Commit PR title and squash merge with that title:
 | `content:`, `docs:`, `test:`, `ci:`, `build:`, `chore:`, `refactor:`, `style:` without breaking changes | No independent release |
 
 For example, use `feat: add article search`, `fix: correct Chinese dates`, or
-`content: publish a new article`. Pure content changes still deploy and are included
-in subsequent source snapshots, but are omitted from software release notes.
+`content: publish a new article`. Pure content changes do not create an independent
+release or deploy immediately. They ship with the next release and are omitted
+from software release notes.
 
 The **PR title / title** check validates the title. Configure it as a required
 check in the `main` branch rules if invalid titles must block merging. Likewise,
-require CI and E2E before merging changes. The release publisher checks CI and E2E
-again on the actual release merge commit even if branch rules are not configured.
+require CI and E2E before merging changes. Keep the Release PR current with `main`
+and wait for its latest checks after any update. CI and E2E run on GitHub's PR
+merge commit, so their evidence covers the proposed combined tree. A green check
+for an earlier PR head or a different combined tree cannot authorize publication.
 
 ## Publish a version
 
-1. Merge feature and fix PRs into `main`. The **Release** workflow maintains one
-   release PR containing `package.json`, `CHANGELOG.md`, and
-   `.release-please-manifest.json` updates.
-2. Review the version and notes in that PR, and wait for its checks. Use squash
-   merge when ready to publish. Do not manually bump the package version alongside
-   ordinary feature work.
-3. CI and E2E run on the merge commit. Completion of either workflow wakes the
-   publisher, which verifies that both latest `push` runs for that exact SHA
-   succeeded. An unrelated SHA, a PR run, or an older successful run cannot approve
-   publication.
-4. The publisher creates `vX.Y.Z` and the matching GitHub Release and transitions
-   the PR from `autorelease: pending` to `autorelease: tagged`.
+1. Merge reviewed feature and fix PRs into `main`. The **Release** workflow
+   maintains one Release PR containing `package.json`, `CHANGELOG.md`, and
+   `.release-please-manifest.json` updates. Ordinary PRs run CI and E2E before
+   merge; merging them does not repeat those jobs or deploy the site.
+2. Review the version and notes in the Release PR. Its same-repository branch is
+   `release-please--branches--main--components--sionrbot-blog`, targeting `main`. CI builds and validates
+   `pages.tar` and `workers.tar`; E2E records evidence only after all four variants
+   succeed. The build and E2E evidence artifacts are retained for 90 days.
+3. Keep the Release PR up to date and wait for its latest complete CI and E2E
+   runs. Use squash merge when ready to publish. Version changes belong in this
+   PR, before the production archives are built.
+4. The publisher looks up the merged PR and its latest PR-triggered CI and E2E
+   runs. It verifies the repository, PR head, workflow identity, run attempt,
+   version, artifact digests, and tested Git trees. Both tested trees must equal
+   the actual merge commit's tree. Squash merge may change the commit SHA;
+   identical tree IDs establish identical tracked content.
+5. The publisher creates `vX.Y.Z` and the matching GitHub Release, then attaches
+   `pages.tar`, `workers.tar`, and `release-manifest.json`. The manifest is attached
+   last and records the approved source, test runs, and archive SHA-256 digests.
+6. After the assets are ready, the Release workflow calls the deployment workflow
+   for that tag. Pages and Workers consume the verified archives. Confirm both
+   deployments separately before synchronizing the local repository.
 
-The publisher freezes its validated candidates before asking Release Please to
-create releases. A later merge cannot become an unchecked candidate during that
-operation. Existing tags must resolve to the expected commit and are never moved.
-The pinned `release-please` version and regression tests protect this API boundary.
-Automated tags do not inherit the upstream maintainer's PGP signature.
+The publisher freezes approved candidates before asking Release Please to create
+releases. A later merge cannot become an unchecked candidate during that operation.
+Existing tags must resolve to the expected commit; existing assets must have the
+expected digest. Conflicts fail instead of replacing published history. Automated
+tags do not inherit the upstream maintainer's PGP signature.
 
-Releases include GitHub's source archives; the workflow neither publishes an npm
-package nor attaches a deployment-specific `dist` archive. A Release means its
-source passed CI and E2E, not that both hosting deployments have succeeded.
+A Release includes GitHub's source archives and the two deployment archives. It
+certifies the recorded PR validation and artifact provenance, not successful
+hosting deployment. The release workflow exposes a deployable tag only after all
+three assets are present. See [Deployment](deploy.md) for platform settings and
+manual deployment retries.
+
+## Artifact and source mismatches
+
+Missing, expired, or mismatched evidence blocks publication. There is no fallback
+to rebuilding or rerunning CI on `main`. Before merging, refresh an outdated
+Release PR and rerun its PR checks to produce current evidence. Manual CI/E2E
+workflow dispatches are useful for investigation but do not replace PR evidence.
+When retrying CI or E2E, choose **Re-run all jobs**. Evidence must belong to the
+latest workflow attempt; rerunning only failed jobs can leave a successful run
+with archives or evidence from an older attempt, which publication rejects.
+
+If a merged candidate's tree differs from the validated tree, investigate the
+intervening changes and prepare a new validated Release PR. A successful check on
+a different SHA or newer PR does not repair the old candidate. Legacy releases
+without the deployment archives and manifest cannot use this deployment workflow.
 
 ## Start the project version history
 
@@ -100,28 +133,38 @@ and [bootstrap configuration](https://github.com/googleapis/release-please/blob/
 
 ## Inspect and retry
 
-Automatic `main` pushes and CI/E2E completion events both retry ready releases
-and refresh the release PR. This also picks up changes merged while the previous
-release was waiting for checks.
+`main` pushes run Release Please to publish ready merged candidates and refresh
+its Release PR. Completion of same-repository PR CI/E2E runs also wakes the
+publisher, covering a merge that happened while the final evidence was still
+being uploaded. Publication checks existing PR evidence; it does not launch new
+CI, E2E, or production builds.
 
 Use **Actions → Release → Run workflow**, on `main`, with one of these modes:
 
 - `check`: preview candidates without creating PRs, tags, labels, or Releases.
-- `pr`: refresh the release PR.
-- `publish`: retry publication of merged candidates after checking their exact
-  commit again. This does not bypass failed or missing checks.
+- `pr`: refresh the Release PR.
+- `publish`: retry publication of merged candidates using their existing valid
+  PR evidence. This does not bypass failed checks, expired artifacts, or source
+  mismatches.
 
-If CI or E2E fails, fix the issue or rerun the failed run for the release SHA.
-A successful run for a newer commit does not qualify the old candidate. When a
-code fix is necessary, merge the fix, retire the unpublished candidate by removing
-`autorelease: pending` from its merged PR, then run `pr` to prepare the next version.
-The pending label otherwise blocks new release PRs. Retiring an unpublished candidate
-may skip a version number; never move an existing tag. Verify that no Release was
-published before retiring a candidate.
-If a tag exists but publication was interrupted, retry `publish`; a matching tag
-can be reused. A tag pointing to another SHA fails the workflow for investigation.
-If the Release already exists but label updates failed, rerun publication to
-reconcile the pending PR.
+If publication or asset attachment fails, the publisher restores
+`autorelease: pending` and removes `autorelease: tagged` so `publish` can retry.
+A matching existing tag and already uploaded matching assets are reused; conflicting
+tags or assets require investigation. If label restoration itself fails, inspect
+the reported error and reconcile the labels before retrying. A Release can exist
+before its assets are complete, so verify `release-manifest.json` and the two
+archives rather than treating the Release page alone as delivery completion.
+
+For a source fix, merge the fix, verify that the old candidate has not published,
+retire it by removing `autorelease: pending` from its merged PR, then run `pr` to
+prepare the next version. The pending label otherwise blocks a new Release PR.
+Retiring an unpublished candidate may skip a version number. Preserve any published
+tag and assets; published releases require a subsequent version for source changes.
+
+If only hosting deployment fails, use the deployment workflow's manual trigger
+with the latest published stable `release_tag`; it reuses the same release assets.
+See [Deployment](deploy.md). A failure refreshing the next Release PR does not
+invalidate assets that were already published successfully.
 
 For a local read-only preview, supply `GITHUB_REPOSITORY=sionrbot/blog` and
 a read-capable `GITHUB_TOKEN` through your environment, then run

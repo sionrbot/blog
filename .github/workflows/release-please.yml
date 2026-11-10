@@ -6,7 +6,6 @@ on:
   workflow_run:
     workflows: [CI, E2E]
     types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       mode:
@@ -29,13 +28,16 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.event == 'push' &&
+       (github.event.workflow_run.event == 'pull_request' &&
         github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      release_sha: ${{ steps.release.outputs.release_sha }}
     steps:
       # Only trusted main-branch tooling runs with the release token.
-      # Release candidates are validated separately by their exact merge SHA.
+      # PR evidence must match the actual merged source tree; no post-merge rebuild.
       - uses: actions/checkout@v7
         with:
           ref: main
@@ -54,7 +56,23 @@ jobs:
             exit 1
           fi
       - name: Manage releases
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'sync' }}
         run: node scripts/release.ts "$RELEASE_MODE"
+
+  deploy:
+    # Publishing assets can succeed even if refreshing the next release PR fails.
+    if: ${{ always() && needs.release.outputs.release_tag != '' }}
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      release_tag: ${{ needs.release.outputs.release_tag }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
