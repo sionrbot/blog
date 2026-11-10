@@ -6,6 +6,12 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## [1.8.1](https://github.com/sionrbot/blog/compare/v1.8.0...v1.8.1) (2026-11-10)
+
+### Bug Fixes
+
+- attach deployment assets before publishing immutable releases ([#57](https://github.com/sionrbot/blog/issues/57)) ([45ac4ea](https://github.com/sionrbot/blog/commit/45ac4ea6c7d841caf4d25b7f5b0ef5e6b45cb322))
+
 ## [1.8.0](https://github.com/sionrbot/blog/compare/v1.7.2...v1.8.0) (2026-11-10)
 
 ### Features
