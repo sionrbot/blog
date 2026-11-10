@@ -14,7 +14,7 @@ interface SearchResult {
   meta: Record<string, string>;
 }
 
-for (const base of ['/', '/sionrbot-blog/']) {
+for (const base of ['/', '/sionrbot-blog/', '/blog/']) {
   test(`search indexes published originals once under ${base} for either UI language`, async () => {
     const fixture = await createFixture('search', {
       posts: [
@@ -53,12 +53,12 @@ for (const base of ['/', '/sionrbot-blog/']) {
         const search = page('[data-search]');
         expect(search.attr('data-bundle')).toBe(`${base}pagefind/pagefind.js`);
         expect(search.attr('data-base')).toBe(base);
-        expect(search.attr('data-post-base')).toBe(`${base}${localePrefix}blog/`);
+        expect(search.attr('data-post-base')).toBe(`${base}${localePrefix}articles/`);
         expect(page('form[role="search"]').attr('action')).toBe(`${base}${localePrefix}search/`);
         expect(page('header nav a[aria-current="page"]').attr('href')).toBe(
           `${base}${localePrefix}search/`,
         );
-        const post = await readHtml(fixture.dist, `/${localePrefix}blog/chinese/`);
+        const post = await readHtml(fixture.dist, `/${localePrefix}articles/chinese/`);
         expect(post(`header nav a[href="${base}${localePrefix}search/"]`)).toHaveLength(1);
         expect(post('h1[data-pagefind-meta="title"]').text().trim()).toBe('自由软件');
         expect(post('h1[data-pagefind-meta="title"]').attr('lang')).toBe('zh-Hans');
@@ -97,7 +97,7 @@ for (const base of ['/', '/sionrbot-blog/']) {
         ]);
         for (const search of searches) {
           for (const result of search.results) {
-            expect(result.url).toBe(`${base}blog/${result.meta.slug}/`);
+            expect(result.url).toBe(`${base}articles/${result.meta.slug}/`);
             expect(result.content).not.toContain('Back to blog');
             expect(result.content).not.toContain('Draftsecret');
           }

@@ -66,10 +66,10 @@ test('A0: independent builds retain distinct content and caches without changing
     expect(firstCaches.astro).not.toBe(secondCaches.astro);
     expect(firstCaches.vite).not.toBe(secondCaches.vite);
     expect(listPostPaths((await readHtml(first.dist, '/articles/')).html())).toEqual([
-      '/blog/first-only/',
+      '/articles/first-only/',
     ]);
     expect(listPostPaths((await readHtml(second.dist, '/articles/')).html())).toEqual([
-      '/blog/second-only/',
+      '/articles/second-only/',
     ]);
     expect(await fingerprint(join(projectRoot, 'src'))).toBe(sourceBefore);
     expect(await fingerprint(join(projectRoot, 'dist'))).toBe(distBefore);
@@ -104,7 +104,7 @@ test('A0: an invalid description fails for that field and the corrected fixture 
     const result = await corrected.build();
     expect(result.code, result.stderr).toBe(0);
     expect(listPostPaths((await readHtml(corrected.dist, '/articles/')).html())).toEqual([
-      '/blog/description-control/',
+      '/articles/description-control/',
     ]);
   } finally {
     await corrected.dispose();

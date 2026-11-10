@@ -91,8 +91,8 @@ test.each(['fallback', 'hero'] as const)(
   'SEO-02: %s article has dates, image and breadcrumbs',
   async (id) => {
     const title = id === 'hero' ? 'Hero article' : 'Fallback article';
-    const url = `${origin}/blog/${id}/`;
-    const $ = await readHtml(fixture.dist, `/blog/${id}/`);
+    const url = `${origin}/articles/${id}/`;
+    const $ = await readHtml(fixture.dist, `/articles/${id}/`);
     const data = schemas($);
     const post = data.find((entry) => entry['@type'] === 'BlogPosting');
     expect(post).toMatchObject({
@@ -120,7 +120,7 @@ test.each(['fallback', 'hero'] as const)(
 );
 
 test('SEO-03: less-than and closing-script text round-trip without breaking JSON-LD', async () => {
-  const $ = await readHtml(fixture.dist, '/blog/escaped/');
+  const $ = await readHtml(fixture.dist, '/articles/escaped/');
   expect($('main h1').text()).toBe(escapedTitle);
   expect($('#unexpected-script')).toHaveLength(0);
   const raw = $('script[type="application/ld+json"]').text();
@@ -136,7 +136,7 @@ test('SEO-03: less-than and closing-script text round-trip without breaking JSON
 
 test('SEO-04: error-page filtering retains legitimate 404 article and tag routes', async () => {
   const urls = await sitemapUrls(fixture.dist);
-  for (const path of ['/blog/404-guide/', '/blog/tag/404/']) {
+  for (const path of ['/articles/404-guide/', '/articles/tag/404/']) {
     expect(urls).toContain(`${origin}${path}`);
     expect((await readHtml(fixture.dist, path))('h1').text()).not.toBe('');
   }

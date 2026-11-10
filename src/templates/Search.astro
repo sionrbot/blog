@@ -13,7 +13,7 @@ const t = useT(Astro.currentLocale);
     data-search
     data-bundle={withBase('/pagefind/pagefind.js')}
     data-base={withBase('/')}
-    data-post-base={localizedHref('/blog/', Astro.currentLocale)}
+    data-post-base={localizedHref('/articles/', Astro.currentLocale)}
     data-prompt={t.searchPrompt}
     data-loading={t.searchLoading}
     data-empty={t.searchEmpty}

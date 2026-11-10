@@ -39,7 +39,7 @@ test('I18N-B1: both static UI routes contain localized navigation and matching p
       '/',
       '/articles/',
       '/articles/2/',
-      '/blog/tag/shared/',
+      '/articles/tag/shared/',
       '/about/',
       '/contact/',
       '/privacy/',
@@ -61,14 +61,14 @@ test('I18N-B1: both static UI routes contain localized navigation and matching p
       expect($('meta[property="og:locale"]')).toHaveLength(0);
     }
     expect(
-      listPostPaths((await readHtml(fixture.dist, `${prefix}/blog/tag/shared/`)).html()),
-    ).toEqual([...i18nFirstPage, 'older-1'].map((id) => `${prefix}/blog/${id}/`));
+      listPostPaths((await readHtml(fixture.dist, `${prefix}/articles/tag/shared/`)).html()),
+    ).toEqual([...i18nFirstPage, 'older-1'].map((id) => `${prefix}/articles/${id}/`));
     for (const base of ['/articles']) {
       expect(listPostPaths((await readHtml(fixture.dist, `${prefix}${base}/`)).html())).toEqual(
-        i18nFirstPage.map((id) => `${prefix}/blog/${id}/`),
+        i18nFirstPage.map((id) => `${prefix}/articles/${id}/`),
       );
       expect(listPostPaths((await readHtml(fixture.dist, `${prefix}${base}/2/`)).html())).toEqual([
-        `${prefix}/blog/older-1/`,
+        `${prefix}/articles/older-1/`,
       ]);
     }
   }
@@ -78,7 +78,7 @@ test('I18N-B2: original article text, links and content language survive both UI
   for (const post of [englishPost, chinesePost]) {
     const bodies: string[] = [];
     for (const prefix of ['', '/zh']) {
-      const $ = await readHtml(fixture.dist, `${prefix}/blog/${post.id}/`);
+      const $ = await readHtml(fixture.dist, `${prefix}/articles/${post.id}/`);
       expect($('h1').text()).toBe(post.title);
       expect($('h1').attr('lang')).toBe(post.lang);
       expect($('meta[name="description"]').attr('content')).toBe(post.description);
@@ -100,7 +100,7 @@ test('I18N-B2: original article text, links and content language survive both UI
         headline: post.title,
         inLanguage: post.lang,
         datePublished: `${post.pubDate}T00:00:00.000Z`,
-        mainEntityOfPage: `${origin}/blog/${post.id}/`,
+        mainEntityOfPage: `${origin}/articles/${post.id}/`,
       });
       expect($('time').first().attr('datetime')).toBe(`${post.pubDate}T00:00:00.000Z`);
       const day = post.id === 'original-english' ? 12 : 11;
@@ -119,7 +119,7 @@ test('I18N-B3: home pages show the latest six posts without the hero or newslett
     expect(home('main h1').text()).toBe(title);
     expect(home(`main a[href="${prefix}/articles/"]`).text().trim()).toBe(`${moreLabel} →`);
     expect(listPostPaths(home.html())).toEqual(
-      i18nFirstPage.slice(0, 6).map((id) => `${prefix}/blog/${id}/`),
+      i18nFirstPage.slice(0, 6).map((id) => `${prefix}/articles/${id}/`),
     );
     expect(home('main').text()).not.toContain('Barely Surviving and Deeply Loving');
     expect(home('main').text()).not.toContain('Passion, Thinking and Technology.');
@@ -147,7 +147,7 @@ test('I18N-B4: sitemap variants agree with canonical pages and RSS contains orig
     `${origin}/zh/contact/`,
   ]);
   for (const post of i18nPosts) {
-    expect(urls).toContain(`${origin}/blog/${post.id}/`);
+    expect(urls).toContain(`${origin}/articles/${post.id}/`);
   }
   const index = load(await readFile(join(fixture.dist, 'sitemap-index.xml'), 'utf8'), {
     xml: true,
@@ -156,18 +156,20 @@ test('I18N-B4: sitemap variants agree with canonical pages and RSS contains orig
     const path = new URL(index(shard).text()).pathname;
     const xml = load(await readFile(join(fixture.dist, path), 'utf8'), { xml: true });
     const entry = xml('url').filter(
-      (_, item) => xml(item).find('loc').text() === `${origin}/blog/original-english/`,
+      (_, item) => xml(item).find('loc').text() === `${origin}/articles/original-english/`,
     );
     if (entry.length) {
-      expect(entry.find('[hreflang="en"]').attr('href')).toBe(`${origin}/blog/original-english/`);
+      expect(entry.find('[hreflang="en"]').attr('href')).toBe(
+        `${origin}/articles/original-english/`,
+      );
       expect(entry.find('[hreflang="zh-Hans"]').attr('href')).toBe(
-        `${origin}/zh/blog/original-english/`,
+        `${origin}/zh/articles/original-english/`,
       );
     }
   }
   const rss = await readFile(join(fixture.dist, 'rss.xml'), 'utf8');
   expect(rssPosts(rss).map((post) => post.url)).toEqual(
-    [...i18nFirstPage, 'older-1'].map((id) => `${origin}/blog/${id}/`),
+    [...i18nFirstPage, 'older-1'].map((id) => `${origin}/articles/${id}/`),
   );
   expect(load(rss, { xml: true })('channel > language')).toHaveLength(0);
 });

@@ -6,7 +6,7 @@ Images go in `src/assets/`, not `public/` (except favicon/robots). Reference `he
 
 ## blog
 
-Files: `src/content/blog/<slug>.mdx`. Each file generates `/blog/<slug>/` for English UI and `/zh/blog/<slug>/` for Simplified Chinese UI. Both routes render the same original article. The URL chooses the UI language; it does not choose a translation of the article.
+Files: `src/content/blog/<slug>.mdx`. Each file generates `/articles/<slug>/` for English UI and `/zh/articles/<slug>/` for Simplified Chinese UI. Both routes render the same original article. The URL chooses the UI language; it does not choose a translation of the article.
 
 Fields:
 
@@ -49,3 +49,14 @@ Home content and section order live in `src/templates/Home.astro`. UI messages l
 - Every post is attributed to `site.author` in `src/config.ts`.
 - Section components can be embedded in the body of a post or page. See [Section components in a
   post](customization.md#section-components-in-a-post).
+
+## Article URLs
+
+Article lists, details and tags share `/articles/` (or `/zh/articles/` for Chinese UI).
+Deployment prefixes are added separately: GitHub Pages uses `/blog/articles/<slug>/`
+and `/blog/zh/articles/<slug>/`; root-hosted Workers use `/articles/<slug>/`.
+RSS, canonical URLs, sitemap entries and search results use these article routes.
+The old `/blog/<slug>/` and `/blog/tag/<tag>/` routes, including their Chinese
+variants, are removed without redirects. Old article and tag URLs return 404;
+update bookmarks and external links to the new addresses. The `/blog/` deployment
+prefix on GitHub Pages remains unchanged.

@@ -48,7 +48,7 @@ afterAll(async () => {
 test.each(formats)(
   'MD-01: %s renders inline, display and chemical math with its stylesheet',
   async (format) => {
-    const $ = await readHtml(fixture.dist, `/blog/math-${format}/`);
+    const $ = await readHtml(fixture.dist, `/articles/math-${format}/`);
     expect($('.prose .katex').length).toBe(3);
     expect($('.prose .katex-display').length).toBe(1);
     expect($('.prose .katex-error').length).toBe(0);
@@ -77,7 +77,7 @@ test.each(formats)(
 test.each(formats)(
   'MD-01: %s preserves an invalid formula without failing the build',
   async (format) => {
-    const $ = await readHtml(fixture.dist, `/blog/invalid-${format}/`);
+    const $ = await readHtml(fixture.dist, `/articles/invalid-${format}/`);
     expect($('.prose .katex-error').length).toBe(1);
     expect($('.prose .katex-error').text()).toBe(String.raw`\frac{a}{`);
     expect($('.prose .katex-error').attr('title')).toContain('KaTeX parse error');
@@ -88,7 +88,7 @@ test.each(formats)(
 test.each(formats)(
   'MD-02: %s keeps native tables and labeled tasks without loading math CSS',
   async (format) => {
-    const $ = await readHtml(fixture.dist, `/blog/plain-${format}/`);
+    const $ = await readHtml(fixture.dist, `/articles/plain-${format}/`);
     expect($('head link[rel="stylesheet"][href*="katex"]').length).toBe(0);
     expect($('.prose .katex, .prose .katex-error').length).toBe(0);
     expect($('.prose .table-scroll > table').length).toBe(1);

@@ -58,7 +58,7 @@ test('keyboard users can activate navigation and theme controls with visible foc
   await expect(browser).toHaveClass(browser.locator('html'), /\bdark\b/);
 });
 
-for (const path of ['/', '/articles/', '/about/', '/contact/', '/blog/typography-sampler/']) {
+for (const path of ['/', '/articles/', '/about/', '/contact/', '/articles/typography-sampler/']) {
   test(`default page ${path} fits a 360px viewport`, async ({ app, browser, screen }) => {
     await browser.setViewport({ width: 360, height: 800 });
     await app.open(path);

@@ -5,7 +5,7 @@ const { existsSync } = require('node:fs');
 
 const DIST = './dist';
 
-const PAGES = ['/', '/blog/typography-sampler/', '/about/'];
+const PAGES = ['/', '/articles/typography-sampler/', '/about/'];
 
 const file = (p) => `${DIST}${p.endsWith('.html') ? p : p.replace(/\/?$/, '/') + 'index.html'}`;
 const built = PAGES.filter((p) => existsSync(file(p)));

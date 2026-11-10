@@ -9,10 +9,10 @@ export async function getPosts() {
   return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
 
-export const postHref = (post: Post) => `/blog/${post.id}/`;
+export const postHref = (post: Post) => `/articles/${post.id}/`;
 
 export const tagSlug = (tag: string) => tag.toLowerCase().trim().replace(/\s+/g, '-');
-export const tagHref = (tag: string) => `/blog/tag/${tagSlug(tag)}/`;
+export const tagHref = (tag: string) => `/articles/tag/${tagSlug(tag)}/`;
 
 export const formatDate = (date: Date, locale: string = defaultLocale) =>
   date.toLocaleDateString(locale === 'zh' ? 'zh-Hans' : locale, {
