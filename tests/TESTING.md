@@ -6,16 +6,19 @@ See [I18N.md](I18N.md) for language contracts and translation tooling.
 
 ## What to test
 
-| Layer                 | Source                                                                          | Contracts                                                                                                                                                        |
-| --------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit                  | `tests/unit/`                                                                   | Post/tag links and normalization; UTC dates and locale formatting; dictionaries, interpolation, locale fallback and localized page identities                    |
-| Build and integration | `tests/build/publication.test.ts`, `pagination.test.ts`, `routes.test.ts`       | Draft exclusion across public surfaces, dev draft visibility, publication order, normalized tags, exact pagination and route availability                        |
-| Build                 | `tests/build/seo.test.ts`, `schema.test.ts`                                     | Canonical/OG/JSON-LD/RSS/sitemap/robots consistency; escaped titles; dates, content language, hero alt text and schema defaults                                  |
-| Build                 | `tests/build/rendering.test.ts`, `page-math.test.ts`                            | Markdown/MDX math, recoverable formula errors, conditional KaTeX styles, tables, checkboxes and shared-page layouts                                              |
-| Build                 | `tests/build/i18n.test.ts`, `navigation-config.test.ts`, `x18n-tooling.test.ts` | Bilingual static pages, original content, configurable navigation and translation-tool integration; details in [I18N.md](I18N.md)                                |
-| Infrastructure        | `tests/build/isolation.test.ts`, `interruption.test.ts`                         | Independent fixture content/caches, unchanged source/root output, field-specific errors and controls, signal handling, process shutdown and retained diagnostics |
-| Browser               | `tests/e2e/deterministic/`                                                      | User navigation, theme state, forms, keyboard access, narrow layouts, rendering and language switching                                                           |
-| AI browser            | `tests/e2e/ai/`                                                                 | Reading/navigation goals, theme selection, form discovery/submission and screenshot-based readability checks with exact assertions                               |
+| Layer                 | Source                                                                    | Contracts                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit                  | `tests/unit/`                                                             | Post/tag links and normalization; UTC dates and locale formatting; dictionaries, interpolation, locale fallback and localized page identities       |
+| Build and integration | `tests/build/publication.test.ts`, `pagination.test.ts`, `routes.test.ts` | Draft exclusion across public surfaces, dev draft visibility, publication order, normalized tags, exact pagination and route availability           |
+| Build                 | `tests/build/seo.test.ts`, `schema.test.ts`                               | Canonical/OG/JSON-LD/RSS/sitemap/robots consistency; escaped titles; dates, content language, description length, hero alt text and schema defaults |
+| Build                 | `tests/build/rendering.test.ts`, `page-math.test.ts`                      | Markdown/MDX math, recoverable formula errors, conditional KaTeX styles, tables, checkboxes and shared-page layouts                                 |
+| Build                 | `tests/build/i18n.test.ts`, `navigation-config.test.ts`                   | Bilingual static pages, original content and configurable navigation; details in [I18N.md](I18N.md)                                                 |
+| Infrastructure        | `tests/build/tooling/isolation.test.ts`, `interruption.test.ts`           | Independent fixture content/caches, unchanged source/root output, signal handling, process shutdown and retained diagnostics                        |
+| Build                 | `tests/build/search.test.ts`, `base-path.test.ts`                         | Real Pagefind queries, draft exclusion, original-content deduplication, metadata, deployment prefixes and resource serving                          |
+| Tooling               | `tests/unit/tooling/`                                                     | Content stub rejection, output-path decoding and dependency-consumer compatibility                                                                  |
+| Tooling               | `tests/build/tooling/x18n-tooling.test.ts`                                | Translation-tool diagnostics and valid controls; rejected writes preserve files                                                                     |
+| Browser               | `tests/e2e/deterministic/`                                                | User navigation, theme state, forms, keyboard access, narrow layouts, rendering and language switching                                              |
+| AI browser            | `tests/e2e/ai/`                                                           | Reading/navigation goals, theme selection, form discovery/submission and screenshot-based readability checks with exact assertions                  |
 
 Test Astro content collection behavior through real builds; the unit-only
 `astro:content` stub rejects collection access.
@@ -25,6 +28,25 @@ successful build and parse before checking that the contract rejects the mutated
 output. A build crash is not evidence that an assertion detects the intended bug.
 Expected fixture data must remain independent of production sorting, pagination,
 slug and translation functions.
+
+The existing `unit` and `build` projects include `tests/unit/**/*.test.ts` and
+`tests/build/**/*.test.ts`, including their `tooling/` subdirectories. Tooling is
+an ownership distinction, not an additional project or execution pass. Run each
+project once; build tooling still requires root `dist` to be ready. Release and
+evidence tests remain in the unit project while their implementations are in use.
+
+To inspect collection without executing tests:
+
+```sh
+vp test list --project unit --project build --filesOnly
+vp test list --project unit --project build
+```
+
+The list contains static definitions; parameterized cases expand during execution.
+When relocating tests, compare mapped file/name pairs and actual runner counts,
+check each file is collected once, and preserve every assertion or identify its
+specific replacement. Keep migration inventories and command exit/time/build-count
+reports in ignored `tests/test-results/qa-refactor/`, not in project guides.
 
 ## Run unit and build tests
 
@@ -59,7 +81,7 @@ For a focused run:
 ```sh
 vp test --project unit tests/unit/posts.test.ts
 vp test --project build tests/build/publication.test.ts
-vp test --project build tests/build/isolation.test.ts tests/build/interruption.test.ts
+vp test --project build tests/build/tooling/isolation.test.ts tests/build/tooling/interruption.test.ts
 ```
 
 `test:unit:tz` runs date tests in separate UTC, America/Los_Angeles and

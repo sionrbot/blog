@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { getPosts, postHref, tagHref, tagSlug, type Post } from '../../src/utils/posts';
+import { postHref, tagHref, tagSlug, type Post } from '../../src/utils/posts';
 
 const post = {
   id: 'notes/a-reading-list',
@@ -32,10 +32,4 @@ describe('post and tag links', () => {
   it('preserves the content entry id in the article route', () => {
     expect(postHref(post)).toBe('/articles/notes/a-reading-list/');
   });
-});
-
-it('rejects collection access in the unit test boundary', async () => {
-  await expect(getPosts()).rejects.toThrow(
-    'astro:content is unavailable in unit tests; use a real Astro build instead.',
-  );
 });

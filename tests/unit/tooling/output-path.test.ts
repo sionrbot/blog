@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test';
-import { outputPath } from '../support/parse-output';
+import { outputPath } from '../../support/parse-output';
 
 test.each(['/', '/sionrbot-blog/'])(
   'emitted file paths decode URL segments once under %s',

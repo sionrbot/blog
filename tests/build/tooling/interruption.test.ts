@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process';
 import { access, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test, expect } from 'vite-plus/test';
-import { projectRoot } from '../support/build-fixture';
-import { withDeadline } from '../support/astro-process';
+import { projectRoot } from '../../support/build-fixture';
+import { withDeadline } from '../../support/astro-process';
 
 interface Ready {
   phase: 'created' | 'ready';

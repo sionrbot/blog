@@ -93,3 +93,29 @@ const [post] = await getCollection('blog');
     await fixture.dispose();
   }
 });
+
+test('A0: an invalid description fails for that field and the corrected fixture builds', async () => {
+  const posts = [
+    { id: 'description-control', title: 'Description control', pubDate: '2026-01-01', tags: [] },
+  ];
+  const invalid = await createFixture('invalid-description', { posts, invalidDescription: true });
+  try {
+    const result = await invalid.build();
+    expect(result.code).not.toBe(0);
+    expect(result.code).not.toBeNull();
+    expect(`${result.stdout}\n${result.stderr}`).toContain('description-control');
+    expect(`${result.stdout}\n${result.stderr}`).toContain('description');
+  } finally {
+    await invalid.dispose();
+  }
+  const corrected = await createFixture('corrected-description', { posts });
+  try {
+    const result = await corrected.build();
+    expect(result.code, result.stderr).toBe(0);
+    expect(listPostPaths((await readHtml(corrected.dist, '/articles/')).html())).toEqual([
+      '/articles/description-control/',
+    ]);
+  } finally {
+    await corrected.dispose();
+  }
+});
