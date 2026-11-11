@@ -6,6 +6,21 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## [1.8.4](https://github.com/sionrbot/blog/compare/v1.8.2...v1.8.4) (2026-11-11)
+
+### Bug Fixes
+
+- preserve merge SHA in release API responses ([#68](https://github.com/sionrbot/blog/issues/68)) ([cbb3397](https://github.com/sionrbot/blog/commit/cbb3397fab82769f597521143ab2b6da07bb2ec3))
+
+### Refactoring
+
+- cut over CI and fixed-source release workflows ([#66](https://github.com/sionrbot/blog/issues/66)) ([b104d29](https://github.com/sionrbot/blog/commit/b104d299289c8a2d3b4a5ca7ad3214b20d6c702d))
+- prepare fixed-source release and deployment smoke ([#65](https://github.com/sionrbot/blog/issues/65)) ([1355412](https://github.com/sionrbot/blog/commit/13554126fe16341ddcdd09ebc212b43c9629ca56))
+- separate business and tooling test ownership ([#61](https://github.com/sionrbot/blog/issues/61)) ([b4d49ed](https://github.com/sionrbot/blog/commit/b4d49ed3c32b930ae5a8ff768d3bb754a3e1af08))
+- separate test contracts and consolidate SEO coverage ([#62](https://github.com/sionrbot/blog/issues/62)) ([9da08d5](https://github.com/sionrbot/blog/commit/9da08d53b349f3504eba103a5da366a819f68dee))
+- separate visual checks and connect production path journey ([#64](https://github.com/sionrbot/blog/issues/64)) ([d9bb23d](https://github.com/sionrbot/blog/commit/d9bb23d23f47b5913778f84e6707f47b972842a1))
+- simplify isolated build fixtures ([#63](https://github.com/sionrbot/blog/issues/63)) ([017dd75](https://github.com/sionrbot/blog/commit/017dd7512ad5549be61cda86b058f630ea2d0fe3))
+
 ## [1.8.3](https://github.com/sionrbot/blog/compare/v1.8.2...v1.8.3) (2026-11-11)
 
 ### Refactoring
