@@ -1,0 +1,31 @@
+# Prepared for R3; replace the legacy publisher only during the coordinated cutover.
+name: Maintain release PR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-pr-main
+  cancel-in-progress: false
+
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: package.json
+      - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - run: pnpm install --frozen-lockfile
+      - name: Maintain version PR without publishing
+        run: node scripts/release.ts pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
