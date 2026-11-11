@@ -105,21 +105,18 @@ update PR:
 Validate a frozen-lockfile installation, run `pnpm run test:unit`, and run all
 project checks listed below. Review the lockfile for other vulnerable minimatch
 copies and run `pnpm audit`; the four consumer tests alone do not cover every
-possible dependency path. Require the existing CI and E2E checks before merging.
+possible dependency path. Require `verify` and `title` at the latest PR head before merging.
 After merging a security repair, verify that the relevant Dependabot alert is
 fixed rather than dismissed; automatic alert closure is not a substitute for
 pre-merge verification.
 
 ## CI credentials
 
-The AI E2E jobs require `OPENAI_API_KEY` in **Dependabot secrets**, with access to
-this repository. Dependabot-triggered workflows cannot use the value from Actions
-secrets. Set a suitable key under Settings → Secrets and variables → Dependabot.
-GitHub does not expose an existing Actions secret's value for copying.
-
-Keep the current CI and E2E checks when reviewing bot PRs. A missing key must not
-be worked around by skipping AI tests or running untrusted PR code with privileged
-`pull_request_target` credentials.
+The required `verify` job runs deterministic tests without model or deployment
+credentials, including on Dependabot PRs. Rendering AI checks are an on-demand
+local command; configure their credentials as described in
+[Testing](../tests/TESTING.md#run-e2e-tests) when running that check.
+Review bot PRs with the same `verify` and `title` requirements as other changes.
 
 ## Review linked versions
 
@@ -130,7 +127,7 @@ be worked around by skipping AI tests or running untrusted PR code with privileg
   support before changing the project's TypeScript 6 constraint.
 - When `@e2e-dev/web` changes its Playwright dependency, update the matching CI
   container version, digest, and explicit version assertion in
-  `.github/workflows/e2e.yml` together.
+  `.github/workflows/ci.yml` and `.github/workflows/release.yml` together.
 - Node.js runtime pins, pnpm tool-version pins, copied font files, and CI tools
   invoked with `pnpm dlx` require separate review. This npm configuration does not
   promise to maintain them or GitHub Actions references. Keep

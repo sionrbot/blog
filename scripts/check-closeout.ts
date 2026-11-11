@@ -169,7 +169,7 @@ function main(): void {
         ...snapshot,
         repositoryReady: ready,
         scope:
-          'Repository snapshot only. Review PR-head CI/E2E, release-manifest source trees, release-tag deployments and branch cleanup separately. Each commit query is limited to 100 runs. Main pushes do not rerun CI/E2E; required PR checks must still be verified.',
+          'Repository snapshot only. Review PR-head verify/title checks, fixed release version/source, both deployment and smoke results, and branch cleanup separately. Each commit query is limited to 100 runs. Main pushes do not rerun verify; required PR checks must still be verified.',
       },
       null,
       2,

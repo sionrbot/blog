@@ -32,7 +32,7 @@ export function e2eConfiguration(): E2EConfig {
     port > 65535 ||
     !['deterministic', 'ai'].includes(mode) ||
     !['default', 'rendering', 'configured-forms', 'i18n', 'production-path'].includes(variant) ||
-    (mode === 'ai' && (variant === 'i18n' || variant === 'production-path')) ||
+    (mode === 'ai' && variant !== 'rendering') ||
     typeof siteUrl !== 'string' ||
     !/^https?:\/\//.test(siteUrl) ||
     !/^[0-9a-f]{40}$/.test(sourceSha) ||

@@ -18,7 +18,7 @@ See [I18N.md](I18N.md) for language contracts and translation tooling.
 | Tooling               | `tests/unit/tooling/`                                                     | Content stub rejection, output-path decoding and dependency-consumer compatibility                                                                  |
 | Tooling               | `tests/build/tooling/x18n-tooling.test.ts`                                | Translation-tool diagnostics and valid controls; rejected writes preserve files                                                                     |
 | Browser               | `tests/e2e/deterministic/`                                                | User navigation, theme state, forms, keyboard access, narrow layouts, rendering and language switching                                              |
-| AI browser            | `tests/e2e/ai/`                                                           | Rendering screenshot readability; legacy navigation/theme/forms retained for the current workflow                                                   |
+| AI browser            | `tests/e2e/ai/`                                                           | Rendering screenshot readability as an on-demand check                                                                                              |
 
 Test Astro content collection behavior through real builds; the unit-only
 `astro:content` stub rejects collection access.
@@ -34,8 +34,8 @@ slug and translation functions.
 The existing `unit` and `build` projects include `tests/unit/**/*.test.ts` and
 `tests/build/**/*.test.ts`, including their `tooling/` subdirectories. Tooling is
 an ownership distinction, not an additional project or execution pass. Run each
-project once; build tooling still requires root `dist` to be ready. Release and
-evidence tests remain in the unit project while their implementations are in use.
+project once; build tooling still requires root `dist` to be ready. Release maintenance, fixed-candidate publication, recovery, production-output,
+and smoke contracts also run in the unit project.
 
 To inspect collection without executing tests:
 
@@ -120,7 +120,7 @@ pnpm run test:e2e -- --variant production-path
 env -u SITE_URL vp run build
 ```
 
-The existing browser and Lighthouse baseline serves the site at the domain root;
+The browser and Lighthouse baseline serves the site at the domain root;
 build it with the root `SITE_URL` above. The Pages deployment builds the configured
 production subpath, covered by build assertions and the isolated `production-path`
 preview journey. The runner checks an explicit `SITE_URL` against the existing home
@@ -129,7 +129,7 @@ after root-path browser runs, including failures, before default build tests.
 
 Linux CI uses a digest-pinned Playwright container with browsers and system
 dependencies preinstalled. Keep the image and version checks in
-`.github/workflows/e2e.yml` aligned with `@e2e-dev/web`'s `playwright-core`
+`.github/workflows/ci.yml` and `.github/workflows/release.yml` aligned with `@e2e-dev/web`'s `playwright-core`
 dependency when upgrading it. CI verifies the version and browser executables
 before running tests. Targets are Chromium
 `desktop` (1280×800), Chromium `narrow` (360×800) and WebKit `webkit` (360×800).
@@ -153,9 +153,8 @@ is untouched. Empty-site/all-draft presentation remains unspecified and is not
 assigned guessed expectations. Local preview does not certify hosted routing.
 
 Form fixtures use fake credentials and intercepted local actions. Keep exact
-payload, method and request-count assertions. AI fills newsletter fields; the test
-submits once deterministically because a popup does not change the source page.
-AI navigation goals also require exact URL/heading assertions.
+payload, method and request-count assertions. Submission is deterministic and
+checks exactly one request even when the native form opens a popup.
 
 For AI tests, set `OPENAI_API_KEY` in the environment or an ignored `.env.e2e`
 file with permissions `0600`. `E2E_MODEL` overrides the configured
@@ -165,18 +164,15 @@ over the file. Deterministic configuration does not load model credentials.
 
 ```sh
 pnpm run test:e2e:visual -- --target desktop,narrow
-pnpm run test:e2e:ai -- --variant default
-pnpm run test:e2e:ai -- --variant configured-forms
+pnpm run test:e2e:ai -- --variant rendering
 pnpm run test:e2e -- --list
 pnpm run test:e2e -- tests/e2e/deterministic/default/theme.e2e.ts --target desktop
-pnpm run test:e2e:ai -- --variant default tests/e2e/ai/default/reading.e2e.ts --target desktop --no-cache
+pnpm run test:e2e:visual -- tests/e2e/ai/rendering/reading.e2e.ts --target desktop --no-cache
 ```
 
 `test:e2e:visual` runs only the rendering screenshot suite and rejects other
-variants. `test:e2e:ai` also defaults to rendering; explicit `default` and
-`configured-forms` remain compatible with the current workflow until CI cutover.
-Do not delete these suites while that workflow still calls them. Deterministic
-forms include visible Contact and site-name navigation, and theme tests assert
+variants. `test:e2e:ai` also defaults to rendering and rejects every other
+variant. Deterministic forms include visible Contact and site-name navigation, and theme tests assert
 immediate state as well as persistence. Visual assertions retain content positioning
 and pixel evidence; DOM text is not a replacement. Without model credentials,
 report visual validation as not executed, not passed.
@@ -230,18 +226,30 @@ in these artifacts or CI, rather than adding execution history to these guides.
 
 ## CI and coverage boundaries
 
-The quality workflow runs static checks, i18n, unit/timezone tests, a production
-build, build tests, Lighthouse and internal links. E2E runs automatically on pull
-requests; manual dispatch is also available. Deterministic
-jobs cover the four existing variants and three targets. The production-path
-journey and dedicated visual command are available locally; production-path CI
-wiring belongs to the later CI cutover. AI jobs cover `default`,
-`rendering` and `configured-forms` on Chromium desktop/narrow and require the
-`OPENAI_API_KEY` Actions secret. Secret availability follows repository settings.
+[CI](../.github/workflows/ci.yml) runs one `verify` job on pull requests and manual
+dispatch. It executes static checks, i18n, unit/timezone tests, a root-hosted
+baseline build, build tests and internal links in order. Four explicit browser
+steps run `default`, `i18n`, `configured-forms` and `rendering`, each on
+`desktop,narrow,webkit`; a fifth runs `production-path` on desktop. Required
+steps use command exit codes; an ordinary failure stops later verification.
+The root build stays in the job's workspace and fixture suites build their own
+isolated output. Diagnostics uploads preserve reports without changing test results.
 
-CI uploads fixture diagnostics on quality failure and E2E reports/fixture logs
-for E2E jobs that are not cancelled. Inspect remote runs separately from local
-results.
+The [release workflow](../.github/workflows/release.yml) repeats core validation
+at the fixed merged version SHA before building and checking both production
+targets. Publication, Pages deployment/smoke and Workers deployment/smoke have
+independent observable results. Inspect remote runs separately from local results.
+
+Rendering AI checks remain on demand through `test:e2e:visual`. Lighthouse keeps
+its configured sampling pages and thresholds as a performance/accessibility
+specialty tool, not a required PR score gate. With the root baseline built, run:
+
+```sh
+pnpm dlx @lhci/cli@0.15.1 autorun
+```
+
+Record relevant visual or performance findings with the source SHA. A specialty
+check that was not run has no passing result.
 
 Fixed desktop-browser viewports do not establish real-device behavior. Preview
 404 checks do not establish hosting configuration. Keyboard/layout checks are

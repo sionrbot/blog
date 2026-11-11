@@ -59,7 +59,7 @@ for (let i = 0; i < args.length; i++) {
 }
 if (entry === 'visual' && variant !== 'rendering')
   throw new Error('The visual entry supports only the rendering variant');
-if (mode === 'ai' && (variant === 'i18n' || variant === 'production-path'))
+if (mode === 'ai' && variant !== 'rendering')
   throw new Error(`${variant} is a deterministic-only variant`);
 // WebKit is explicitly selectable; the everyday default is Chromium at two widths.
 if (!forwarded.includes('--target'))

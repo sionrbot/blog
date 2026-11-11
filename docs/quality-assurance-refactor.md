@@ -1,6 +1,6 @@
 # 质量保证体系重构实施方案
 
-以业务契约清楚、测试简单完整、CI 容易理解为目标，分别落实测试重构与 CI/CD 简化。测试部分保留独立的契约、文件范围、实施步骤和验收条件；CI/CD 部分只决定执行及交付机制。测试分组用于组织代码和报告，不自动变成 CI job。当前机制的事实说明见[质量保证说明](quality-assurance.md)。本方案描述重构目标，现有 workflow 尚未改变。
+以业务契约清楚、测试简单完整、CI 容易理解为目标，分别落实测试重构与 CI/CD 简化。测试部分保留独立的契约、文件范围、实施步骤和验收条件；CI/CD 部分只决定执行及交付机制。测试分组用于组织代码和报告，不自动变成 CI job。当前机制的事实说明见[质量保证说明](quality-assurance.md)。本方案描述重构目标与迁移边界，实际运行方式见质量保证说明。
 
 ## 测试重构的目标与契约
 
@@ -188,7 +188,7 @@ vp test list --project unit --project build --filesOnly --json tests/test-result
 
 ## 浏览器与专项检查的范围
 
-测试用例按业务契约保留。四个现有确定性套件保留 `desktop,narrow,webkit` 全部目标，与[现有 E2E 工作流](../.github/workflows/e2e.yml)一致：`desktop` 为 Chromium 桌面，`narrow` 为 Chromium 360px，`webkit` 为 WebKit 360px。收敛 job 不同时缩减浏览器覆盖；尤其保留 WebKit 下键盘焦点、原生控件及语言菜单的回归验证。
+测试用例按业务契约保留。四个现有确定性套件保留 `desktop,narrow,webkit` 全部目标，由[CI 工作流](../.github/workflows/ci.yml)统一执行：`desktop` 为 Chromium 桌面，`narrow` 为 Chromium 360px，`webkit` 为 WebKit 360px。收敛 job 不同时缩减浏览器覆盖；尤其保留 WebKit 下键盘焦点、原生控件及语言菜单的回归验证。
 
 | 套件             | 必需目标                                | 验证目的                                            |
 | ---------------- | --------------------------------------- | --------------------------------------------------- |

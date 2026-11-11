@@ -4,11 +4,11 @@ import { runInNewContext } from 'node:vm';
 import { describe, expect, test } from 'vite-plus/test';
 
 const template = readFileSync(
-  new URL('../../.github/prepared-workflows/release.yml', import.meta.url),
+  new URL('../../.github/workflows/release.yml', import.meta.url),
   'utf8',
 );
 const maintenance = readFileSync(
-  new URL('../../.github/prepared-workflows/release-please.yml', import.meta.url),
+  new URL('../../.github/workflows/release-please.yml', import.meta.url),
   'utf8',
 );
 const jobs = [
@@ -68,7 +68,7 @@ function execute(failingStep?: string, superseded = false) {
   return { attempted, failed: Object.values(jobResults).includes('failure'), results };
 }
 
-describe('prepared fixed-source release wiring', () => {
+describe('fixed-source release wiring', () => {
   test('publishes only after checks, browser contracts and both independent builds', () => {
     const result = execute();
     expect(result.failed).toBe(false);
