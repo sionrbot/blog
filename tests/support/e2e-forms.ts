@@ -99,7 +99,7 @@ export async function assertNewsletterConstraints(
 ) {
   const submit = screen.getByRole('button', 'Subscribe');
   await expect(submit).toBeEnabled();
-  await expect(browser.locator('form')).toHaveAttribute('target', '_blank');
+  await expect(browser.locator('form:has(#newsletter-email)')).toHaveAttribute('target', '_blank');
   await submit.tap();
   expect(
     await browser.evaluate(
