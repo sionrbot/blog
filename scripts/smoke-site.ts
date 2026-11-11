@@ -33,7 +33,6 @@ export async function smokeSite(baseUrl: string, options: SmokeOptions = {}): Pr
   const checks = [
     { path: '', kind: 'html' },
     { path: 'zh/', kind: 'html' },
-    { path: 'search/', kind: 'html' },
     { path: 'pagefind/pagefind.js', kind: 'js' },
     { path: `__release-smoke-missing-${randomUUID()}/`, kind: 'missing' },
   ] as const;

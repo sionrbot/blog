@@ -19,20 +19,23 @@ test('production subpath connects home, article, real search and Chinese article
   await expect(screen.getByRole('article')).toContainText(
     'The original article contains pathconnectiontoken.',
   );
-  await screen.getByRole('link', 'Search').tap();
-  await expect(browser).toHaveURL('/blog/search/');
+  await screen.getByRole('button', 'Search').tap();
+  await expect(browser).toHaveURL('/blog/articles/production-path/');
   await screen.getByRole('searchbox', 'Search articles').fill('pathconnectiontoken');
-  await expect(browser).toHaveURL('/blog/search/?q=pathconnectiontoken');
+  await expect(browser).toHaveURL('/blog/articles/production-path/');
   await expect(screen.getByRole('status')).toHaveText('Results: 1');
   await expect(screen.getByRole('link', 'Production path article')).toHaveCount(1);
   await expect(screen.getByRole('link', 'Production path article')).toHaveAttribute(
     'href',
     '/blog/articles/production-path/',
   );
+  await screen.getByRole('button', 'Close search').tap();
   await screen.getByLabel('Language', { visible: true }).tap();
   await screen.getByRole('link', '简体中文').tap();
-  await expect(browser).toHaveURL('/blog/zh/search/?q=pathconnectiontoken');
-  await expect(screen.getByRole('searchbox', '搜索文章')).toHaveValue('pathconnectiontoken');
+  await expect(browser).toHaveURL('/blog/zh/articles/production-path/');
+  await screen.getByRole('button', '搜索').tap();
+  await expect(screen.getByRole('searchbox', '搜索文章')).toHaveValue('');
+  await screen.getByRole('searchbox', '搜索文章').fill('pathconnectiontoken');
   await expect(screen.getByRole('status')).toHaveText('找到 1 篇文章');
   await expect(screen.getByRole('link', 'Production path article')).toHaveCount(1);
   await expect(screen.getByRole('link', 'Production path article')).toHaveAttribute(

@@ -1,0 +1,149 @@
+---
+import { Icon } from 'astro-icon/components';
+import { localizedHref } from '../../i18n/links';
+import { useT } from '../../i18n/t';
+import { withBase } from '../../utils/base-path';
+
+const t = useT(Astro.currentLocale);
+---
+
+<dialog
+  id="search-dialog"
+  data-search-dialog
+  aria-label={t.search}
+  aria-describedby="search-description"
+  closedby="any"
+  class="rounded-xs border border-border bg-background p-0 font-sans text-foreground"
+>
+  <p id="search-description" class="sr-only">
+    {t.searchDescription}
+  </p>
+  <div
+    data-search
+    data-bundle={withBase('/pagefind/pagefind.js')}
+    data-base={withBase('/')}
+    data-post-base={localizedHref('/articles/', Astro.currentLocale)}
+    data-prompt={t.searchPrompt}
+    data-loading={t.searchLoading}
+    data-empty={t.searchEmpty}
+    data-error={t.searchError}
+    data-count={t.searchResultsCount}
+    class="flex min-h-0 flex-1 flex-col"
+  >
+    <div class="flex shrink-0 items-center gap-2 border-b border-border p-4">
+      <form role="search" class="relative min-w-0 flex-1">
+        <label for="search-query" class="sr-only">
+          {t.searchLabel}
+        </label>
+        <input
+          id="search-query"
+          name="q"
+          type="search"
+          placeholder={t.searchPlaceholder}
+          autocomplete="off"
+          autofocus
+          class="w-full min-w-0 rounded-xs bg-background py-2 ps-2 pe-16 text-base text-foreground"
+        />
+        <button
+          data-search-clear
+          type="button"
+          hidden
+          class="absolute inset-y-0 end-1 my-auto min-h-9 cursor-pointer rounded-xs px-2 text-sm text-muted hover:text-foreground hover:underline"
+        >
+          {t.searchClear}
+        </button>
+      </form>
+      <form method="dialog">
+        <button
+          type="submit"
+          aria-label={t.searchClose}
+          class="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xs text-muted hover:bg-foreground/5 hover:text-foreground"
+        >
+          <Icon name="lucide:x" class="size-5" aria-hidden="true" />
+        </button>
+      </form>
+    </div>
+    <div data-search-scroll class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-5">
+      <p
+        data-search-status
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        class="my-5 text-sm text-muted"
+      >
+        {t.searchPrompt}
+      </p>
+      <ol data-search-results role="list" class="m-0 list-none p-0"></ol>
+      <button
+        data-search-more
+        type="button"
+        hidden
+        class="mt-4 cursor-pointer rounded-xs border border-border px-4 py-2 text-sm hover:bg-foreground/5"
+      >
+        {t.searchMore}
+      </button>
+    </div>
+    <template data-search-result>
+      <li class="border-t border-border py-4">
+        <h2 class="m-0 font-serif text-xl leading-snug font-normal break-words">
+          <a data-result-link class="text-foreground underline-offset-4 hover:underline"></a>
+        </h2>
+        <time class="mt-2 block text-xs text-muted"></time>
+        <p
+          data-result-excerpt
+          class="mt-2 text-sm leading-relaxed break-words [&_mark]:bg-primary/15 [&_mark]:text-foreground"
+        ></p>
+        <p data-result-tags class="mt-2 text-xs leading-relaxed break-words text-muted"></p>
+      </li>
+    </template>
+  </div>
+  <div class="flex shrink-0 flex-wrap justify-end gap-x-4 gap-y-1 border-t border-border px-6 py-3 text-xs text-muted">
+    <span>{t.searchCloseShortcut}</span>
+    <span>{t.searchNavigateShortcut}</span>
+    <span>{t.searchSelectShortcut}</span>
+  </div>
+</dialog>
+
+<style>
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  dialog {
+    position: fixed;
+    inset: 15dvh 0 auto;
+    margin: 0 auto;
+    width: min(40rem, calc(100% - 2rem));
+    max-width: none;
+    max-height: 75dvh;
+    overflow: auto;
+  }
+  dialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  dialog:modal {
+    overscroll-behavior: contain;
+  }
+  dialog::backdrop {
+    background: color-mix(in srgb, var(--color-foreground) 55%, transparent);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  :global(.dark) dialog::backdrop {
+    background: color-mix(in srgb, var(--color-background) 75%, transparent);
+  }
+  @media (width < 40rem), (height < 30rem) {
+    dialog {
+      top: 1rem;
+      max-height: calc(100dvh - 2rem);
+    }
+  }
+</style>
+
+<script>
+  import { setupSearchDialog } from '../../scripts/search-dialog';
+  const dialog = document.querySelector<HTMLDialogElement>('[data-search-dialog]');
+  if (dialog) setupSearchDialog(dialog);
+</script>

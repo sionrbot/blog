@@ -57,9 +57,9 @@ describe('deployment GET smoke', () => {
       await smokeSite(`${url}${base}`, successful);
       const missing = requests.filter((path) => path.includes('__release-smoke-missing-'));
       expect(requests.filter((path) => !path.includes('__release-smoke-missing-')).sort()).toEqual(
-        [base, `${base}zh/`, `${base}search/`, `${base}pagefind/pagefind.js`].sort(),
+        [base, `${base}zh/`, `${base}pagefind/pagefind.js`].sort(),
       );
-      expect(requests).toHaveLength(5);
+      expect(requests).toHaveLength(4);
       expect(missing).toEqual([
         expect.stringMatching(new RegExp(`^${base}__release-smoke-missing-`)),
       ]);

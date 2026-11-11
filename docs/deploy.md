@@ -151,7 +151,7 @@ and each platform's deployment and smoke remain separate outcomes. Test URLs,
 Pages output, and Workers output cannot be interchanged.
 
 After deployment, `scripts/smoke-site.ts` performs bounded GET checks for the
-home, Chinese, and search pages, Pagefind JavaScript, and a random missing path.
+home and Chinese pages, Pagefind JavaScript, and a random missing path.
 It requires correct statuses and content types and rejects HTML fallback for
 JavaScript. It does not submit forms or replace full browser regression.
 Local preview success does not establish hosted availability; inspect both

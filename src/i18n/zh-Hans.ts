@@ -45,4 +45,9 @@ export default {
   searchResultsCount: '找到 {count} 篇文章',
   searchMore: '显示更多结果',
   searchRequiresJavaScript: '请启用 JavaScript 以搜索文章。',
+  searchClose: '关闭搜索',
+  searchCloseShortcut: 'Esc 关闭',
+  searchNavigateShortcut: '↑ ↓ 切换结果',
+  searchSelectShortcut: 'Enter 打开',
+  searchClear: '清除',
 };

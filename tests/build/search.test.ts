@@ -5,7 +5,7 @@ import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, test } from 'vite-plus/test';
 import { createFixture, projectRoot } from '../support/build-fixture';
 import { startDev } from '../support/dev-server';
-import { readHtml } from '../support/parse-output';
+import { readHtml, sitemapUrls } from '../support/parse-output';
 
 const run = promisify(execFile);
 interface SearchResult {
@@ -85,27 +85,33 @@ describe.each(['/', '/sionrbot-blog/', '/blog/'])('search under %s', (base) => {
   afterAll(async () => fixture?.dispose());
 
   test.each(['', 'zh/'])(
-    'search UI %s wires the bundle, routes and active navigation',
+    'global search dialog %s wires the bundle and localized article routes',
     async (localePrefix) => {
-      const path = `/${localePrefix}search/`;
-      const page = await readHtml(fixture.dist, path);
-      const search = page('[data-search]');
-      expect(search.attr('data-bundle'), `${path}: bundle`).toBe(`${base}pagefind/pagefind.js`);
-      expect(search.attr('data-base'), `${path}: deployment base`).toBe(base);
-      expect(search.attr('data-post-base'), `${path}: article routes`).toBe(
-        `${base}${localePrefix}articles/`,
-      );
-      expect(page('form[role="search"]').attr('action'), `${path}: form action`).toBe(
-        `${base}${localePrefix}search/`,
-      );
-      expect(
-        page('header nav a[aria-current="page"]').attr('href'),
-        `${path}: active navigation`,
-      ).toBe(`${base}${localePrefix}search/`);
-      const post = await readHtml(fixture.dist, `/${localePrefix}articles/chinese/`);
-      expect(post(`header nav a[href="${base}${localePrefix}search/"]`)).toHaveLength(1);
+      for (const path of [`/${localePrefix}`, `/${localePrefix}articles/chinese/`]) {
+        const page = await readHtml(fixture.dist, path);
+        const dialog = page('dialog[data-search-dialog]');
+        expect(dialog, `${path}: one global dialog`).toHaveLength(1);
+        expect(dialog.attr('open'), `${path}: initially closed`).toBeUndefined();
+        const search = dialog.find('[data-search]');
+        expect(search, `${path}: one search panel`).toHaveLength(1);
+        expect(search.attr('data-bundle'), `${path}: bundle`).toBe(`${base}pagefind/pagefind.js`);
+        expect(search.attr('data-base'), `${path}: deployment base`).toBe(base);
+        expect(search.attr('data-post-base'), `${path}: article routes`).toBe(
+          `${base}${localePrefix}articles/`,
+        );
+        expect(page('header button[data-search-open]'), `${path}: search trigger`).toHaveLength(1);
+        expect(page(`a[href="${base}${localePrefix}search/"]`)).toHaveLength(0);
+      }
+      await expect(readHtml(fixture.dist, `/${localePrefix}search/`)).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
     },
   );
+
+  test('removed search pages are absent from the sitemap', async () => {
+    const urls = await sitemapUrls(fixture.dist, base);
+    expect(urls.some((url) => /\/(?:zh\/)?search\/$/.test(new URL(url).pathname))).toBe(false);
+  });
 
   test.each(['', 'zh/'])(
     'article UI %s retains authored search metadata and marks only the original for indexing',

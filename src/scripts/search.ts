@@ -72,20 +72,6 @@ export function setupSearch(root: HTMLElement) {
     return indexPromise;
   };
 
-  const updateUrl = (query: string) => {
-    const url = new URL(window.location.href);
-    if (query) url.searchParams.set('q', query);
-    else url.searchParams.delete('q');
-    history.replaceState(null, '', url);
-    // Search is the one page whose query is useful when switching UI language.
-    for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-language-switcher] a')) {
-      const target = new URL(link.href);
-      if (query) target.searchParams.set('q', query);
-      else target.searchParams.delete('q');
-      link.href = target.href;
-    }
-  };
-
   const appendResults = async (request: number) => {
     more.disabled = true;
     try {
@@ -124,11 +110,11 @@ export function setupSearch(root: HTMLElement) {
 
   const search = async (request: number) => {
     const query = input.value.trim();
-    updateUrl(query);
     list.replaceChildren();
     more.hidden = true;
     shown = 0;
     if (!query) {
+      more.disabled = false;
       status.textContent = messages.prompt!;
       return;
     }
@@ -139,8 +125,10 @@ export function setupSearch(root: HTMLElement) {
       const found = await index.search(query);
       if (request !== version) return;
       results = found.results;
-      if (!results.length) status.textContent = messages.empty!;
-      else await appendResults(request);
+      if (!results.length) {
+        more.disabled = false;
+        status.textContent = messages.empty!;
+      } else await appendResults(request);
     } catch {
       if (request === version) status.textContent = messages.error!;
     }
@@ -152,6 +140,7 @@ export function setupSearch(root: HTMLElement) {
     // Old result batches must not be started under the new query's generation.
     more.hidden = true;
     more.disabled = true;
+    list.replaceChildren();
     if (composing) return;
     if (immediate) void search(request);
     else timer = setTimeout(() => void search(request), 180);
@@ -167,7 +156,7 @@ export function setupSearch(root: HTMLElement) {
   });
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    schedule(true);
+    if (!composing) schedule(true);
   });
   more.addEventListener('click', () => {
     const request = version;
@@ -175,10 +164,15 @@ export function setupSearch(root: HTMLElement) {
       if (request === version) status.textContent = messages.error!;
     });
   });
-  const restoreQuery = () => {
-    input.value = new URL(window.location.href).searchParams.get('q') ?? '';
-    schedule(true);
+  return {
+    suspend() {
+      clearTimeout(timer);
+      ++version;
+      composing = false;
+    },
+    resume() {
+      // An interrupted query or batch needs a fresh run; settled results stay in place.
+      if (more.disabled) schedule(true);
+    },
   };
-  window.addEventListener('popstate', restoreQuery);
-  restoreQuery();
 }
