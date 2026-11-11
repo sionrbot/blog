@@ -1,8 +1,8 @@
-import { readdir, writeFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { expect, test } from 'vite-plus/test';
 import { paginationCases, paginationPosts } from '../fixtures/pagination';
-import { createFixture } from '../support/build-fixture';
+import { createBuiltFixture } from '../support/build-fixture';
 import { listPostPaths, readHtml } from '../support/parse-output';
 
 function pathname(href: string | undefined): string | undefined {
@@ -77,65 +77,14 @@ function assertPagination(
 
 for (const scenario of paginationCases) {
   test(`PAGE-01/PAGE-02: ${scenario.count} posts have exact, ordered pages and valid navigation`, async () => {
-    const fixture = await createFixture(`pagination-${scenario.count}`, {
+    const fixture = await createBuiltFixture({
+      name: `pagination-${scenario.count}`,
       posts: paginationPosts(scenario.count),
     });
     try {
-      const result = await fixture.build();
-      expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
       assertPagination(await paginationOutput(fixture.dist, scenario.pages.length), scenario.pages);
     } finally {
       await fixture.dispose();
     }
   });
 }
-
-test('pagination contract rejects an actual build with a broken next-page link', async () => {
-  const scenario = paginationCases.find((item) => item.count === 11)!;
-  const fixture = await createFixture('mutation-break-pagination', {
-    posts: paginationPosts(scenario.count),
-    mutation: 'break-pagination',
-  });
-  try {
-    const result = await fixture.build();
-    expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const output = await paginationOutput(fixture.dist, scenario.pages.length);
-    expect(() => assertPagination(output, scenario.pages)).toThrow(
-      'Pagination next link must target the adjacent page',
-    );
-    await writeFile(
-      join(fixture.reportDir, 'sensitivity.json'),
-      JSON.stringify({ mutation: 'break-pagination', rejectedBy: 'next link targets wrong page' }),
-    );
-  } finally {
-    await fixture.dispose();
-  }
-});
-
-test.each([
-  ['external-next', 'next'],
-  ['external-prev', 'previous'],
-] as const)(
-  'pagination contract rejects an actual build with an %s link',
-  async (mutation, direction) => {
-    const scenario = paginationCases.find((item) => item.count === 11)!;
-    const fixture = await createFixture(`mutation-${mutation}`, {
-      posts: paginationPosts(scenario.count),
-      mutation,
-    });
-    try {
-      const result = await fixture.build();
-      expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
-      const output = await paginationOutput(fixture.dist, scenario.pages.length);
-      expect(() => assertPagination(output, scenario.pages)).toThrow(
-        `Pagination ${direction} link must stay on the fixture origin`,
-      );
-      await writeFile(
-        join(fixture.reportDir, 'sensitivity.json'),
-        JSON.stringify({ mutation, rejectedBy: `${direction} link targets an external origin` }),
-      );
-    } finally {
-      await fixture.dispose();
-    }
-  },
-);

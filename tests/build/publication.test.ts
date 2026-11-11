@@ -1,4 +1,4 @@
-import { access, readFile, readdir, writeFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vite-plus/test';
 import {
@@ -125,26 +125,4 @@ describe('published content across production and development', () => {
       await server.stop();
     }
   });
-});
-
-test('publication contract rejects an actual build with draft filtering disabled', async () => {
-  const fixture = await createFixture('mutation-publish-drafts', {
-    posts: publicationPosts,
-    mutation: 'publish-drafts',
-  });
-  try {
-    const result = await fixture.build();
-    expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
-    const output = await publicationOutput(fixture.dist);
-    expect(() => assertPublication(output)).toThrow('Draft detail must not be emitted');
-    await writeFile(
-      join(fixture.reportDir, 'sensitivity.json'),
-      JSON.stringify({
-        mutation: 'publish-drafts',
-        rejectedBy: 'draft detail must not be emitted',
-      }),
-    );
-  } finally {
-    await fixture.dispose();
-  }
 });

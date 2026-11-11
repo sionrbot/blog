@@ -1,14 +1,12 @@
 import { afterAll, beforeAll, expect, test } from 'vite-plus/test';
 import { chinesePost, englishPost, i18nFirstPage, i18nPosts } from '../fixtures/i18n';
-import { createFixture } from '../support/build-fixture';
+import { createBuiltFixture } from '../support/build-fixture';
 import { listPostPaths, readHtml } from '../support/parse-output';
 
-let fixture: Awaited<ReturnType<typeof createFixture>>;
+let fixture: Awaited<ReturnType<typeof createBuiltFixture>>;
 const origin = 'https://fixture.example';
 beforeAll(async () => {
-  fixture = await createFixture('i18n', { posts: i18nPosts });
-  const result = await fixture.build();
-  expect(result.code, `${result.stdout}\n${result.stderr}`).toBe(0);
+  fixture = await createBuiltFixture({ name: 'i18n', posts: i18nPosts });
 });
 afterAll(async () => fixture?.dispose());
 
