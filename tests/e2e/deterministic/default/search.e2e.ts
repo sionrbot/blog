@@ -107,10 +107,17 @@ export async function search(query) {
     await new Promise(resolve => document.addEventListener('finish-slow', resolve, { once: true }));
     document.documentElement.dataset.slowComplete = 'true';
   }
-  return { results: Array.from({ length: query === 'many' ? 12 : 1 }, (_, i) => ({
-    data: async () => ({ excerpt: '<mark>matched</mark><img src=x onerror="window.searchInjected=true">',
+  return { results: Array.from({ length: query === 'paged' ? 25 : query === 'many' ? 12 : 1 }, (_, i) => ({
+    data: async () => {
+      if (query === 'paged' && i >= 20 && !document.documentElement.dataset.pagedReleased) {
+        document.documentElement.dataset.pagedStarted = 'true';
+        await new Promise(resolve => document.addEventListener('finish-paged', resolve, { once: true }));
+        document.documentElement.dataset.pagedComplete = 'true';
+      }
+      return { excerpt: '<mark>matched</mark><img src=x onerror="window.searchInjected=true">',
       meta: { title: query + ' ' + i, description: '', slug: 'result-' + i,
-        lang: 'en', pubDate: '2026-10-13', tags: '["AI"]' } })
+        lang: 'en', pubDate: '2026-10-13', tags: '["AI"]' } };
+    }
   })) };
 }`,
       });
@@ -129,6 +136,33 @@ export async function search(query) {
     await expect(screen.getByRole('button', 'Show more results')).toBeVisible();
     await screen.getByRole('button', 'Show more results').tap();
     await expect(browser.locator('[data-search-results] li')).toHaveCount(12);
+    await expect(screen.getByRole('button', 'Show more results')).toBeHidden();
+  });
+
+  test('reopening during pagination preserves prior results and ignores the interrupted batch', async ({
+    browser,
+    screen,
+  }) => {
+    await screen.getByRole('searchbox', 'Search articles').fill('paged');
+    await expect(screen.getByRole('status')).toHaveText('Results: 25');
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(10);
+    await screen.getByRole('button', 'Show more results').tap();
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(20);
+    await screen.getByRole('button', 'Show more results').tap();
+    await expect(browser.locator('html')).toHaveAttribute('data-paged-started', 'true');
+    await expect(screen.getByRole('button', 'Show more results')).toBeDisabled();
+    await screen.getByRole('button', 'Close search').tap();
+    await screen.getByRole('button', 'Search', { exact: true }).tap();
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(20);
+    await expect(screen.getByRole('button', 'Show more results')).toBeEnabled();
+    await browser.evaluate(() => {
+      document.documentElement.dataset.pagedReleased = 'true';
+      return document.dispatchEvent(new Event('finish-paged'));
+    });
+    await expect(browser.locator('html')).toHaveAttribute('data-paged-complete', 'true');
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(20);
+    await screen.getByRole('button', 'Show more results').tap();
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(25);
     await expect(screen.getByRole('button', 'Show more results')).toBeHidden();
   });
 

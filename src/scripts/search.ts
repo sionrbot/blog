@@ -169,9 +169,12 @@ export function setupSearch(root: HTMLElement) {
       clearTimeout(timer);
       ++version;
       composing = false;
+      // Cancel a pending page without discarding the batches already shown.
+      // The reader can request that page again after reopening.
+      if (list.childElementCount > 0) more.disabled = false;
     },
     resume() {
-      // An interrupted query or batch needs a fresh run; settled results stay in place.
+      // Only an interrupted query with no completed results needs a fresh run.
       if (more.disabled) schedule(true);
     },
   };
