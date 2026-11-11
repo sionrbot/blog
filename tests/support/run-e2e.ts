@@ -68,13 +68,17 @@ if (
   forwarded.some((arg, index) => arg === '--target' && forwarded[index + 1] !== 'desktop')
 )
   throw new Error('production-path supports only the desktop target');
-const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+// Container checkout ownership may differ; trust only this invocation's project root.
+const gitArgs = ['-c', `safe.directory=${projectRoot}`];
+const sourceSha = execFileSync('git', [...gitArgs, 'rev-parse', 'HEAD'], {
   cwd: projectRoot,
   encoding: 'utf8',
 }).trim();
 const sourceDirty =
-  execFileSync('git', ['status', '--porcelain'], { cwd: projectRoot, encoding: 'utf8' }).trim() !==
-  '';
+  execFileSync('git', [...gitArgs, 'status', '--porcelain'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+  }).trim() !== '';
 const reportDir = join(projectRoot, '.e2e', 'runs', `${Date.now()}-${randomUUID()}`, mode, variant);
 await mkdir(reportDir, { recursive: true });
 console.log(`E2E diagnostics: ${reportDir}`);
