@@ -5,7 +5,8 @@ on:
     branches: [fix/qa-recovery-closeout]
 permissions: {}
 concurrency:
-  group: qa-closeout-20261111-${{ startsWith(github.event.head_commit.message, 'test(queue): M') && 'maintenance' || 'release' }}
+  group: >-
+    qa-closeout-20261111-${{ startsWith(github.event.head_commit.message, 'test(queue): M') && 'maintenance' || 'release' }}
   queue: max
   cancel-in-progress: false
 jobs:
