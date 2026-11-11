@@ -12,14 +12,18 @@ export async function checkProductionOutput(directory: string, siteUrl: string):
   if (!site.pathname.endsWith('/')) site.pathname += '/';
   const base = site.pathname;
   for (const prefix of ['', 'zh/']) {
-    const route = `${prefix}search/`;
+    const route = prefix || './';
     const $ = load(await readFile(join(directory, route, 'index.html'), 'utf8'));
-    const expectedCanonical = new URL('search/', site).href;
+    const expectedCanonical = site.href;
     if ($('link[rel="canonical"]').attr('href') !== expectedCanonical) {
       throw new Error(`${route}: canonical must be ${expectedCanonical}`);
     }
-    const search = $('[data-search]');
+    if ($('dialog[data-search-dialog]').length !== 1) {
+      throw new Error(`${route}: expected one global search dialog`);
+    }
+    const search = $('dialog[data-search-dialog] [data-search]');
     if (
+      search.length !== 1 ||
       search.attr('data-bundle') !== `${base}pagefind/pagefind.js` ||
       search.attr('data-base') !== base ||
       search.attr('data-post-base') !== `${base}${prefix}articles/`

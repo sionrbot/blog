@@ -5,6 +5,7 @@ import serifFont from '../assets/fonts/newsreader-latin-opsz-normal.woff2?url';
 import Analytics from '../components/common/Analytics.astro';
 import Footer from '../components/common/Footer.astro';
 import Header from '../components/common/Header.astro';
+import SearchDialog from '../components/common/SearchDialog.astro';
 import SEO from '../components/common/SEO.astro';
 import { features } from '../config';
 import { resolveLocale } from '../i18n/locales';
@@ -58,5 +59,6 @@ type Props = ComponentProps<typeof SEO>;
       <slot />
     </main>
     <Footer />
+    <SearchDialog />
   </body>
 </html>

@@ -32,17 +32,35 @@ const isCurrent = (href: string) => {
   </div>
   <nav aria-label={t.mainNav} class="w-full min-w-0 md:w-auto">
     <ul class="flex flex-wrap gap-x-4 gap-y-2 font-sans text-sm md:gap-x-6">
-      {navigation.header.map(({ label, href }) => (
+      {navigation.header.map((item) => (
         <li>
-          <a
-            href={navigationHref(href, Astro.currentLocale)}
-            aria-current={isCurrent(navigationHref(href, Astro.currentLocale)) ? 'page' : undefined}
-            class="text-muted no-underline transition-colors hover:text-foreground aria-[current=page]:text-foreground"
-          >
-            {label}
-          </a>
+          {'action' in item ? (
+            <button
+              type="button"
+              data-search-open
+              aria-haspopup="dialog"
+              aria-controls="search-dialog"
+              disabled
+              class="cursor-pointer text-muted transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-50"
+            >
+              {item.label}
+            </button>
+          ) : (
+            <a
+              href={navigationHref(item.href, Astro.currentLocale)}
+              aria-current={
+                isCurrent(navigationHref(item.href, Astro.currentLocale)) ? 'page' : undefined
+              }
+              class="text-muted no-underline transition-colors hover:text-foreground aria-[current=page]:text-foreground"
+            >
+              {item.label}
+            </a>
+          )}
         </li>
       ))}
     </ul>
   </nav>
+  <noscript>
+    <p class="w-full font-sans text-sm text-muted">{t.searchRequiresJavaScript}</p>
+  </noscript>
 </header>

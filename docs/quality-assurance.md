@@ -101,4 +101,4 @@ env -u SITE_URL vp run build
 - **事实：**Lighthouse 只采样配置页面，内部链接检查跳过外站；不能据此宣称全站性能或外链可用。[Lighthouse](../lighthouserc.cjs)、[链接命令](../.github/workflows/ci.yml)
 - **事实：**浏览器目标是固定 viewport 的 Chromium/WebKit；可读性使用模型视觉判断，未建立像素差异基线。**推断：**这些结果不能证明真实手机、全部浏览器或所有辅助技术兼容。[目标配置](../tests/support/e2e-targets.ts)、[视觉断言](../tests/e2e/ai/rendering/reading.e2e.ts)、[键盘测试](../tests/e2e/deterministic/default/accessibility.e2e.ts)
 - **事实：**无脚本场景用 CSP 阻止脚本，并非禁用浏览器 JavaScript；翻译使用扫描器匹配文本引用，空白翻译的工具缺口由字典单元测试补充。[浏览器场景](../tests/e2e/deterministic/i18n/navigation.e2e.ts)、[扫描器](../x18n.config.ts)、[工具探针](../tests/build/tooling/x18n-tooling.test.ts)、[字典测试](../tests/unit/i18n.test.ts)
-- **事实：**发布 workflow 的两站 smoke 检查首页、中文页、搜索页、Pagefind JS 和随机不存在地址的状态、MIME 及非空 JS，并拒绝 HTML fallback；传播重试有共享总时限。**推断：**这能验证所请求资源当时的托管响应，但不能证明完整业务交互或第三方表单投递。[发布 workflow](../.github/workflows/release.yml)、[smoke](../scripts/smoke-site.ts)
+- **事实：**发布 workflow 的两站 smoke 检查首页、中文页、Pagefind JS 和随机不存在地址的状态、MIME 及非空 JS，并拒绝 HTML fallback；传播重试有共享总时限。**推断：**这能验证所请求资源当时的托管响应，但不能证明完整业务交互或第三方表单投递。[发布 workflow](../.github/workflows/release.yml)、[smoke](../scripts/smoke-site.ts)

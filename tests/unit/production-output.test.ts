@@ -12,11 +12,11 @@ async function output(base: string) {
   const directory = await mkdtemp(join(tmpdir(), 'production-output-'));
   directories.push(directory);
   for (const prefix of ['', 'zh/']) {
-    await mkdir(join(directory, prefix, 'search'), { recursive: true });
+    await mkdir(join(directory, prefix), { recursive: true });
     await writeFile(
-      join(directory, prefix, 'search/index.html'),
-      `<link rel="canonical" href="https://fixture.example${base}search/">
-      <div data-search data-bundle="${base}pagefind/pagefind.js" data-base="${base}" data-post-base="${base}${prefix}articles/"></div>`,
+      join(directory, prefix, 'index.html'),
+      `<link rel="canonical" href="https://fixture.example${base}">
+      <dialog data-search-dialog><div data-search data-bundle="${base}pagefind/pagefind.js" data-base="${base}" data-post-base="${base}${prefix}articles/"></div></dialog>`,
     );
   }
   await mkdir(join(directory, 'pagefind'));
@@ -44,11 +44,22 @@ test('rejects output built for the other target', async () => {
 test('rejects a root search resource under a correct subpath canonical', async () => {
   const directory = await output('/blog/');
   await writeFile(
-    join(directory, 'search/index.html'),
-    '<link rel="canonical" href="https://fixture.example/blog/search/"><div data-search data-bundle="/pagefind/pagefind.js" data-base="/blog/" data-post-base="/blog/articles/"></div>',
+    join(directory, 'index.html'),
+    '<link rel="canonical" href="https://fixture.example/blog/"><dialog data-search-dialog><div data-search data-bundle="/pagefind/pagefind.js" data-base="/blog/" data-post-base="/blog/articles/"></div></dialog>',
   );
   await expect(checkProductionOutput(directory, 'https://fixture.example/blog/')).rejects.toThrow(
     'deployment base',
+  );
+});
+
+test('rejects a home page missing the global search dialog', async () => {
+  const directory = await output('/');
+  await writeFile(
+    join(directory, 'zh/index.html'),
+    '<link rel="canonical" href="https://fixture.example/">',
+  );
+  await expect(checkProductionOutput(directory, 'https://fixture.example/')).rejects.toThrow(
+    'global search dialog',
   );
 });
 

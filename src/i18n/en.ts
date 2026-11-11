@@ -45,4 +45,9 @@ export default {
   searchResultsCount: 'Results: {count}',
   searchMore: 'Show more results',
   searchRequiresJavaScript: 'Enable JavaScript to search articles.',
+  searchClose: 'Close search',
+  searchCloseShortcut: 'Esc to close',
+  searchNavigateShortcut: '↑ ↓ to navigate',
+  searchSelectShortcut: 'Enter to open',
+  searchClear: 'Clear',
 };
