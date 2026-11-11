@@ -1,10 +1,7 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { load } from 'cheerio';
 import { afterAll, beforeAll, expect, test } from 'vite-plus/test';
 import { chinesePost, englishPost, i18nFirstPage, i18nPosts } from '../fixtures/i18n';
 import { createFixture } from '../support/build-fixture';
-import { listPostPaths, readHtml, rssPosts, sitemapUrls } from '../support/parse-output';
+import { listPostPaths, readHtml } from '../support/parse-output';
 
 let fixture: Awaited<ReturnType<typeof createFixture>>;
 const origin = 'https://fixture.example';
@@ -30,48 +27,69 @@ test('I18N-B0: explicit error pages localize and switch between actual routes wi
   }
 });
 
-test('I18N-B1: both static UI routes contain localized navigation and matching page identities', async () => {
+const staticRoutes = [
+  '/',
+  '/articles/',
+  '/articles/2/',
+  '/articles/tag/shared/',
+  '/about/',
+  '/contact/',
+  '/privacy/',
+  '/terms/',
+];
+
+test('I18N-B1: static pages render the URL-selected UI language and navigation', async () => {
   for (const [prefix, lang, blog] of [
     ['', 'en', 'Blog'],
     ['/zh', 'zh-Hans', '博客'],
   ]) {
-    for (const route of [
-      '/',
-      '/articles/',
-      '/articles/2/',
-      '/articles/tag/shared/',
-      '/about/',
-      '/contact/',
-      '/privacy/',
-      '/terms/',
-    ]) {
-      const $ = await readHtml(fixture.dist, `${prefix}${route}`);
-      expect($('html').attr('lang')).toBe(lang);
-      expect($(`header a[href="${prefix}/articles/"]`).text()).toContain(blog);
-      expect($('a[hreflang="en"]').attr('href')).toBe(route);
-      expect($('a[hreflang="zh-Hans"]').attr('href')).toBe(`/zh${route}`);
-      expect($('a[hreflang][aria-current="page"]').attr('hreflang')).toBe(lang);
-      const preferredUrl = `${origin}${route === '/contact/' ? prefix : ''}${route}`;
-      expect($('link[rel="canonical"]').attr('href')).toBe(preferredUrl);
-      expect($('meta[property="og:url"]').attr('content')).toBe(preferredUrl);
-      expect($('link[rel="alternate"][hreflang="en"]').attr('href')).toBe(`${origin}${route}`);
-      expect($('link[rel="alternate"][hreflang="zh-Hans"]').attr('href')).toBe(
-        `${origin}/zh${route}`,
-      );
-      expect($('meta[property="og:locale"]')).toHaveLength(0);
-    }
-    expect(
-      listPostPaths((await readHtml(fixture.dist, `${prefix}/articles/tag/shared/`)).html()),
-    ).toEqual([...i18nFirstPage, 'older-1'].map((id) => `${prefix}/articles/${id}/`));
-    for (const base of ['/articles']) {
-      expect(listPostPaths((await readHtml(fixture.dist, `${prefix}${base}/`)).html())).toEqual(
-        i18nFirstPage.map((id) => `${prefix}/articles/${id}/`),
-      );
-      expect(listPostPaths((await readHtml(fixture.dist, `${prefix}${base}/2/`)).html())).toEqual([
-        `${prefix}/articles/older-1/`,
-      ]);
+    for (const route of staticRoutes) {
+      const path = `${prefix}${route}`;
+      const $ = await readHtml(fixture.dist, path);
+      expect($('html').attr('lang'), path).toBe(lang);
+      expect($(`header a[href="${prefix}/articles/"]`).text(), path).toContain(blog);
     }
   }
+});
+
+test('I18N-B1: language links preserve each static page identity and selected language', async () => {
+  for (const [prefix, lang] of [
+    ['', 'en'],
+    ['/zh', 'zh-Hans'],
+  ]) {
+    for (const route of staticRoutes) {
+      const path = `${prefix}${route}`;
+      const $ = await readHtml(fixture.dist, path);
+      expect($('a[hreflang="en"]').attr('href'), path).toBe(route);
+      expect($('a[hreflang="zh-Hans"]').attr('href'), path).toBe(`/zh${route}`);
+      expect($('a[hreflang][aria-current="page"]').attr('hreflang'), path).toBe(lang);
+    }
+  }
+});
+
+test('I18N-B1: tag and representative two-page lists retain article identity in both UIs', async () => {
+  for (const prefix of ['', '/zh']) {
+    expect(
+      listPostPaths((await readHtml(fixture.dist, `${prefix}/articles/tag/shared/`)).html()),
+      prefix,
+    ).toEqual([...i18nFirstPage, 'older-1'].map((id) => `${prefix}/articles/${id}/`));
+    expect(
+      listPostPaths((await readHtml(fixture.dist, `${prefix}/articles/`)).html()),
+      prefix,
+    ).toEqual(i18nFirstPage.map((id) => `${prefix}/articles/${id}/`));
+    expect(
+      listPostPaths((await readHtml(fixture.dist, `${prefix}/articles/2/`)).html()),
+      prefix,
+    ).toEqual([`${prefix}/articles/older-1/`]);
+  }
+});
+
+test('I18N-B1: Chinese page identity reaches canonical and alternate metadata', async () => {
+  const $ = await readHtml(fixture.dist, '/zh/articles/2/');
+  expect($('link[rel="canonical"]').attr('href')).toBe(`${origin}/articles/2/`);
+  expect($('link[rel="alternate"][hreflang="zh-Hans"]').attr('href')).toBe(
+    `${origin}/zh/articles/2/`,
+  );
 });
 
 test('I18N-B2: original article text, links and content language survive both UI renderings', async () => {
@@ -92,21 +110,22 @@ test('I18N-B2: original article text, links and content language survive both UI
         post.lang === 'en' ? 'const message = "original";' : 'const message = "中文原文";',
       );
       bodies.push(content.html()!);
-      const schemas = JSON.parse($('script[type="application/ld+json"]').text()) as Record<
-        string,
-        unknown
-      >[];
-      expect(schemas.find((schema) => schema['@type'] === 'BlogPosting')).toMatchObject({
-        headline: post.title,
-        inLanguage: post.lang,
-        datePublished: `${post.pubDate}T00:00:00.000Z`,
-        mainEntityOfPage: `${origin}/articles/${post.id}/`,
-      });
-      expect($('time').first().attr('datetime')).toBe(`${post.pubDate}T00:00:00.000Z`);
-      const day = post.id === 'original-english' ? 12 : 11;
-      expect($('time').first().text()).toBe(prefix ? `2025年1月${day}日` : `January ${day}, 2025`);
     }
     expect(bodies[1]).toBe(bodies[0]);
+  }
+});
+
+test('I18N-B2: article dates use UI formatting while preserving the original instant', async () => {
+  for (const post of [englishPost, chinesePost]) {
+    for (const prefix of ['', '/zh']) {
+      const path = `${prefix}/articles/${post.id}/`;
+      const $ = await readHtml(fixture.dist, path);
+      expect($('time').first().attr('datetime'), path).toBe(`${post.pubDate}T00:00:00.000Z`);
+      const day = post.id === 'original-english' ? 12 : 11;
+      expect($('time').first().text(), path).toBe(
+        prefix ? `2025年1月${day}日` : `January ${day}, 2025`,
+      );
+    }
   }
 });
 
@@ -137,39 +156,4 @@ test('I18N-B5: Chinese contact forms and descriptions are static', async () => {
   expect(contact('label[for="contact-email"]').text()).toContain('邮箱');
   expect(contact('main').text()).not.toContain('Get in touch');
   expect(contact('title').text()).toContain('联系');
-});
-
-test('I18N-B4: sitemap variants agree with canonical pages and RSS contains originals only once', async () => {
-  const urls = await sitemapUrls(fixture.dist);
-  expect(urls).toContain(`${origin}/contact/`);
-  expect(urls).toContain(`${origin}/zh/contact/`);
-  expect(urls.filter((url) => new URL(url).pathname.startsWith('/zh/'))).toEqual([
-    `${origin}/zh/contact/`,
-  ]);
-  for (const post of i18nPosts) {
-    expect(urls).toContain(`${origin}/articles/${post.id}/`);
-  }
-  const index = load(await readFile(join(fixture.dist, 'sitemap-index.xml'), 'utf8'), {
-    xml: true,
-  });
-  for (const shard of index('loc').toArray()) {
-    const path = new URL(index(shard).text()).pathname;
-    const xml = load(await readFile(join(fixture.dist, path), 'utf8'), { xml: true });
-    const entry = xml('url').filter(
-      (_, item) => xml(item).find('loc').text() === `${origin}/articles/original-english/`,
-    );
-    if (entry.length) {
-      expect(entry.find('[hreflang="en"]').attr('href')).toBe(
-        `${origin}/articles/original-english/`,
-      );
-      expect(entry.find('[hreflang="zh-Hans"]').attr('href')).toBe(
-        `${origin}/zh/articles/original-english/`,
-      );
-    }
-  }
-  const rss = await readFile(join(fixture.dist, 'rss.xml'), 'utf8');
-  expect(rssPosts(rss).map((post) => post.url)).toEqual(
-    [...i18nFirstPage, 'older-1'].map((id) => `${origin}/articles/${id}/`),
-  );
-  expect(load(rss, { xml: true })('channel > language')).toHaveLength(0);
 });

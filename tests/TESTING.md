@@ -48,6 +48,14 @@ check each file is collected once, and preserve every assertion or identify its
 specific replacement. Keep migration inventories and command exit/time/build-count
 reports in ignored `tests/test-results/qa-refactor/`, not in project guides.
 
+Build suites share one read-only fixture per input configuration with
+`beforeAll`/`afterAll`; splitting assertions into named contracts must not add
+builds for the same input. SEO owns the full canonical/alternate and feed policy;
+i18n and deployment-base suites keep representative wiring checks. Pagination
+owns the 1/10/11/20/21 boundaries, exact page contents and same-origin navigation.
+Controlled browser search tests start independently for pagination, stale queries
+and excerpt rendering; real Pagefind queries remain in the build suite.
+
 ## Run unit and build tests
 
 Use the Node and pnpm versions pinned in `package.json` and `pnpm-workspace.yaml`.

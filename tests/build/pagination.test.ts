@@ -40,13 +40,10 @@ function assertPagination(
   expect(output.numberedDirectories).toEqual(
     expectedPages.length === 1 ? [] : expectedPages.length === 2 ? ['2'] : ['2', '3'],
   );
-  expect(output.pages.flatMap((page) => page.paths)).toEqual(expectedPages.flat());
-  expect(new Set(output.pages.flatMap((page) => page.paths)).size).toBe(
-    expectedPages.flat().length,
-  );
   for (const [index, page] of output.pages.entries()) {
-    expect(page.paths).toEqual(expectedPages[index]);
-    expect(page.paths.length).toBeLessThanOrEqual(10);
+    expect(page.paths, `Page ${index + 1}: exact published article paths`).toEqual(
+      expectedPages[index],
+    );
     expect(page.navCount).toBe(expectedPages.length === 1 ? 0 : 1);
     if (expectedPages.length > 1) {
       expect(page.position).toBe(`Page ${index + 1} of ${expectedPages.length}`);
