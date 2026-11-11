@@ -167,7 +167,8 @@ export function fixedReleaseApi(
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
         'Content-Type': 'application/json',
-        'X-GitHub-Api-Version': '2026-03-10',
+        // Candidate identity needs merge_commit_sha, removed from REST PRs in 2026-03-10.
+        'X-GitHub-Api-Version': '2022-11-28',
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(30_000),
