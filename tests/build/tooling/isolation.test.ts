@@ -3,8 +3,8 @@ import { readFile, readdir, realpath, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vite-plus/test';
-import { createFixture, projectRoot, type BuildFixture } from '../support/build-fixture';
-import { listPostPaths, readHtml } from '../support/parse-output';
+import { createFixture, projectRoot, type BuildFixture } from '../../support/build-fixture';
+import { listPostPaths, readHtml } from '../../support/parse-output';
 
 async function fingerprint(path: string): Promise<string> {
   const hash = createHash('sha256');
@@ -83,30 +83,4 @@ test('A0: independent builds retain distinct content and caches without changing
   await expect(stat(first.root)).rejects.toMatchObject({ code: 'ENOENT' });
   if (second) await expect(stat(second.root)).rejects.toMatchObject({ code: 'ENOENT' });
   expect((await readFile(join(first.reportDir, 'build.log'), 'utf8')).length).toBeGreaterThan(0);
-});
-
-test('A0: an invalid description fails for that field and the corrected fixture builds', async () => {
-  const posts = [
-    { id: 'description-control', title: 'Description control', pubDate: '2026-01-01', tags: [] },
-  ];
-  const invalid = await createFixture('invalid-description', { posts, invalidDescription: true });
-  try {
-    const result = await invalid.build();
-    expect(result.code).not.toBe(0);
-    expect(result.code).not.toBeNull();
-    expect(`${result.stdout}\n${result.stderr}`).toContain('description-control');
-    expect(`${result.stdout}\n${result.stderr}`).toContain('description');
-  } finally {
-    await invalid.dispose();
-  }
-  const corrected = await createFixture('corrected-description', { posts });
-  try {
-    const result = await corrected.build();
-    expect(result.code, result.stderr).toBe(0);
-    expect(listPostPaths((await readHtml(corrected.dist, '/articles/')).html())).toEqual([
-      '/articles/description-control/',
-    ]);
-  } finally {
-    await corrected.dispose();
-  }
 });

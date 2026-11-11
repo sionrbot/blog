@@ -90,7 +90,7 @@ update PR:
    Do not leave an ineffective old selector or broaden it to a global override
    merely to make installation succeed. If no safe compatible resolution exists,
    keep the update unmerged and investigate another repair.
-4. Maintain `tests/unit/minimatch-security.test.ts` alongside the graph changes.
+4. Maintain `tests/unit/tooling/minimatch-security.test.ts` alongside the graph changes.
    Its consumer-resolution assertions currently require exactly `11.0.5`; update
    them to the reviewed safe resolution when appropriate, including when removing
    an override. Preserve the amplification regression, legitimate-match controls,
