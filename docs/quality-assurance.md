@@ -98,3 +98,7 @@ env -u SITE_URL vp run build
 - **事实：**浏览器目标是固定 viewport 的 Chromium/WebKit；可读性使用模型视觉判断，未建立像素差异基线。**推断：**这些结果不能证明真实手机、全部浏览器或所有辅助技术兼容。[目标配置](../tests/support/e2e-targets.ts)、[视觉断言](../tests/e2e/ai/rendering/reading.e2e.ts)、[键盘测试](../tests/e2e/deterministic/default/accessibility.e2e.ts)
 - **事实：**无脚本场景用 CSP 阻止脚本，并非禁用浏览器 JavaScript；翻译使用扫描器匹配文本引用，空白翻译的工具缺口由字典单元测试补充。[浏览器场景](../tests/e2e/deterministic/i18n/navigation.e2e.ts)、[扫描器](../x18n.config.ts)、[工具探针](../tests/build/tooling/x18n-tooling.test.ts)、[字典测试](../tests/unit/i18n.test.ts)
 - **事实：**部署 workflow 没有部署完成后请求远端页面的 smoke 步骤。**推断：**本地 preview 的 404、静态产物正确和上传成功，均不能单独证明托管平台实时路由正确；判断线上可用性需要独立的部署后请求证据。[部署 workflow](../.github/workflows/deploy.yml)、[preview 路由测试](../tests/build/base-path.test.ts)
+
+固定源码发布的替代实现及两站 GET smoke 存放于
+[准备中的发布路径](release-prepared.md)。其 workflow 模板位于
+`.github/prepared-workflows/`，不被 GitHub Actions 调度；现行发布与部署入口仍使用上述产物证据流程。
