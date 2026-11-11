@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import { access, appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
@@ -69,7 +70,8 @@ if (
 )
   throw new Error('production-path supports only the desktop target');
 // Container checkout ownership may differ; trust only this invocation's project root.
-const gitArgs = ['-c', `safe.directory=${projectRoot}`];
+// Git 2.43 compares this literally, so resolve symlinks and the URL's trailing slash.
+const gitArgs = ['-c', `safe.directory=${realpathSync(projectRoot)}`];
 const sourceSha = execFileSync('git', [...gitArgs, 'rev-parse', 'HEAD'], {
   cwd: projectRoot,
   encoding: 'utf8',
