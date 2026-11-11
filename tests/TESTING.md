@@ -18,7 +18,7 @@ See [I18N.md](I18N.md) for language contracts and translation tooling.
 | Tooling               | `tests/unit/tooling/`                                                     | Content stub rejection, output-path decoding and dependency-consumer compatibility                                                                  |
 | Tooling               | `tests/build/tooling/x18n-tooling.test.ts`                                | Translation-tool diagnostics and valid controls; rejected writes preserve files                                                                     |
 | Browser               | `tests/e2e/deterministic/`                                                | User navigation, theme state, forms, keyboard access, narrow layouts, rendering and language switching                                              |
-| AI browser            | `tests/e2e/ai/`                                                           | Reading/navigation goals, theme selection, form discovery/submission and screenshot-based readability checks with exact assertions                  |
+| AI browser            | `tests/e2e/ai/`                                                           | Rendering screenshot readability; legacy navigation/theme/forms retained for the current workflow                                                   |
 
 Test Astro content collection behavior through real builds; the unit-only
 `astro:content` stub rejects collection access.
@@ -112,16 +112,20 @@ Install browsers once, then build the current checkout:
 ```sh
 pnpm exec e2e-web install chromium webkit
 SITE_URL=https://sionrbot.github.io vp run build
-pnpm run test:e2e -- --target desktop,narrow,webkit
-pnpm run test:e2e -- --variant rendering --target desktop,narrow,webkit
-pnpm run test:e2e -- --variant configured-forms --target desktop,narrow,webkit
-pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit
+SITE_URL=https://sionrbot.github.io pnpm run test:e2e -- --target desktop,narrow,webkit
+SITE_URL=https://sionrbot.github.io pnpm run test:e2e -- --variant rendering --target desktop,narrow,webkit
+SITE_URL=https://sionrbot.github.io pnpm run test:e2e -- --variant configured-forms --target desktop,narrow,webkit
+SITE_URL=https://sionrbot.github.io pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit
+pnpm run test:e2e -- --variant production-path
+env -u SITE_URL vp run build
 ```
 
 The existing browser and Lighthouse baseline serves the site at the domain root;
 build it with the root `SITE_URL` above. The Pages deployment builds the configured
-production subpath, which is covered separately by build assertions. Rebuild without
-the override before running the default production build tests or deploying.
+production subpath, covered by build assertions and the isolated `production-path`
+preview journey. The runner checks an explicit `SITE_URL` against the existing home
+canonical and gives preview the same deployment URL. Rebuild without the override
+after root-path browser runs, including failures, before default build tests.
 
 Linux CI uses a digest-pinned Playwright container with browsers and system
 dependencies preinstalled. Keep the image and version checks in
@@ -130,6 +134,8 @@ dependency when upgrading it. CI verifies the version and browser executables
 before running tests. Targets are Chromium
 `desktop` (1280×800), Chromium `narrow` (360×800) and WebKit `webkit` (360×800).
 The default target selection is `desktop,narrow`, with one worker and no retries.
+`production-path` runs desktop only and rejects other targets; the four existing
+deterministic suites retain all three targets.
 
 | Variant            | What to test                                                                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,6 +143,14 @@ The default target selection is `desktop,narrow`, with one worker and no retries
 | `rendering`        | Table/code/math scrolling stays inside content containers; page fits viewport; embedded controls remain usable; AI evaluates readability at content positions    |
 | `configured-forms` | Required/email validation, exact native POST fields, default/custom newsletter fields and hidden values, popup submission and exactly one request                |
 | `i18n`             | Language/page identity, original content, URL-selected UI, script-independent navigation and narrow layouts; deterministic only                                  |
+
+The deterministic-only `production-path` variant creates a fixed public article in
+an isolated fixture built at `https://fixture.example/blog/`. One desktop journey
+follows home → article → real Pagefind unique-word query → Chinese search with the
+same query → the same original article in Chinese UI. Exact URLs, result count,
+article text and language are checked; the index is not mocked and root `dist`
+is untouched. Empty-site/all-draft presentation remains unspecified and is not
+assigned guessed expectations. Local preview does not certify hosted routing.
 
 Form fixtures use fake credentials and intercepted local actions. Keep exact
 payload, method and request-count assertions. AI fills newsletter fields; the test
@@ -150,13 +164,22 @@ API with `high` reasoning effort. Existing environment variables take precedence
 over the file. Deterministic configuration does not load model credentials.
 
 ```sh
-pnpm run test:e2e:ai -- --target desktop,narrow
-pnpm run test:e2e:ai -- --variant rendering
+pnpm run test:e2e:visual -- --target desktop,narrow
+pnpm run test:e2e:ai -- --variant default
 pnpm run test:e2e:ai -- --variant configured-forms
 pnpm run test:e2e -- --list
 pnpm run test:e2e -- tests/e2e/deterministic/default/theme.e2e.ts --target desktop
-pnpm run test:e2e:ai -- tests/e2e/ai/default/reading.e2e.ts --target desktop --no-cache
+pnpm run test:e2e:ai -- --variant default tests/e2e/ai/default/reading.e2e.ts --target desktop --no-cache
 ```
+
+`test:e2e:visual` runs only the rendering screenshot suite and rejects other
+variants. `test:e2e:ai` also defaults to rendering; explicit `default` and
+`configured-forms` remain compatible with the current workflow until CI cutover.
+Do not delete these suites while that workflow still calls them. Deterministic
+forms include visible Contact and site-name navigation, and theme tests assert
+immediate state as well as persistence. Visual assertions retain content positioning
+and pixel evidence; DOM text is not a replacement. Without model credentials,
+report visual validation as not executed, not passed.
 
 AI runs consume model calls. Use `--no-cache` to verify a changed flow live;
 inspect replay/model-call fields rather than inferring replay from duration.
@@ -167,7 +190,9 @@ unknown arguments fail.
 
 The runner prepares a validated `E2E_RUN_MANIFEST`. The default variant reuses
 root `dist`; each other variant builds an isolated fixture. E2E owns preview
-startup/readiness/shutdown through `app.command`. Run one invocation per root
+startup/readiness/shutdown through `app.command`. The manifest carries `siteUrl`,
+`sourceSha` and `sourceDirty`; preview uses that deployment URL. The SHA identifies
+the checked-out source, and dirty runs must not be reported as exact commit evidence. Run one invocation per root
 at a time. `--list` collects tests without starting preview. Cleanup failures
 make the invocation fail.
 
@@ -207,8 +232,10 @@ in these artifacts or CI, rather than adding execution history to these guides.
 
 The quality workflow runs static checks, i18n, unit/timezone tests, a production
 build, build tests, Lighthouse and internal links. E2E runs automatically on pull
-requests and pushes to main; manual dispatch is also available. Deterministic
-jobs cover all four variants and three targets. AI jobs cover `default`,
+requests; manual dispatch is also available. Deterministic
+jobs cover the four existing variants and three targets. The production-path
+journey and dedicated visual command are available locally; production-path CI
+wiring belongs to the later CI cutover. AI jobs cover `default`,
 `rendering` and `configured-forms` on Chromium desktop/narrow and require the
 `OPENAI_API_KEY` Actions secret. Secret availability follows repository settings.
 

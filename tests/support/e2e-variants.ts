@@ -11,11 +11,27 @@ async function replaceOnce(path: string, before: string, after: string) {
 
 /** Only isolated copies receive fixture content and fake form configuration. */
 export async function prepareE2EVariant(
-  variant: 'rendering' | 'configured-forms' | 'i18n',
+  variant: 'rendering' | 'configured-forms' | 'i18n' | 'production-path',
 ): Promise<BuildFixture> {
   const fixture = await createFixture(
     `e2e-${variant}`,
-    variant === 'i18n' ? { posts: i18nPosts } : {},
+    variant === 'production-path'
+      ? {
+          siteUrl: 'https://fixture.example/blog/',
+          posts: [
+            {
+              id: 'production-path',
+              title: 'Production path article',
+              pubDate: '2026-01-01',
+              tags: [],
+              lang: 'en',
+              body: 'The original article contains pathconnectiontoken.',
+            },
+          ],
+        }
+      : variant === 'i18n'
+        ? { posts: i18nPosts }
+        : {},
   );
   try {
     if (variant === 'rendering') {

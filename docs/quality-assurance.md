@@ -46,7 +46,7 @@ pnpm run test:build
 
 ## 3. 交互变更后：在浏览器里检查用户行为
 
-**事实：**生产回归通过 `test:e2e` 与 `test:e2e:ai` 包装器运行 Astro preview。默认变体读取根 `dist`，其他变体建立独立 fixture；运行器验证 manifest，默认选择 Chromium 的 desktop（1280×800）与 narrow（360×800），可另选 WebKit（360×800）。配置为单 worker、零重试并启用 trace。[命令入口](../package.json)、[运行器](../tests/support/run-e2e.ts)、[目标配置](../tests/support/e2e-targets.ts)、[fixture 变体](../tests/support/e2e-variants.ts)
+**事实：**生产回归通过 `test:e2e` 与 `test:e2e:ai` 包装器运行 Astro preview。默认变体读取根 `dist`，其他变体建立独立 fixture；运行器验证 manifest，默认选择 Chromium 的 desktop（1280×800）与 narrow（360×800），可另选 WebKit（360×800）；`production-path` 仅使用 desktop。配置为单 worker、零重试并启用 trace。[命令入口](../package.json)、[运行器](../tests/support/run-e2e.ts)、[目标配置](../tests/support/e2e-targets.ts)、[fixture 变体](../tests/support/e2e-variants.ts)
 
 | 变体             | 确定性浏览器契约（事实）                                                                                                                                          | AI 补充（事实）                                                                                             |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ pnpm run test:build
 
 **事实：**表单 fixture 使用假凭据，提交请求被拦截；断言检查方法、payload 与请求数量。因此这层验证表单客户端契约，并不验证第三方服务实际投递。[表单 fixture](../tests/support/e2e-variants.ts)、[拦截与断言](../tests/support/e2e-forms.ts)
 
-**事实：**浏览器基线使用站点根路径，运行前按指南安装浏览器并以相同 SITE_URL 构建。生产子路径另由构建测试验证。[测试指南](../tests/TESTING.md)、[CI 根路径配置](../.github/workflows/e2e.yml)、[子路径断言](../tests/build/base-path.test.ts)
+**事实：**浏览器基线使用站点根路径，运行前按指南安装浏览器并以相同 SITE_URL 构建。生产子路径由构建测试与隔离的 `production-path` 真实 preview 贯通验证。runner 将构建使用的 `siteUrl` 传给 preview，并记录源码 SHA 与工作区是否有修改。[测试指南](../tests/TESTING.md)、[CI 根路径配置](../.github/workflows/e2e.yml)、[子路径断言](../tests/build/base-path.test.ts)
 
 ```sh
 pnpm exec e2e-web install chromium webkit
@@ -66,7 +66,11 @@ pnpm run test:e2e -- --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant rendering --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant configured-forms --target desktop,narrow,webkit
 pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit
+pnpm run test:e2e -- --variant production-path
+env -u SITE_URL vp run build
 ```
+
+**事实：**`production-path` 在独立 `/blog/` fixture 中串起首页、固定文章、真实 Pagefind 唯一词搜索、保留查询的中文切换及同篇原文；精确验证路径、结果数量和原文身份，不覆盖根 `dist`。专项 `test:e2e:visual` 只运行 rendering 截图可读性检查；AI 入口默认 rendering，现有 workflow 显式调用的 default/configured-forms 套件继续保留，实际删除及生产路径 CI 接线属于后续切换。[生产路径测试](../tests/e2e/deterministic/production-path/navigation.e2e.ts)、[运行器](../tests/support/run-e2e.ts)
 
 **事实：**AI 配置从环境或 `.env.e2e` 获取凭据，默认模型为 `gpt-6.1-sol`，可由 `E2E_MODEL` 覆盖，限制步骤与模型调用数。交互式 E2E 未提供 manifest 时可启动桌面 dev target，固定 `APP_URL` 可复用本地 dev；生产回归应使用上述包装器。[AI 配置](../e2e.ai.config.ts)、[交互配置](../e2e.config.ts)、[使用说明](../tests/TESTING.md)
 
