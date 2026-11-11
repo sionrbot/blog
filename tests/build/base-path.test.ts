@@ -37,11 +37,11 @@ describe.each(['', '/sionrbot-blog', '/blog'])('deployment base %s', (base) => {
         const $ = await readHtml(fixture.dist, `${prefix}${route}`);
         const page = `${base}${prefix}${route}`;
         expect($('html').attr('lang'), page).toBe(prefix ? 'zh-Hans' : 'en');
-        expect($('header nav a').first().attr('href')?.replace(/\/$/, ''), page).toBe(
+        expect($('body > header > nav a').first().attr('href')?.replace(/\/$/, ''), page).toBe(
           `${base}${prefix}/articles`,
         );
         if (route.startsWith('/articles/'))
-          expect($('header nav a').first().attr('aria-current'), page).toBe('page');
+          expect($('body > header > nav a').first().attr('aria-current'), page).toBe('page');
         expect($('a[hreflang="en"]').attr('href'), page).toBe(`${base}${route}`);
         expect($('a[hreflang="zh-Hans"]').attr('href'), page).toBe(`${base}/zh${route}`);
       }
