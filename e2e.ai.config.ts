@@ -14,7 +14,7 @@ export default {
       model: openai.responses(process.env.E2E_MODEL || 'gpt-6.1-sol'),
       providerOptions: { openai: { reasoningEffort: 'high' } },
       context:
-        'A reading-focused personal blog. Use the visible site links and controls to navigate; do not navigate directly to guessed URLs. Form submissions are intercepted by the test.',
+        'A reading-focused personal blog. Judge the visible rendering of tables, code and mathematics for legibility, contrast and overlap.',
       maxSteps: 12,
       maxModelCalls: 16,
     },

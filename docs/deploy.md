@@ -35,24 +35,25 @@ repository: GitHub derives the public path from the repository name. Changing
 separate deployment or a root-hosted test build.
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the build
-source. CI builds and validates the Pages archive on the Release PR. After merge,
-the Release workflow verifies the PR evidence and publishes the archive with the
-release, then calls `.github/workflows/deploy.yml`. The deploy workflow verifies
-the release manifest, tag, source tree, and archive digests, extracts `pages.tar`,
-and uploads it to the `github-pages` environment. It does not rebuild the site.
+source. The [release workflow](../.github/workflows/release.yml) validates the
+version PR's fixed merge SHA, builds for the Pages URL, checks its production
+output, and saves it to `release-output/pages` before building Workers.
+After both builds pass and the Release is public, the Pages job deploys that
+run's native Pages artifact to the `github-pages` environment and performs GET
+smoke checks. Only this job receives Pages write and OIDC permissions.
 
-Production deployment follows published releases, not ordinary `main` pushes.
-Pages and Workers each receive their platform-specific archive from the same
-release. Source checks, E2E, build tests, and production packaging happen before
-merge; deployment only verifies and transfers those outputs.
+Production deployment follows merged version PRs, not ordinary `main` pushes.
+Each platform consumes its own output from the same release run and attempt.
+Before deploying, each job checks that the candidate is still the latest stable
+Release and its tag still matches the fixed SHA. Superseded candidates skip
+hosting changes.
 
-To retry deployment, use **Actions → Deploy release to GitHub Pages and Cloudflare Workers
-→ Run workflow**, select `main`, and supply `release_tag` such as `v1.8.0`.
-Only the latest published stable release is accepted, preventing an older queued
-run from replacing a newer release. Its `pages.tar`, `workers.tar`, and
-`release-manifest.json` must all be present and valid. Legacy releases without
-these assets cannot be deployed through this workflow. GitHub Pages uses the
-generated token; no personal token or domain configuration is needed.
+For temporary deployment or smoke failures, use **Re-run all jobs** on the
+original **Release fixed source** run. This repeats validation and both builds at
+the original version and SHA. Deployment-only retries reject outputs from an
+older attempt. Source defects require a repaired subsequent version; see
+[release recovery](releasing.md#inspect-and-retry). Published history remains
+unchanged. There is no manual arbitrary-tag deployment entry point.
 
 Use the workflow's deployment URL to open the site. The Chinese UI is under
 `/blog/zh/`. Preview locally with `pnpm preview` and open the same
@@ -61,12 +62,14 @@ unknown URLs; it does not automatically choose the Chinese error page.
 
 ## Cloudflare Workers
 
-The same deployment workflow publishes the prebuilt Workers archive to
-https://sionrbot-blog.pgsnotfound404.workers.dev. CI creates this archive with the
-Workers URL because its domain and root path differ from Pages. After release
-verification, the Workers job runs independently of the Pages jobs. It checks out
-the recorded release source for the deployment tool and configuration, restores
-`.cloudflare/output/`, and runs `cf deploy --prebuilt`.
+The release workflow also builds for
+https://sionrbot-blog.pgsnotfound404.workers.dev. Its domain and root path differ
+from Pages, so the preparation job checks this output separately and packages
+`.cloudflare/output/` with `cf-wrangler build`. The Workers job checks out the
+fixed SHA for tooling, downloads this run's prebuilt output, and runs
+`cf deploy --prebuilt`, followed by GET smoke checks. Pages and Workers run
+independently; a failure in one leaves the workflow failed while the other still
+attempts deployment and smoke.
 
 Set repository Actions secrets `CLOUDFLARE_API_TOKEN` and
 `CLOUDFLARE_ACCOUNT_ID`. The token needs Workers Scripts Write for the target
@@ -75,12 +78,13 @@ R2, or server-side Astro adapter.
 
 For a local build or a separate local deployment, use the Workers URL so navigation,
 assets, feeds, and SEO metadata use the root path. Keep `site.url` unchanged for
-GitHub Pages. These build commands are not repeated by the release deployment job:
+GitHub Pages. The preparation job uses the same build and verification steps before publication:
 
 ```sh
 export SITE_URL=https://sionrbot-blog.pgsnotfound404.workers.dev
 pnpm build
 pnpm exec vp test --project build tests/build/base-path.test.ts tests/build/routes.test.ts tests/build/seo.test.ts
+node scripts/check-production-output.ts dist "$SITE_URL"
 pnpm exec cf-wrangler build
 pnpm exec cf deploy --prebuilt --dry-run
 pnpm exec cf deploy --prebuilt
@@ -116,34 +120,23 @@ Build command: `pnpm build`. Publish directory: `dist`.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sionrbot/blog)
 
-## CI
+## CI and deployment verification
 
-`.github/workflows/ci.yml` and `.github/workflows/e2e.yml` run on pull requests and
-manual dispatch, not on `main` pushes. Superseded runs for the same PR are
-cancelled. Release publication requires successful PR-triggered runs; manual runs
-do not produce release evidence.
+[CI](../.github/workflows/ci.yml) runs one `verify` job on pull requests and manual
+dispatch, with a fixed root-hosted test URL. It installs dependencies once, runs
+source/translation/unit/timezone checks, builds the baseline, checks build
+contracts and internal links, and runs the four deterministic browser suites on
+`desktop,narrow,webkit` plus the `production-path` desktop journey. The baseline
+stays in the same job's workspace. Diagnostics are uploaded for inspection.
 
-The CI build job installs dependencies, runs Astro checks (including type
-generation), Vite+ checks, ESLint, translation checks, unit tests and timezone
-tests, then builds the root-hosted baseline once. Vite+ already runs Oxlint, so
-CI invokes ESLint directly instead of repeating Oxlint through `pnpm lint`.
+Lighthouse and rendering AI checks are on-demand tools; see
+[Testing](../tests/TESTING.md). PR validation, release preparation, publication,
+and each platform's deployment and smoke remain separate outcomes. Test URLs,
+Pages output, and Workers output cannot be interchanged.
 
-Build tests and Lighthouse/internal-link checks download the same baseline
-artifact by immutable ID and run in parallel. Baseline artifacts are retained for
-seven days. The final `quality` check requires all those jobs to succeed.
-
-For the same-repository Release PR targeting `main`, `release-builds` separately
-builds Pages and Workers output, runs the deployment build tests for each target,
-and packages the Workers output with `cf-wrangler build` and a dry-run deployment.
-That job must also succeed before `quality` passes. It uploads the production
-archives and source evidence as `release-bundle-<attempt>`, retained for 90 days.
-Other PRs deliberately skip this job.
-
-E2E's default variant builds the baseline once for deterministic and AI tests.
-Other variants build isolated fixtures inside the runner. Runner and fixture
-lifecycles remain independent between suites. After every variant succeeds, a
-Release PR receives `e2e-evidence-<attempt>`, also retained for 90 days.
-
-CI baseline, Pages, and Workers builds use different deployment URLs; their
-output must not be interchanged. [Releasing](releasing.md) defines how the
-publisher matches the PR runs and source trees to the merged release commit.
+After deployment, `scripts/smoke-site.ts` performs bounded GET checks for the
+home, Chinese, and search pages, Pagefind JavaScript, and a random missing path.
+It requires correct statuses and content types and rejects HTML fallback for
+JavaScript. It does not submit forms or replace full browser regression.
+Local preview success does not establish hosted availability; inspect both
+platforms' actual smoke steps in the fixed-source release run.

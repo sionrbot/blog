@@ -10,20 +10,19 @@ local branch are separate conditions.
    review and required checks cover that SHA before merging. If the head changes,
    repeat the review and checks affected by the change. Merge only within the
    user's authorization and use an expected-head check when supported.
-2. Record the actual merge SHA and the final PR head SHA. Inspect the latest
-   PR-triggered CI and E2E runs for that head. These workflows do not run again
-   on `main`; their absence on the merge commit is expected. Check failures,
-   cancellations, and missing required jobs in the PR runs instead of treating
-   workflow completion as success.
-3. Follow the release lifecycle in [Releasing Sionrbot blog](../releasing.md).
-   Determine whether this change is waiting for a Release PR, is part of a merged
-   release awaiting publication, or has no independent release. For a Release PR,
-   record its head and merge SHAs separately. Verify the published tag resolves
-   to that merge SHA and `release-manifest.json` records successful CI/E2E PR
-   evidence with the same Git tree. Confirm both archive digests and the two
-   deployment jobs for that release tag. Deployment may run within the Release
-   workflow through a reusable workflow, so inspect its jobs rather than expecting
-   a separate push-triggered deployment run.
+2. Record the actual merge SHA and final PR head SHA. Inspect the PR-triggered
+   CI `verify` and PR title `title` checks for that head. CI does not run again on
+   ordinary `main` pushes; its absence on the merge commit is expected. Check
+   failures, cancellations, and missing required jobs instead of treating workflow
+   completion as success.
+3. Follow [Releasing Sionrbot blog](../releasing.md). Determine whether the change
+   awaits a version PR, belongs to a merged version awaiting publication, or has
+   no independent release. For a merged version PR, record its head and merge
+   SHAs separately. Verify the tag resolves to its fixed merge SHA and inspect
+   that candidate's release preparation, publication, Pages deployment/smoke,
+   and Workers deployment/smoke separately. For retries, require validation and
+   both builds from the deployment's current run attempt. Superseded candidates
+   may skip deployment; report that outcome without claiming they went live.
 4. Wait for authorized release and deployment work to reach its endpoint, then
    synchronize locally. An open Release PR does not grant permission to merge it;
    report that boundary when publication is outside scope. Publication alone
@@ -89,8 +88,8 @@ delete refs, merge PRs, or publish releases. Exit codes describe the snapshot:
 | `2`  | The check could not complete, such as an authentication or network error. |
 
 A successful exit is not approval to delete a branch and does not certify CI,
-E2E, deployment, or release completion. Assess those independently using the
-recorded PR heads, merge commits, release tag, and published manifest.
+browser tests, deployment, smoke, or release completion. Assess those independently
+using the recorded PR head, fixed merge SHA, release tag, and workflow jobs.
 
 Compare the local target SHA with the live remote branch SHA, not only a cached
 tracking ref. If the remote advanced during closeout, inspect the new commits and

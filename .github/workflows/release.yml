@@ -1,4 +1,3 @@
-# Prepared for R3; GitHub does not discover workflows in this directory.
 name: Release fixed source
 
 on:
