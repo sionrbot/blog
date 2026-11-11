@@ -42,6 +42,20 @@ After both builds pass and the Release is public, the Pages job deploys that
 run's native Pages artifact to the `github-pages` environment and performs GET
 smoke checks. Only this job receives Pages write and OIDC permissions.
 
+In **Settings → Environments → github-pages → Deployment branches and tags**,
+choose **Selected branches and tags** and add these two **Branch** rules:
+
+- `main`
+- `refs/pull/*/merge`
+
+The release workflow is triggered by a merged version PR's `pull_request` event.
+GitHub evaluates environment access against the event's ref, which can be
+`refs/pull/<number>/merge`; checking out the validated merge SHA does not change
+that event ref. Keep both rules so the environment accepts the workflow's event
+context. The workflow still checks that the same-repository version PR merged
+into `main` and validates its fixed merge SHA before publication and deployment.
+See [GitHub's deployment branch rules](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags).
+
 Production deployment follows merged version PRs, not ordinary `main` pushes.
 Each platform consumes its own output from the same release run and attempt.
 Before deploying, each job checks that the candidate is still the latest stable
@@ -54,6 +68,8 @@ the original version and SHA. Deployment-only retries reject outputs from an
 older attempt. Source defects require a repaired subsequent version; see
 [release recovery](releasing.md#inspect-and-retry). Published history remains
 unchanged. There is no manual arbitrary-tag deployment entry point.
+An environment-rule rejection requires correcting the environment configuration
+first, then using the same **Re-run all jobs** procedure.
 
 Use the workflow's deployment URL to open the site. The Chinese UI is under
 `/blog/zh/`. Preview locally with `pnpm preview` and open the same
