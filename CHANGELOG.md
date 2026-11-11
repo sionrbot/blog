@@ -6,6 +6,28 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## [1.9.0](https://github.com/sionrbot/blog/compare/v1.8.3...v1.9.0) (2026-11-11)
+
+### Features
+
+- add bilingual full-text search and freedom article ([#39](https://github.com/sionrbot/blog/issues/39)) ([0278efe](https://github.com/sionrbot/blog/commit/0278efea615851047fe210926a77ee6bd399ec83))
+- add English and Simplified Chinese static UI routes ([#11](https://github.com/sionrbot/blog/issues/11)) ([dfa3f2c](https://github.com/sionrbot/blog/commit/dfa3f2ccce7d6fdb8a01faa1a59221032e04c208))
+- automate version PRs and gated GitHub releases ([#19](https://github.com/sionrbot/blog/issues/19)) ([c37aa68](https://github.com/sionrbot/blog/commit/c37aa68e99d57fc9aaa7da8f15dbf042a6e27a7a))
+- deploy blog to GitHub Pages with project subpath support ([e9f6505](https://github.com/sionrbot/blog/commit/e9f6505ec8932cb4feceffcb7fcb86ee8403bd55))
+- promote validated release artifacts to production ([#54](https://github.com/sionrbot/blog/issues/54)) ([62fdd17](https://github.com/sionrbot/blog/commit/62fdd1766c5ff02742821fe4275dc4c00dc4d091))
+- replace language links with compact dropdown ([ddd5214](https://github.com/sionrbot/blog/commit/ddd521404df27e9e675ce592cd55a9a9d220f9eb))
+- simplify home and refresh personal content ([#42](https://github.com/sionrbot/blog/issues/42)) ([1d09f4d](https://github.com/sionrbot/blog/commit/1d09f4d91a329521c1cb82d4fa7f7ff94302e460))
+
+### Bug Fixes
+
+- align blog branding and routes with renamed repository ([#44](https://github.com/sionrbot/blog/issues/44)) ([d6a8470](https://github.com/sionrbot/blog/commit/d6a84709d5ebe8838e353f03bcc680fa58f0e50e))
+- attach deployment assets before publishing immutable releases ([#57](https://github.com/sionrbot/blog/issues/57)) ([45ac4ea](https://github.com/sionrbot/blog/commit/45ac4ea6c7d841caf4d25b7f5b0ef5e6b45cb322))
+- **deps:** remediate minimatch pattern amplification ([#33](https://github.com/sionrbot/blog/issues/33)) ([5bd2ed1](https://github.com/sionrbot/blog/commit/5bd2ed1a9d7e7645fcbe131b4cff35af0f6f17e9))
+- limit Pages deployment to site inputs ([910924e](https://github.com/sionrbot/blog/commit/910924eaeb471fa7115807f4181c9110dedcc9d4))
+- preserve merge SHA in release API responses ([#68](https://github.com/sionrbot/blog/issues/68)) ([cbb3397](https://github.com/sionrbot/blog/commit/cbb3397fab82769f597521143ab2b6da07bb2ec3))
+- publish new release drafts by their creation identity ([#59](https://github.com/sionrbot/blog/issues/59)) ([7e0a3b8](https://github.com/sionrbot/blog/commit/7e0a3b879371f4ff118a2779aa7103f48439cb46))
+- unify article routes under articles ([#52](https://github.com/sionrbot/blog/issues/52)) ([c70614a](https://github.com/sionrbot/blog/commit/c70614ab6c7327056c3d464a0ba2484297312ccd))
+
 ## [1.8.3](https://github.com/sionrbot/blog/compare/v1.8.2...v1.8.3) (2026-11-11)
 
 ### Refactoring
