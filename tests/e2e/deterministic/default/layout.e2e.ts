@@ -8,6 +8,7 @@ for (const prefix of ['', '/zh']) {
   }) => {
     for (const width of [360, 390, 768, 1023, 1024, 1280]) {
       await browser.setViewport({ width, height: 800 });
+      const listBounds = [];
       for (const path of ['/', '/articles/']) {
         await app.open(`${prefix}${path}`);
         const layout = await browser.evaluate(async () => {
@@ -16,7 +17,10 @@ for (const prefix of ['', '/zh']) {
           const nav = header.querySelector(':scope > nav')!.getBoundingClientRect();
           const tools = header.querySelector(':scope > div')!.getBoundingClientRect();
           const rows = [...document.querySelectorAll('main ol > li')];
+          const list = document.querySelector('main ol')!.getBoundingClientRect();
           return {
+            left: list.left,
+            right: list.right,
             count: rows.length,
             fits: [...header.querySelectorAll('a, button, summary'), ...rows].every((node) => {
               const r = node.getBoundingClientRect();
@@ -39,6 +43,7 @@ for (const prefix of ['', '/zh']) {
         expect(layout.count).toBeGreaterThan(0);
         expect(layout.fits).toBe(true);
         expect(layout.readable).toBe(true);
+        listBounds.push({ left: layout.left, right: layout.right });
         if (width < 768) expect(layout.navBelowTools).toBe(true);
         if (width === 360 || width === 1280) {
           await app.screenshot(
@@ -46,6 +51,8 @@ for (const prefix of ['', '/zh']) {
           );
         }
       }
+      expect(Math.abs(listBounds[0]!.left - listBounds[1]!.left)).toBeLessThanOrEqual(1);
+      expect(Math.abs(listBounds[0]!.right - listBounds[1]!.right)).toBeLessThanOrEqual(1);
     }
     await browser.setViewport({ width: 360, height: 800 });
     await app.open(`${prefix}/`);
