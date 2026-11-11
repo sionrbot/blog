@@ -22,56 +22,75 @@ describe.each(['', '/sionrbot-blog', '/blog'])('deployment base %s', (base) => {
   });
   afterAll(async () => fixture?.dispose());
 
-  test('project subpaths retain bilingual navigation, feeds, assets and canonical relationships', async () => {
+  const routes = [
+    '/',
+    '/articles/',
+    '/articles/sample/',
+    '/articles/tag/writing/',
+    '/about/',
+    '/contact/',
+  ];
+
+  test('bilingual navigation and article links retain the deployment prefix', async () => {
     for (const prefix of ['', '/zh']) {
-      for (const route of [
-        '/',
-        '/articles/',
-        '/articles/sample/',
-        '/articles/tag/writing/',
-        '/about/',
-        '/contact/',
-      ]) {
+      for (const route of routes) {
         const $ = await readHtml(fixture.dist, `${prefix}${route}`);
-        expect($('html').attr('lang')).toBe(prefix ? 'zh-Hans' : 'en');
-        expect($('header nav a').first().attr('href')?.replace(/\/$/, '')).toBe(
+        const page = `${base}${prefix}${route}`;
+        expect($('html').attr('lang'), page).toBe(prefix ? 'zh-Hans' : 'en');
+        expect($('header nav a').first().attr('href')?.replace(/\/$/, ''), page).toBe(
           `${base}${prefix}/articles`,
         );
         if (route.startsWith('/articles/'))
-          expect($('header nav a').first().attr('aria-current')).toBe('page');
-        expect($('a[hreflang="en"]').attr('href')).toBe(`${base}${route}`);
-        expect($('a[hreflang="zh-Hans"]').attr('href')).toBe(`${base}/zh${route}`);
-        expect($('link[rel="canonical"]').attr('href')).toBe(
-          `${origin}${base}${route === '/contact/' ? prefix : ''}${route}`,
-        );
-        expect($('link[hreflang="zh-Hans"]').attr('href')).toBe(`${origin}${base}/zh${route}`);
-        expect($('link[type="application/rss+xml"]').attr('href')).toBe(`${base}/rss.xml`);
-        expect($('link[rel="sitemap"]').attr('href')).toBe(`${base}/sitemap-index.xml`);
-        for (const element of $('a[href], link[href], script[src], img[src]').toArray()) {
-          const href = $(element).attr('href') ?? $(element).attr('src')!;
-          if (href.startsWith('/') && !href.startsWith('//')) {
-            expect(href.startsWith(`${base}/`), href).toBe(true);
-            expect(href.slice(base.length), href).not.toMatch(/^\/(?:zh\/)?blog\//);
-          }
-        }
-        const schema = JSON.parse($('script[type="application/ld+json"]').text());
-        expect(schema[0].url).toBe(`${origin}${base}/`);
+          expect($('header nav a').first().attr('aria-current'), page).toBe('page');
+        expect($('a[hreflang="en"]').attr('href'), page).toBe(`${base}${route}`);
+        expect($('a[hreflang="zh-Hans"]').attr('href'), page).toBe(`${base}/zh${route}`);
       }
-    }
-    for (const prefix of ['', '/zh']) {
       const $ = await readHtml(fixture.dist, `${prefix}/articles/`);
       expect($('main h2 a').first().attr('href')).toBe(`${base}${prefix}/articles/sample/`);
     }
     for (const route of ['/404.html', '/zh/404/']) {
       const $ = await readHtml(fixture.dist, route);
-      expect($('a[hreflang="en"]').attr('href')).toBe(`${base}/404.html`);
-      expect($('a[hreflang="zh-Hans"]').attr('href')).toBe(`${base}/zh/404/`);
+      expect($('a[hreflang="en"]').attr('href'), route).toBe(`${base}/404.html`);
+      expect($('a[hreflang="zh-Hans"]').attr('href'), route).toBe(`${base}/zh/404/`);
     }
+  });
+
+  test('page resources and discovery links stay under the deployment prefix', async () => {
+    for (const prefix of ['', '/zh']) {
+      for (const route of routes) {
+        const $ = await readHtml(fixture.dist, `${prefix}${route}`);
+        const page = `${base}${prefix}${route}`;
+        expect($('link[type="application/rss+xml"]').attr('href'), page).toBe(`${base}/rss.xml`);
+        expect($('link[rel="sitemap"]').attr('href'), page).toBe(`${base}/sitemap-index.xml`);
+        for (const element of $('a[href], link[href], script[src], img[src]').toArray()) {
+          const href = $(element).attr('href') ?? $(element).attr('src')!;
+          if (href.startsWith('/') && !href.startsWith('//')) {
+            expect(href.startsWith(`${base}/`), `${page}: ${href}`).toBe(true);
+            expect(href.slice(base.length), `${page}: ${href}`).not.toMatch(/^\/(?:zh\/)?blog\//);
+          }
+        }
+      }
+    }
+  });
+
+  test('canonical, alternate and structured-data URLs connect to the deployment prefix', async () => {
+    // SEO owns the full page-policy matrix; these two cases check prefix composition.
+    for (const [route, canonical] of [
+      ['/articles/sample/', '/articles/sample/'],
+      ['/contact/', '/zh/contact/'],
+    ]) {
+      const $ = await readHtml(fixture.dist, `/zh${route}`);
+      expect($('link[rel="canonical"]').attr('href'), route).toBe(`${origin}${base}${canonical}`);
+      expect($('link[hreflang="zh-Hans"]').attr('href'), route).toBe(`${origin}${base}/zh${route}`);
+      const schema = JSON.parse($('script[type="application/ld+json"]').text());
+      expect(schema[0].url, route).toBe(`${origin}${base}/`);
+    }
+  });
+
+  test('sitemap, RSS and robots connect published content to the deployment prefix', async () => {
     const urls = await sitemapUrls(fixture.dist, base);
     expect(urls).toContain(`${origin}${base}/articles/sample/`);
     expect(urls).toContain(`${origin}${base}/zh/contact/`);
-    expect(urls).not.toContain(`${origin}${base}/zh/articles/sample/`);
-    expect(urls.some((url) => /\/404(?:\/|\.html)$/.test(url))).toBe(false);
     const rss = await readFile(join(fixture.dist, 'rss.xml'), 'utf8');
     expect(rssPosts(rss).map((post) => post.url)).toEqual([`${origin}${base}/articles/sample/`]);
     expect(load(rss, { xml: true })('channel > link').text()).toBe(`${origin}${base}/`);

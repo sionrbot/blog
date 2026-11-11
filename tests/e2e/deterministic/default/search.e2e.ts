@@ -1,4 +1,4 @@
-import { test } from '@e2e-dev/web';
+import { beforeEach, describe, test } from '@e2e-dev/web';
 import { expect } from 'e2e';
 
 // Set SEARCH_TEST_BASE when running against the repository-path deployment.
@@ -66,19 +66,17 @@ test('search results remain readable at 360px in dark mode', async ({ app, brows
   await app.screenshot('search-360-dark');
 });
 
-test('search paginates safely and discards a superseded query', async ({
-  app,
-  browser,
-  screen,
-}) => {
-  // Isolate UI concurrency and excerpt rendering; index correctness has separate real-WASM tests.
-  await browser.route('**/pagefind/pagefind.js*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      headers: { 'content-type': 'text/javascript' },
-      body: `export async function options() {}
+describe('search interaction with a controlled index', () => {
+  // Index correctness has separate real-WASM tests. Each test gets a fresh browser context.
+  beforeEach(async ({ app, browser }) => {
+    await browser.route('**/pagefind/pagefind.js*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'text/javascript' },
+        body: `export async function options() {}
 export async function search(query) {
   if (query === 'slow') {
+    document.documentElement.dataset.slowStarted = 'true';
     await new Promise(resolve => document.addEventListener('finish-slow', resolve, { once: true }));
     document.documentElement.dataset.slowComplete = 'true';
   }
@@ -88,37 +86,69 @@ export async function search(query) {
         lang: 'en', pubDate: '2026-10-13', tags: '["AI"]' } })
   })) };
 }`,
+      });
     });
+    await app.open(`${base}/search/`);
   });
-  await app.open(`${base}/search/`);
-  await screen.getByRole('searchbox', 'Search articles').fill('many');
-  await expect(screen.getByRole('status')).toHaveText('Results: 12');
-  await expect(browser.locator('[data-search-results] li')).toHaveCount(10);
-  const oldPaginationHidden = await browser.evaluate(() => {
-    const input = document.querySelector<HTMLInputElement>('#search-query')!;
-    input.value = 'latest';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    return document.querySelector<HTMLButtonElement>('[data-search-more]')!.hidden;
+
+  test('appends the next batch and hides pagination when all results are shown', async ({
+    browser,
+    screen,
+  }) => {
+    await screen.getByRole('searchbox', 'Search articles').fill('many');
+    await expect(screen.getByRole('status')).toHaveText('Results: 12');
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(10);
+    await expect(screen.getByRole('button', 'Show more results')).toBeVisible();
+    await screen.getByRole('button', 'Show more results').tap();
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(12);
+    await expect(screen.getByRole('button', 'Show more results')).toBeHidden();
   });
-  expect(oldPaginationHidden).toBe(true);
-  await screen.getByRole('searchbox', 'Search articles').fill('many');
-  await expect(screen.getByRole('status')).toHaveText('Results: 12');
-  await expect(screen.getByRole('button', 'Show more results')).toBeVisible();
-  await screen.getByRole('button', 'Show more results').tap();
-  await expect(browser.locator('[data-search-results] li')).toHaveCount(12);
-  await expect(screen.getByRole('button', 'Show more results')).toBeHidden();
-  await expect(browser.locator('[data-search-results] img')).toHaveCount(0);
-  await expect(browser.locator('[data-search-results] mark')).toHaveCount(12);
-  expect(await browser.evaluate(() => 'searchInjected' in window)).toBe(false);
-  await screen.getByRole('searchbox', 'Search articles').fill('slow');
-  await screen.getByRole('button', 'Search', { exact: true }).tap();
-  await screen.getByRole('searchbox', 'Search articles').fill('latest');
-  await screen.getByRole('button', 'Search', { exact: true }).tap();
-  await expect(screen.getByRole('link', 'latest 0')).toBeVisible();
-  await browser.evaluate(() => document.dispatchEvent(new Event('finish-slow')));
-  await expect(browser.locator('html')).toHaveAttribute('data-slow-complete', 'true');
-  await expect(browser.locator('[data-search-results] li')).toHaveCount(1);
-  await expect(screen.getByRole('link', 'slow 0')).toHaveCount(0);
+
+  test('a changed query immediately hides pagination from the previous query', async ({
+    browser,
+    screen,
+  }) => {
+    await screen.getByRole('searchbox', 'Search articles').fill('many');
+    await expect(screen.getByRole('status')).toHaveText('Results: 12');
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(10);
+    await expect(screen.getByRole('button', 'Show more results')).toBeVisible();
+    const oldPaginationHidden = await browser.evaluate(() => {
+      const input = document.querySelector<HTMLInputElement>('#search-query')!;
+      input.value = 'latest';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return document.querySelector<HTMLButtonElement>('[data-search-more]')!.hidden;
+    });
+    expect(oldPaginationHidden).toBe(true);
+  });
+
+  test('excerpts retain highlight marks without rendering injected images or scripts', async ({
+    browser,
+    screen,
+  }) => {
+    await screen.getByRole('searchbox', 'Search articles').fill('many');
+    await expect(screen.getByRole('status')).toHaveText('Results: 12');
+    await screen.getByRole('button', 'Show more results').tap();
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(12);
+    await expect(browser.locator('[data-search-results] img')).toHaveCount(0);
+    await expect(browser.locator('[data-search-results] mark')).toHaveCount(12);
+    expect(await browser.evaluate(() => 'searchInjected' in window)).toBe(false);
+  });
+
+  test('a slow query cannot replace the latest query results when it completes', async ({
+    browser,
+    screen,
+  }) => {
+    await screen.getByRole('searchbox', 'Search articles').fill('slow');
+    await screen.getByRole('button', 'Search', { exact: true }).tap();
+    await expect(browser.locator('html')).toHaveAttribute('data-slow-started', 'true');
+    await screen.getByRole('searchbox', 'Search articles').fill('latest');
+    await screen.getByRole('button', 'Search', { exact: true }).tap();
+    await expect(screen.getByRole('link', 'latest 0')).toBeVisible();
+    await browser.evaluate(() => document.dispatchEvent(new Event('finish-slow')));
+    await expect(browser.locator('html')).toHaveAttribute('data-slow-complete', 'true');
+    await expect(browser.locator('[data-search-results] li')).toHaveCount(1);
+    await expect(screen.getByRole('link', 'slow 0')).toHaveCount(0);
+  });
 });
 
 test('search reports an unavailable index', async ({ app, browser, screen }) => {
