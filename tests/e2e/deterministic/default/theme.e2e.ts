@@ -23,6 +23,7 @@ test('manual theme selection persists through reload and overrides system prefer
   await toggle.tap();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   expect(await browser.evaluate(() => localStorage.getItem('theme'))).toBe('light');
+  await expect(browser).not.toHaveClass(browser.locator('html'), /\bdark\b/);
   await browser.reload();
   await expect(browser).not.toHaveClass(browser.locator('html'), /\bdark\b/);
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');

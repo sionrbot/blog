@@ -7,7 +7,10 @@ import { projectRoot } from './build-fixture.ts';
 
 export interface E2EManifest {
   mode: 'deterministic' | 'ai';
-  variant: 'default' | 'rendering' | 'configured-forms' | 'i18n';
+  variant: 'default' | 'rendering' | 'configured-forms' | 'i18n' | 'production-path';
+  siteUrl: string;
+  sourceSha: string;
+  sourceDirty: boolean;
   root: string;
   port: number;
   dist: string;
@@ -21,13 +24,19 @@ export function e2eConfiguration(): E2EConfig {
     throw new Error('Use pnpm run test:e2e (or test:e2e:ai) to prepare E2E_RUN_MANIFEST.');
   }
   const manifest = JSON.parse(readFileSync(path, 'utf8')) as E2EManifest;
-  const { mode, variant, root, dist, reportDir, testsGlob, port } = manifest;
+  const { mode, variant, root, dist, reportDir, testsGlob, port, siteUrl, sourceSha, sourceDirty } =
+    manifest;
   if (
     !Number.isInteger(port) ||
     port < 1024 ||
     port > 65535 ||
     !['deterministic', 'ai'].includes(mode) ||
-    !['default', 'rendering', 'configured-forms', 'i18n'].includes(variant) ||
+    !['default', 'rendering', 'configured-forms', 'i18n', 'production-path'].includes(variant) ||
+    (mode === 'ai' && (variant === 'i18n' || variant === 'production-path')) ||
+    typeof siteUrl !== 'string' ||
+    !/^https?:\/\//.test(siteUrl) ||
+    !/^[0-9a-f]{40}$/.test(sourceSha) ||
+    typeof sourceDirty !== 'boolean' ||
     !isAbsolute(root) ||
     dist !== join(root, 'dist') ||
     !isAbsolute(reportDir) ||
@@ -35,10 +44,13 @@ export function e2eConfiguration(): E2EConfig {
     testsGlob !== `tests/e2e/${mode}/${variant}/**/*.e2e.ts`
   )
     throw new Error('Invalid E2E manifest');
+  const deployment = new URL(siteUrl);
+  if (variant === 'production-path' && deployment.href !== 'https://fixture.example/blog/')
+    throw new Error('production-path requires the production fixture deployment URL');
   const require = createRequire(import.meta.url);
   const astroCli = join(dirname(require.resolve('astro/package.json')), 'bin/astro.mjs');
   const app = {
-    url: `http://127.0.0.1:${port}`,
+    url: `http://127.0.0.1:${port}${deployment.pathname}`,
     command: {
       executable: process.execPath,
       args: [
@@ -51,7 +63,7 @@ export function e2eConfiguration(): E2EConfig {
         ...(variant === 'default' ? [] : ['--config', 'fixture.config.mjs']),
       ],
       cwd: root,
-      env: { ASTRO_TELEMETRY_DISABLED: '1', SITE_URL: 'https://fixture.example' },
+      env: { ASTRO_TELEMETRY_DISABLED: '1', SITE_URL: siteUrl },
       log: relative(projectRoot, join(reportDir, 'preview.log')),
     },
     identity: `sionrbot-e2e:${variant}`,
@@ -83,7 +95,7 @@ export function e2eConfiguration(): E2EConfig {
         }),
         app,
       },
-    ],
+    ].filter((target) => variant !== 'production-path' || target.name === 'desktop'),
     workers: 1,
     retries: 0,
     timeout: 120_000,

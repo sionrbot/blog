@@ -25,7 +25,8 @@
     "test:unit:tz": "node tests/support/run-date-timezones.ts",
     "test:build": "vp test --project build",
     "test:e2e": "node tests/support/run-e2e.ts deterministic",
-    "test:e2e:ai": "node tests/support/run-e2e.ts ai"
+    "test:e2e:ai": "node tests/support/run-e2e.ts ai",
+    "test:e2e:visual": "node tests/support/run-e2e.ts visual"
   },
   "dependencies": {
     "@astrojs/markdown-satteri": "^0.4.7",
