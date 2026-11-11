@@ -6,6 +6,12 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## [1.8.5](https://github.com/sionrbot/blog/compare/v1.8.4...v1.8.5) (2026-11-11)
+
+### Bug Fixes
+
+- **release:** recover retired candidates without replaying history ([#70](https://github.com/sionrbot/blog/issues/70)) ([bf4c4d1](https://github.com/sionrbot/blog/commit/bf4c4d1eb9600ab4648d16298484c45b2b3c1caa))
+
 ## [1.8.4](https://github.com/sionrbot/blog/compare/v1.8.2...v1.8.4) (2026-11-11)
 
 ### Bug Fixes
