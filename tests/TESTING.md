@@ -23,9 +23,11 @@ See [I18N.md](I18N.md) for language contracts and translation tooling.
 Test Astro content collection behavior through real builds; the unit-only
 `astro:content` stub rejects collection access.
 
-Publication and pagination tests include deliberate isolated mutations. Require a
-successful build and parse before checking that the contract rejects the mutated
-output. A build crash is not evidence that an assertion detects the intended bug.
+For one-off sensitivity verification, inject faults only in temporary copies.
+Require a successful build and parse, rejection by the intended contract assertion,
+and a passing control after restoring the same fixture. Keep evidence in ignored
+reports; do not add source-expression mutation switches to the fixture API.
+A build crash is not evidence that an assertion detects the intended bug.
 Expected fixture data must remain independent of production sorting, pagination,
 slug and translation functions.
 
@@ -80,7 +82,13 @@ or content changes. Normally build without a `SITE_URL` override to verify the
 production subpath. If overriding it, pass the same `SITE_URL` when running build
 tests so URL-to-output assertions use the matching deployment base.
 
-For tests that modify content or configuration, use `createFixture` from
+For ordinary read-only builds, use `createBuiltFixture({ name, posts, siteUrl })`
+from `tests/support/build-fixture.ts`. It builds once, checks success and returns
+`dist`, `reportDir` and `dispose`; failed builds retain diagnostics and release
+the temporary copy automatically. Share the returned output across read-only tests.
+
+For schema failures, source/configuration edits, dev/preview or process tests,
+use the lower-level `createFixture` from
 `tests/support/build-fixture.ts` to work in an isolated temporary copy. Always
 await `fixture.dispose()` in `finally` or `afterAll`, including failed tests.
 
@@ -181,7 +189,6 @@ tests/test-results/build/<run-id>/<fixture-name>-<uuid>/
   resolved-config.json
   resolved-vite.json
   dev.log                 # when used
-  sensitivity.json        # mutation checks
 ```
 
 Start with the failing assertion and `build.log`; inspect `result.json` for the

@@ -1,9 +1,14 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile, readdir, realpath, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from 'vite-plus/test';
-import { createFixture, projectRoot, type BuildFixture } from '../../support/build-fixture';
+import {
+  createBuiltFixture,
+  createFixture,
+  projectRoot,
+  type BuildFixture,
+} from '../../support/build-fixture';
 import { listPostPaths, readHtml } from '../../support/parse-output';
 
 async function fingerprint(path: string): Promise<string> {
@@ -83,4 +88,43 @@ test('A0: independent builds retain distinct content and caches without changing
   await expect(stat(first.root)).rejects.toMatchObject({ code: 'ENOENT' });
   if (second) await expect(stat(second.root)).rejects.toMatchObject({ code: 'ENOENT' });
   expect((await readFile(join(first.reportDir, 'build.log'), 'utf8')).length).toBeGreaterThan(0);
+});
+
+test('failed ordinary builds remove their temporary root and retain actionable diagnostics', async () => {
+  const name = `failed-build-${randomUUID()}`;
+  let failure: unknown;
+  try {
+    const fixture = await createBuiltFixture({
+      name,
+      posts: [
+        {
+          id: 'diagnostic-control',
+          title: 'Diagnostic control',
+          pubDate: 'not-a-date',
+          tags: [],
+        },
+      ],
+    });
+    // If the helper unexpectedly succeeds, still release its temporary directory.
+    await fixture.dispose();
+  } catch (error) {
+    failure = error;
+  }
+  expect(failure).toBeInstanceOf(Error);
+  const reports = join(projectRoot, 'tests/test-results/build');
+  const manifests = (await readdir(reports, { recursive: true })).filter(
+    (path) => path.includes(`${name}-`) && path.endsWith('/manifest.json'),
+  );
+  expect(manifests).toHaveLength(1);
+  const reportDir = join(reports, manifests[0]!, '..');
+  expect(String(failure)).toContain(reportDir);
+  expect(String(failure)).toContain('diagnostic-control');
+  expect(String(failure)).toContain('pubDate');
+  const manifest = JSON.parse(await readFile(join(reportDir, 'manifest.json'), 'utf8'));
+  expect(manifest.name).toBe(name);
+  await expect(stat(manifest.root)).rejects.toMatchObject({ code: 'ENOENT' });
+  const result = JSON.parse(await readFile(join(reportDir, 'result.json'), 'utf8'));
+  expect(result.code).not.toBe(0);
+  expect(result.code).not.toBeNull();
+  expect(await readFile(join(reportDir, 'build.log'), 'utf8')).toContain('pubDate');
 });

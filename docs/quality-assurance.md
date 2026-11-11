@@ -42,7 +42,7 @@ pnpm run test:build
 | 搜索           | Pagefind 索引只收录已发布原文一次、正确部署前缀、查询结果与静态运行时资源                                     | [search](../tests/build/search.test.ts)                                                                            |
 | 测试基础设施   | fixture 间缓存/内容隔离，不改变源码和根 dist；SIGINT/SIGTERM 后清理子进程与临时目录且保留日志                 | [isolation](../tests/build/tooling/isolation.test.ts)、[interruption](../tests/build/tooling/interruption.test.ts) |
 
-**事实：**发布和分页测试还会在临时副本禁用草稿过滤或破坏分页链接，要求构建成功、产物可解析后，再确认契约断言拒绝错误输出。**推断：**这些针对性变异测试验证了相应断言能发现指定回归；其依据是“构建成功”与“预期断言失败”两种独立条件，不能把构建崩溃当作检测能力的证据。[发布变异](../tests/build/publication.test.ts)、[分页变异](../tests/build/pagination.test.ts)
+**事实：**普通只读构建使用 `createBuiltFixture({ name, posts, siteUrl })`，集中校验构建成功并在失败时清理临时目录；非法 schema、源码配置编辑及 dev/preview/进程场景使用底层 `createFixture`。发布与分页断言继续检查草稿排除、精确分页内容、相邻地址和同源链接；fixture 不再包含业务源码变异开关。一次性敏感度验证应在临时副本确认构建成功、指定断言拒绝错误输出，并在恢复后通过同一契约，证据保存到忽略报告目录。[fixture](../tests/support/build-fixture.ts)、[发布契约](../tests/build/publication.test.ts)、[分页契约](../tests/build/pagination.test.ts)、[测试指南](../tests/TESTING.md)
 
 ## 3. 交互变更后：在浏览器里检查用户行为
 

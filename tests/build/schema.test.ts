@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { expect, test } from 'vite-plus/test';
-import { createFixture } from '../support/build-fixture';
+import { createBuiltFixture, createFixture } from '../support/build-fixture';
 import { listPostPaths, readHtml } from '../support/parse-output';
 
 test.each([
@@ -98,7 +98,9 @@ test('A0: an invalid description fails for that field and the corrected fixture 
   const posts = [
     { id: 'description-control', title: 'Description control', pubDate: '2026-01-01', tags: [] },
   ];
-  const invalid = await createFixture('invalid-description', { posts, invalidDescription: true });
+  const invalid = await createFixture('invalid-description', {
+    posts: posts.map((post) => ({ ...post, description: 'x'.repeat(161) })),
+  });
   try {
     const result = await invalid.build();
     expect(result.code).not.toBe(0);
@@ -108,10 +110,8 @@ test('A0: an invalid description fails for that field and the corrected fixture 
   } finally {
     await invalid.dispose();
   }
-  const corrected = await createFixture('corrected-description', { posts });
+  const corrected = await createBuiltFixture({ name: 'corrected-description', posts });
   try {
-    const result = await corrected.build();
-    expect(result.code, result.stderr).toBe(0);
     expect(listPostPaths((await readHtml(corrected.dist, '/articles/')).html())).toEqual([
       '/articles/description-control/',
     ]);

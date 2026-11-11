@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,8 +23,45 @@ export interface FixturePost {
 
 interface FixtureOptions {
   posts?: readonly FixturePost[];
-  mutation?: 'publish-drafts' | 'break-pagination' | 'external-next' | 'external-prev';
-  invalidDescription?: boolean;
+  siteUrl?: string;
+}
+
+export interface BuiltFixture {
+  readonly dist: string;
+  readonly reportDir: string;
+  dispose(): Promise<void>;
+}
+
+/** Builds ordinary content once; callers only read the output and dispose it. */
+export async function createBuiltFixture({
+  name,
+  posts,
+  siteUrl,
+}: {
+  name: string;
+  posts?: readonly FixturePost[];
+  siteUrl?: string;
+}): Promise<BuiltFixture> {
+  const fixture = await createFixture(name, { posts, siteUrl });
+  try {
+    const result = await fixture.build();
+    if (result.code !== 0) {
+      throw new Error(
+        `Fixture ${name} build exited ${result.code}; see ${fixture.reportDir}\n${result.stdout}\n${result.stderr}`,
+      );
+    }
+    return { dist: fixture.dist, reportDir: fixture.reportDir, dispose: fixture.dispose };
+  } catch (error) {
+    try {
+      await fixture.dispose();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        `Fixture ${name} build and cleanup failed; see ${fixture.reportDir}`,
+      );
+    }
+    throw error;
+  }
 }
 
 export interface BuildFixture {
@@ -36,12 +73,6 @@ export interface BuildFixture {
   build(): Promise<ProcessResult>;
   beforeDispose(cleanup: () => Promise<void>): void;
   dispose(): Promise<void>;
-}
-
-async function replaceOnce(path: string, before: string, after: string) {
-  const source = await readFile(path, 'utf8');
-  if (source.split(before).length !== 2) throw new Error(`Expected exactly one anchor in ${path}`);
-  await writeFile(path, source.replace(before, after));
 }
 
 /** Copies sources, never generated state or credentials. The caller owns disposal. */
@@ -60,6 +91,7 @@ export async function createFixture(
     `${name}-${randomUUID()}`,
   );
   const env = fixtureEnv();
+  if (options.siteUrl !== undefined) env.SITE_URL = options.siteUrl;
   let active: ReturnType<typeof startAstro> | undefined;
   let disposed = false;
   const processes = new Set<ReturnType<typeof startAstro>>();
@@ -117,14 +149,11 @@ export async function createFixture(
       const content = join(root, 'src/content/blog');
       await rm(content, { recursive: true });
       await mkdir(content, { recursive: true });
-      for (const [index, post] of options.posts.entries()) {
+      for (const post of options.posts) {
         if (!/^[a-z0-9-]+$/.test(post.id)) throw new Error(`Invalid fixture post ID: ${post.id}`);
         const data = {
           title: post.title,
-          description:
-            options.invalidDescription && index === 0
-              ? 'x'.repeat(161)
-              : (post.description ?? `About ${post.id}`),
+          description: post.description ?? `About ${post.id}`,
           pubDate: post.pubDate,
           tags: post.tags,
           draft: post.draft ?? false,
@@ -138,28 +167,6 @@ export async function createFixture(
           `---\n${frontmatter}\n---\n\n${post.body ?? `Body of ${post.title}.`}\n`,
         );
       }
-    }
-    if (options.mutation === 'publish-drafts') {
-      await replaceOnce(
-        join(root, 'src/utils/posts.ts'),
-        'import.meta.env.DEV || !post.data.draft',
-        'true /* deliberate test mutation */',
-      );
-    }
-    if (options.mutation === 'break-pagination') {
-      await replaceOnce(
-        join(root, 'src/components/blog/Pagination.astro'),
-        'href={localizedHref(withoutBase(url.next), Astro.currentLocale)}',
-        'href="/articles/999/"',
-      );
-    }
-    if (options.mutation === 'external-next' || options.mutation === 'external-prev') {
-      const direction = options.mutation === 'external-next' ? 'next' : 'prev';
-      await replaceOnce(
-        join(root, 'src/components/blog/Pagination.astro'),
-        `href={localizedHref(withoutBase(url.${direction}), Astro.currentLocale)}`,
-        'href={`https://wrong.example${url.' + direction + '}`}',
-      );
     }
     // Preserve the actual app config and integrations; override only test isolation paths.
     await writeFile(
