@@ -1,0 +1,27 @@
+name: Temporary isolated QA queue probe
+run-name: ${{ github.event.head_commit.message }}
+on:
+  push:
+    branches: [fix/qa-recovery-closeout]
+permissions: {}
+concurrency:
+  group: qa-closeout-20261111-${{ startsWith(github.event.head_commit.message, 'test(queue): M') && 'maintenance' || 'release' }}
+  queue: max
+  cancel-in-progress: false
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Record start, occupy isolated group, record completion
+        env:
+          PROBE: ${{ github.event.head_commit.message }}
+        run: |
+          printf 'START %s %s\n' "$PROBE" "$(date -u +%FT%TZ)"
+          case "$PROBE" in
+            'test(queue): A') sleep 240 ;;
+            'test(queue): B'|'test(queue): C') sleep 15 ;;
+            'test(queue): M') sleep 5 ;;
+            *) exit 1 ;;
+          esac
+          printf 'END %s %s\n' "$PROBE" "$(date -u +%FT%TZ)"
