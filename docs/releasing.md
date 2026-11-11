@@ -155,8 +155,10 @@ not certify either deployment; inspect each target's deployment and smoke result
   then explicitly retire that PR by removing its `autorelease: pending` label.
   This is an operator-authorized action, not automatic cleanup. Do not delete a
   draft, move a tag, or batch-clear pending candidates. The old run now rejects
-  further publication attempts. Merge the repair and let version PR maintenance
-  prepare a new candidate containing it; an unpublished version may be skipped.
+  further publication attempts. Merge the repair, then use the explicit recovery preview and PR commands below;
+  an unpublished version must be skipped. Ordinary maintenance waits while any
+  merged candidate remains pending. After retirement, it stops if the manifest
+  has no public stable Release, instead of rediscovering already published history.
 - For a defect in a published version, preserve its Release, tag and assets.
   Merge a repair and publish it through a subsequent version PR. Do not retire
   published history to make an old version appear repaired.
@@ -170,6 +172,31 @@ Please blocks new version PR creation while a merged pending candidate remains.
 See [the tool's recovery guidance](https://github.com/googleapis/release-please#release-please-bot-does-not-create-a-release-pr-why).
 The publication parameters and latest behavior are documented in
 [GitHub's Release API](https://docs.github.com/en/rest/releases/releases).
+
+When the manifest is ahead of the latest public stable Release after retirement,
+select that public Release as the history boundary and choose a new stable version
+higher than the manifest. Review the unpublished changes when choosing the version
+(patch, minor, or major); the recovery command uses that explicit choice. With the
+same repository and token environment as ordinary maintenance:
+
+```sh
+node scripts/release.ts check --recover-from "$PUBLIC_TAG" --release-as "$NEXT_VERSION"
+node scripts/release.ts pr --recover-from "$PUBLIC_TAG" --release-as "$NEXT_VERSION"
+```
+
+`PUBLIC_TAG` includes `v`; `NEXT_VERSION` does not. Before these commands, inspect
+the retired candidate with draft-visible credentials and confirm its version has
+neither a Release nor a tag. Existing drafts or tags require separate explicit
+reconciliation; these commands do not remove them. The command checks the public
+base, its tag SHA, reachable history, unused next version, and pending candidates.
+It changes the in-memory history boundary and version only: notes compare against
+the public base, include unpublished changes and the repair, and exclude changes
+already released there. Review the preview and all three generated version files.
+Repeat the same recovery command to refresh the PR after further changes; ordinary
+maintenance deliberately stops during this gap so it cannot overwrite the recovery
+PR with bootstrap history. After the recovery version publishes, ordinary maintenance
+resumes without removing a persistent override. The PR still follows normal review,
+validation, merge, and fixed-source publication; this command only maintains a PR.
 
 For a local read-only preview of version PR changes, supply
 `GITHUB_REPOSITORY=sionrbot/blog` and a read-capable `GITHUB_TOKEN` through the

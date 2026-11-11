@@ -1,5 +1,9 @@
 import { pathToFileURL } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { parseArgs } from 'node:util';
+import { formatReleaseFile } from './release-format.ts';
+import { prepareReleaseManifest } from './release-recovery.ts';
+import { fixedReleaseApi } from './release-fixed.ts';
+export { formatReleaseFile } from './release-format.ts';
 import { GitHub, Manifest, type ReleasePullRequest } from 'release-please';
 
 export function setInitialRelease(manifest: {
@@ -12,22 +16,6 @@ export function setInitialRelease(manifest: {
     // Do not generate a comparison link to a nonexistent origin tag.
     delete manifest.releasedVersions['.'];
   }
-}
-
-export function formatReleaseFile(path: string, content: string): string {
-  // The Node strategy updates JSON metadata and Markdown changelogs. Preserve
-  // any other file format rather than guessing a parser or changing lockfiles.
-  if (!/\.(?:json|md)$/.test(path)) return content;
-  const result = spawnSync('pnpm', ['exec', 'vp', 'fmt', '--stdin-filepath', path], {
-    input: content,
-    encoding: 'utf8',
-    timeout: 30_000,
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  if (result.error || result.status !== 0) {
-    throw new Error(`Could not format release update: ${path}`);
-  }
-  return result.stdout;
 }
 
 export async function createFormattedPullRequests<
@@ -54,7 +42,23 @@ export async function createFormattedPullRequests<
 }
 
 async function main(): Promise<void> {
-  const mode = process.argv[2];
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { 'recover-from': { type: 'string' }, 'release-as': { type: 'string' } },
+  });
+  const [mode] = positionals;
+  if (
+    positionals.length !== 1 ||
+    Boolean(values['recover-from']) !== Boolean(values['release-as'])
+  ) {
+    throw new Error(
+      'Use <pr|check> with both --recover-from <tag> and --release-as <version>, or neither',
+    );
+  }
+  const recovery =
+    values['recover-from'] && values['release-as']
+      ? { from: values['recover-from'], releaseAs: values['release-as'] }
+      : undefined;
   if (!['pr', 'check'].includes(mode ?? '')) {
     throw new Error('Usage: node scripts/release.ts <pr|check>');
   }
@@ -67,6 +71,12 @@ async function main(): Promise<void> {
   // Maintain version PRs without automatic conversation messages.
   github.commentOnIssue = async () => '';
   const manifest = await Manifest.fromManifest(github, 'main');
+  if (
+    !(await prepareReleaseManifest(github, manifest, fixedReleaseApi(repository, token), recovery))
+  ) {
+    console.log('A merged release candidate remains pending; version PR maintenance is unchanged.');
+    return;
+  }
   setInitialRelease(manifest);
   if (mode === 'pr') await createFormattedPullRequests(manifest);
   else {
