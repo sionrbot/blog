@@ -220,6 +220,34 @@ describe('publication and deployment', () => {
 });
 
 describe('native release API boundaries', () => {
+  it('retrieves the live merge SHA using an API contract that includes it', async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith('/pulls/10')) {
+        const version = new Headers(init?.headers).get('X-GitHub-Api-Version');
+        // GitHub 2026-03-10 removes this field from REST PR responses,
+        // while the original pull_request webhook still carries it.
+        const withoutMergeSha = { ...pr, merge_commit_sha: undefined };
+        return Response.json(version === '2022-11-28' ? pr : withoutMergeSha);
+      }
+      if (path.includes('/contents/')) {
+        expect(new URL(String(input)).searchParams.get('ref')).toBe(sha);
+        const content = path.endsWith('/package.json') ? '{"version":"2.0.0"}' : '{".":"2.0.0"}';
+        return Response.json({
+          encoding: 'base64',
+          content: Buffer.from(content).toString('base64'),
+        });
+      }
+      if (path.endsWith('/git/ref/tags/v2.0.0') || path.endsWith('/releases/tags/v2.0.0')) {
+        return new Response('', { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    await expect(
+      fixedCandidate(fixedReleaseApi('owner/blog', 'test-token', fetcher), 'owner/blog', event),
+    ).resolves.toEqual(candidate);
+  });
+
   it('resolves annotated tags to the underlying commit before identity checks', async () => {
     const objectSha = 'c'.repeat(40);
     const fetcher = vi.fn(async (input: string | URL | Request) => {
