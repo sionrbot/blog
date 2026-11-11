@@ -19,7 +19,7 @@ export async function prepareReleaseManifest(
     if (recovery) throw new Error('Recovery requires an existing project version');
     return true;
   }
-  const currentTag = `v${recorded}`;
+  const currentTag = `v${recorded.toString()}`;
   const currentRelease = await api.release(currentTag);
   if (!recovery && currentRelease && !currentRelease.draft && !currentRelease.prerelease)
     return true;
@@ -38,7 +38,7 @@ export async function prepareReleaseManifest(
     throw new Error('Recovery requires an unpublished manifest version without a Release or tag');
   }
   if (
-    !/^v/.test(recovery.from) ||
+    !recovery.from.startsWith('v') ||
     !stableVersion.test(recovery.from.slice(1)) ||
     !stableVersion.test(recovery.releaseAs)
   ) {
@@ -61,7 +61,8 @@ export async function prepareReleaseManifest(
   ) {
     throw new Error('Recovery base must be the latest public stable Release with an existing tag');
   }
-  if ((await api.release(`v${next}`)) || (await api.tagCommit(`v${next}`))) {
+  const nextTag = `v${next.toString()}`;
+  if ((await api.release(nextTag)) || (await api.tagCommit(nextTag))) {
     throw new Error('Recovery next version already has a Release or tag');
   }
   let discovered = false;
