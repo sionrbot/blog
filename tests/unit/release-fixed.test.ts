@@ -222,7 +222,8 @@ describe('publication and deployment', () => {
 describe('native release API boundaries', () => {
   it('retrieves the live merge SHA using an API contract that includes it', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const path = new URL(String(input)).pathname;
+      const url = new URL(input instanceof Request ? input.url : input);
+      const path = url.pathname;
       if (path.endsWith('/pulls/10')) {
         const version = new Headers(init?.headers).get('X-GitHub-Api-Version');
         // GitHub 2026-03-10 removes this field from REST PR responses,
@@ -231,7 +232,7 @@ describe('native release API boundaries', () => {
         return Response.json(version === '2022-11-28' ? pr : withoutMergeSha);
       }
       if (path.includes('/contents/')) {
-        expect(new URL(String(input)).searchParams.get('ref')).toBe(sha);
+        expect(url.searchParams.get('ref')).toBe(sha);
         const content = path.endsWith('/package.json') ? '{"version":"2.0.0"}' : '{".":"2.0.0"}';
         return Response.json({
           encoding: 'base64',
@@ -251,7 +252,7 @@ describe('native release API boundaries', () => {
   it('resolves annotated tags to the underlying commit before identity checks', async () => {
     const objectSha = 'c'.repeat(40);
     const fetcher = vi.fn(async (input: string | URL | Request) => {
-      const path = new URL(String(input)).pathname;
+      const path = new URL(input instanceof Request ? input.url : input).pathname;
       if (path.endsWith('/git/ref/tags/v2.0.0')) {
         return Response.json({ object: { type: 'tag', sha: objectSha } });
       }

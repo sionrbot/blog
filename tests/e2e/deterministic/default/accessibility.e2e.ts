@@ -33,6 +33,15 @@ test('keyboard users can activate navigation and theme controls with visible foc
   await browser.keyboard.press(tab);
   await browser.keyboard.press(tab);
   await browser.keyboard.press(tab);
+  const toggle = screen.getByRole('button', 'Toggle dark mode');
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await browser.keyboard.press('Space');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(browser).toHaveClass(browser.locator('html'), /\bdark\b/);
+  await browser.keyboard.press(tab);
+  await expect(browser.locator('[data-language-switcher] summary')).toBeFocused();
+  await browser.keyboard.press(tab);
   const blogLink = screen.getByRole('navigation', 'Main').getByRole('link', 'Blog');
   await expect(blogLink).toBeFocused();
   expect(
@@ -46,16 +55,6 @@ test('keyboard users can activate navigation and theme controls with visible foc
   await browser.keyboard.press('Enter');
   await expect(browser).toHaveURL(/\/articles\/?$/);
   await expect(screen.getByRole('heading', 'Blog', { level: 1 })).toBeVisible();
-  // Tab through skip link, logo, Blog, About, Contact, then Search.
-  for (let index = 0; index < 6; index++) await browser.keyboard.press(tab);
-  await expect(screen.getByRole('navigation', 'Main').getByRole('link', 'Search')).toBeFocused();
-  await browser.keyboard.press(tab);
-  const toggle = screen.getByRole('button', 'Toggle dark mode');
-  await expect(toggle).toBeFocused();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await browser.keyboard.press('Space');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(browser).toHaveClass(browser.locator('html'), /\bdark\b/);
 });
 
 for (const path of ['/', '/articles/', '/about/', '/contact/', '/articles/typography-sampler/']) {

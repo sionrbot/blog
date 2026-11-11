@@ -107,6 +107,8 @@
 
   /* Measure and leading. Font sizes use Tailwind's default scale (text-sm … text-6xl) */
   --container-prose: 65ch;
+  --container-post: 54ch;
+  --text-prose: 1.1875rem;
   --leading-body: 1.75;
 }
 
@@ -212,7 +214,7 @@
    Add the guard to any rule you add here. */
 @layer components {
   .prose {
-    font-size: 1.1875rem;
+    font-size: var(--text-prose);
   }
   .prose
     :where(p, ul, ol, blockquote, pre, table, figure, hr):not(:where(.not-prose, .not-prose *)) {

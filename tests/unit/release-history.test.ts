@@ -152,14 +152,14 @@ describe('retired candidate history discovery', () => {
     async (condition) => {
       const fixture = historyFixture();
       if (condition === 'draft') {
-        const readRelease = fixture.api.release;
+        const readRelease = fixture.api.release.bind(fixture.api);
         vi.spyOn(fixture.api, 'release').mockImplementation(async (tag) =>
           tag === 'v1.8.3'
             ? { id: 2, tag_name: tag, draft: true, prerelease: false }
             : readRelease(tag),
         );
       } else {
-        const readTag = fixture.api.tagCommit;
+        const readTag = fixture.api.tagCommit.bind(fixture.api);
         vi.spyOn(fixture.api, 'tagCommit').mockImplementation(async (tag) =>
           tag === 'v1.8.3' ? sha(4) : readTag(tag),
         );
@@ -229,7 +229,7 @@ describe('retired candidate history discovery', () => {
     'rejects a recovery base whose REST Release is marked %s',
     async (state) => {
       const fixture = historyFixture();
-      const readRelease = fixture.api.release;
+      const readRelease = fixture.api.release.bind(fixture.api);
       vi.spyOn(fixture.api, 'release').mockImplementation(async (tag) =>
         tag === 'v1.8.2'
           ? { id: 1, tag_name: tag, draft: state === 'draft', prerelease: state === 'prerelease' }

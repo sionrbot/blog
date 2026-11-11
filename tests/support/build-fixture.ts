@@ -50,7 +50,11 @@ export async function createBuiltFixture({
         `Fixture ${name} build exited ${result.code}; see ${fixture.reportDir}\n${result.stdout}\n${result.stderr}`,
       );
     }
-    return { dist: fixture.dist, reportDir: fixture.reportDir, dispose: fixture.dispose };
+    return {
+      dist: fixture.dist,
+      reportDir: fixture.reportDir,
+      dispose: fixture.dispose.bind(fixture),
+    };
   } catch (error) {
     try {
       await fixture.dispose();
