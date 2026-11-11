@@ -1,7 +1,7 @@
 {
   "name": "sionrbot-blog",
   "type": "module",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "engines": {
     "node": "^24.22.2 || >=26.0.0"
   },
