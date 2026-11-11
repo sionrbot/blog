@@ -6,6 +6,12 @@ Versions 1.0.0–1.4.1 below describe the upstream
 [Pilcrow theme](https://github.com/ondelva/astro-theme-pilcrow/releases).
 Sionrbot personal blog's own releases start at 1.5.0; upstream tags and releases are not republished here.
 
+## [1.9.0](https://github.com/sionrbot/blog/compare/v1.8.7...v1.9.0) (2026-11-11)
+
+### Features
+
+- replace search pages with a global dialog ([#76](https://github.com/sionrbot/blog/issues/76)) ([9c2a5be](https://github.com/sionrbot/blog/commit/9c2a5be58ccd8cc1d93c6813ff07e121d366f100))
+
 ## [1.8.7](https://github.com/sionrbot/blog/compare/v1.8.6...v1.8.7) (2026-11-11)
 
 ### Bug Fixes
