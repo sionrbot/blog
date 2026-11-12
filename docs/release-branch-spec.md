@@ -1,7 +1,7 @@
 # 长期 release 分支与独立内容部署
 
-本文定义发布流程的契约、实施边界和验收要求。操作入口见
-[Releasing Sionrbot blog](releasing.md)。本地 workflow 实现不代表远端分支、保护规则和生产环境已经完成切换；使用前须完成授权的切换检查。
+本文定义发布流程的契约、实现位置和验收要求。操作入口见
+[Releasing Sionrbot blog](releasing.md)。使用前检查实时分支规则和生产环境配置；首次设置发布线时按切换步骤操作。
 
 ## 决策与范围
 
@@ -55,7 +55,7 @@ logo、字体和默认 OG 图片不属于内容专用资源。`src/config.ts`、
 
 ### 路径检查与审核边界
 
-实现可复用 [ci-scope.ts](../scripts/ci-scope.ts) 的完整差异读取方式：
+[release-content.ts](../scripts/release-content.ts) 读取软件基线到候选的完整差异：
 
 - 使用 `git diff --no-renames` 与 NUL 分隔输出，检查所有变化路径及操作类型。
 - 重命名按删除和新增检查；移出白名单、从软件目录移入内容目录均不得漏检。
@@ -67,7 +67,7 @@ logo、字体和默认 OG 图片不属于内容专用资源。`src/config.ts`、
 
 路径检查证明范围，不证明 MDX 只有文字。晋级审核必须检查 MDX 的 import、表达式、
 嵌入组件和 notices 变化。可沿用已有组件与链接工具；新增脚本、事件处理、计算逻辑或
-组件实现走软件路径。首版不引入 MDX AST 分类器。内容路径使用与软件路径相同的验证和构建。
+组件实现走软件路径。路径检查不使用 MDX AST 分类器。内容路径使用与软件路径相同的验证和构建。
 
 ## 内容候选资格
 
@@ -92,7 +92,7 @@ logo、字体和默认 OG 图片不属于内容专用资源。`src/config.ts`、
 
 ## 统一入口与候选记录
 
-扩展现有 `release.yml`，保留两种入口：
+[release.yml](../.github/workflows/release.yml) 提供两种入口：
 
 - `pull_request: closed`：仅接受合入 `release` 的同仓库、合法来源版本 PR，使用原事件 merge SHA。
 - `workflow_dispatch`：仅用于内容部署，唯一必要人工输入为完整候选 `sha`；正式执行 ref 必须为 `refs/heads/release`。
@@ -101,16 +101,16 @@ logo、字体和默认 OG 图片不属于内容专用资源。`src/config.ts`、
 workflow 执行 ref 与源码 SHA 分别校验；默认分支保留手动入口定义，并验证 UI/CLI 触发行为。
 生产环境限制与凭据访问须配合正式入口配置，不能只依赖候选字符串检查。
 
-两种入口归一为以下字段，通过 job outputs 传递，在运行摘要中展示：
+两种入口使用以下候选 outputs；运行摘要另外记录 Actions 提供的执行身份：
 
-| 字段                            | 含义                                             |
-| ------------------------------- | ------------------------------------------------ |
-| `kind`                          | `software` 或 `content`                          |
-| `sha`                           | 固定源码 SHA                                     |
-| `softwareVersion`               | 源码软件版本                                     |
-| `softwareTag`、`softwareTagSha` | 软件身份；软件候选 tag 创建前预期指向候选 SHA    |
-| `sourcePr`                      | 软件版本 PR 必填；内容关联晋级 PR 可作为辅助记录 |
-| `runId`、`runAttempt`           | 执行及重试身份                                   |
+| 字段                                  | 含义                                          |
+| ------------------------------------- | --------------------------------------------- |
+| `kind`                                | `software` 或 `content`                       |
+| `sha`                                 | 固定源码 SHA                                  |
+| `version`                             | 源码软件版本                                  |
+| `tag`、`tag-sha`                      | 软件身份；软件候选 tag 创建前预期指向候选 SHA |
+| `pr`                                  | 软件版本 PR 编号；内容候选为空                |
+| `GITHUB_RUN_ID`、`GITHUB_RUN_ATTEMPT` | Actions 执行及重试身份                        |
 
 候选身份由类型和源码 SHA 确定，重试不改变源码。原事件/dispatch 输入用于恢复候选，
 不能将运行时移动的分支作为构建输入。无需向 Git 提交候选 JSON，也无需新增内容 tag。
@@ -130,9 +130,9 @@ workflow 执行 ref 与源码 SHA 分别校验；默认分支保留手动入口�
 5. 两个部署 job 独立检查资格、部署并 smoke。
 6. 软件发布后保留版本 PR refresh；内容路径不进行软件发布标签维护。
 
-整个 workflow 共用一个固定 concurrency group，例如 `release-production`，
+整个 workflow 共用固定 concurrency group `release-production`，
 保留 `queue: max`、`cancel-in-progress: false`。不要按类型、SHA 或触发事件分组。
-版本 PR maintenance 使用独立组，例如 `release-pr-release`，避免锁冲突。
+版本 PR maintenance 使用独立组 `release-pr-release`，避免锁冲突。
 队列有限，取消和溢出仍需报告，不能视为发布成功。
 
 各目标实际部署前要求 `candidate.sha == live release HEAD`，并保留相应软件 Release/tag
@@ -140,7 +140,7 @@ workflow 执行 ref 与源码 SHA 分别校验；默认分支保留手动入口�
 已被后续 HEAD 取代的合法候选跳过部署并记录原因；身份或 tag 冲突应失败，不能归类为普通跳过。
 
 `release` 禁止强推和历史回退，所有正式部署都必须经过该队列。相同 SHA 的重复执行可以
-串行重建、部署，无需首版去重。直接调用托管平台部署不属于此流程。
+串行重建、部署，不做去重。直接调用托管平台部署不属于此流程。
 
 HEAD 检查不锁住 Git 分支。检查之间分支推进可能造成一个目标成功、另一个跳过；
 共享队列防止较新的流水线部署完成后又被旧流水线覆盖，但不提供双目标原子切换。
@@ -177,19 +177,19 @@ HEAD 检查不锁住 Git 分支。检查之间分支推进可能造成一个目�
 
 ## 实施清单与切换
 
-| 位置                                                             | 要求                                                                                                                      |
+| 位置                                                             | 当前职责                                                                                                                  |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/release-please.yml`                           | maintenance 触发、checkout 和独立并发组迁到 `release`                                                                     |
-| `.github/workflows/release.yml`                                  | 增加内容入口、统一候选、共用任务和队列；迁移版本 PR 过滤、refresh；两端使用 HEAD 门禁                                     |
-| `scripts/release.ts`、`scripts/release-recovery.ts`              | 正常版本维护、pending 查询和恢复历史统一面向 `release`                                                                    |
-| `scripts/release-fixed.ts`                                       | 保留软件候选身份和发布校验；抽取共享候选输出/部署门禁，增加内容候选校验，不要求内容候选具有版本 PR 事件                   |
-| 内容路径分类逻辑                                                 | 采用小型纯函数，复用现有 diff 读取惯例；不扩大普通 PR 的 docs-only CI 范围                                                |
+| `.github/workflows/release-please.yml`                           | maintenance 在 `release` push 后触发，checkout `release`，使用独立并发组                                                  |
+| `.github/workflows/release.yml`                                  | 软件和内容双入口、统一候选、共用任务和队列；版本 PR 过滤、refresh；两端使用 HEAD 门禁                                     |
+| `scripts/release.ts`、`scripts/release-recovery.ts`              | 正常版本维护、pending 查询和恢复历史面向 `release`；支持固定晋级分支的只读预览                                            |
+| `scripts/release-fixed.ts`                                       | 软件候选身份和发布校验、共享候选输出/部署门禁、内容候选校验                                                               |
+| `scripts/release-content.ts`                                     | 内容路径、操作、文件模式和累计历史校验；与普通 PR 的 docs-only CI 范围分开                                                |
 | `tests/unit/release*.test.ts`                                    | 覆盖双入口、历史计算、恢复、HEAD 门禁及 workflow 契约                                                                     |
 | `scripts/check-closeout.ts` 与相关测试                           | 保留日常 PR 的 `main` 默认值；发布 PR 使用 `--base release`，支持内容 dispatch 的候选和双目标结果，不能只按版本 PR 查部署 |
-| `docs/releasing.md`、`docs/deploy.md`、`docs/agents/closeout.md` | 更新操作步骤、目标分支、内容入口及独立结果判定                                                                            |
+| `docs/releasing.md`、`docs/deploy.md`、`docs/agents/closeout.md` | 操作步骤、目标分支、内容入口及独立结果判定                                                                                |
 | `docs/content.md`                                                | 记录内容资源目录和独立部署范围                                                                                            |
 
-切换步骤：
+以下步骤用于首次建立或迁移发布线；日常发布遵循前文晋级流程：
 
 1. 检查现有 pending 候选、版本 PR、tag/Release 和两端部署。先完成或明确处理旧流程候选，不自动丢弃。
 2. 在 `main` 合入并验证流程迁移代码；切换期间不通过旧入口创建新的正式候选。
@@ -234,4 +234,4 @@ HEAD 检查不锁住 Git 分支。检查之间分支推进可能造成一个目�
 - [GitHub Actions workflow 与 concurrency 语法](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
 - [GitHub Actions 手动触发事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)
 
-实施时核对这些接口和仓库实际规则；文档中的配置要求不等于远端已经配置完成。
+变更发布实现时核对这些接口和仓库实际规则；文档中的配置要求不等于远端已经配置完成。

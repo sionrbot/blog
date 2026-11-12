@@ -1,6 +1,6 @@
 # Customization
 
-Everything site-specific lives in `src/config.ts`, `src/styles/global.css`, and `src/assets/`. You should not need to touch component files for the changes below.
+Site identity and service settings live in `src/config.ts`; styling and assets live in `src/styles/global.css` and `src/assets/`. Home composition and footer layout have their own entry points below.
 
 ## Site identity
 
@@ -8,7 +8,7 @@ Everything site-specific lives in `src/config.ts`, `src/styles/global.css`, and 
 
 - `name` — shown in the header and page titles.
 - `description` — used for meta description and RSS.
-- `url` — your production URL. Set this before deploying; it feeds canonical links, RSS, and sitemap.
+- `url` — the default production URL, including any deployment path prefix. It feeds canonical links, RSS, and sitemap; `SITE_URL` overrides it at build time for alternate deployments.
 - `locale` — the default `en` value from `src/i18n/locales.ts`. Visitor UI language is selected by the URL: English without a prefix, Simplified Chinese under `/zh/`. See [UI strings](#ui-strings).
 - `author` — shown in the footer and JSON-LD structured data.
 - `defaultOgImage` — imported from `src/assets/og-default.png` (see below).
@@ -24,9 +24,9 @@ to change the footer layout.
 
 `src/config.ts`, `nav(t)` function, where `t` is the current UI dictionary:
 
-- `nav(t).header` — top bar links (`label`, `href`); use a literal dictionary reference such as `label: t.blog`. Keep it short; four links fit a phone.
+- `nav(t).header` — top bar links (`label`, `href`) and the search trigger (`label: t.search`, `action: 'search'`). Use literal dictionary references such as `label: t.blog`.
 - `nav(t).footer` — array of groups, each with a translated `title` such as `t.legal` and a `links` array using `label` and `href`.
-- `nav(t).social` — icon links (`label`, `href`, `icon`; icon names are `lucide:*` via astro-icon). Your own SVG icons go in `src/icons/`; `src/icons/logo.svg` is referenced as `logo`.
+- `nav(t).social` — icon links (`label`, `href`, `icon`; icon names are `lucide:*` via astro-icon). The header logo is imported directly from `src/assets/logo.svg`.
 
 Header and footer site paths such as `/about/` follow the current UI language. External URLs, protocol-relative URLs, and fragment-only links retain their configured destinations. Keep literal `t.key` references in `nav(t)` so x18n can scan them.
 
@@ -54,7 +54,7 @@ Font files live in `src/assets/fonts/` (woff2, self-hosted, licensed under the O
 
 ## Home page sections
 
-`src/templates/Home.astro` imports section components from `src/components/sections/` and passes them props to compose the home page; edit this file to reorder or change home page content. Available sections: `Hero`, `RecentPosts`, `Features`, `Newsletter`, `CTA`. Section components only accept props; they do not fetch their own data.
+`src/templates/Home.astro` imports section components from `src/components/sections/` and passes them props to compose the home page; edit this file to reorder or change home page content. The current home page renders only `RecentPosts`, with the six most recent posts. Available sections: `Hero`, `RecentPosts`, `Features`, `Newsletter`, `CTA`. Section components only accept props; they do not fetch their own data.
 
 ## Section components in a post
 

@@ -48,12 +48,12 @@ pnpm run test:build
 
 **事实：**生产回归通过 `test:e2e` 与 `test:e2e:ai` 包装器运行 Astro preview。默认变体读取根 `dist`，其他变体建立独立 fixture；运行器验证 manifest，默认选择 Chromium 的 desktop（1280×800）与 narrow（360×800），可另选 WebKit（360×800）；`production-path` 仅使用 desktop。确定性回归使用两个 worker，AI 检查使用单 worker；均为零重试并启用 trace。[命令入口](../package.json)、[运行器](../tests/support/run-e2e.ts)、[目标配置](../tests/support/e2e-targets.ts)、[fixture 变体](../tests/support/e2e-variants.ts)
 
-| 变体             | 确定性浏览器契约（事实）                                                                                                                                          | AI 补充（事实）                                                                                        |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| default          | 文章/标签导航、404、主题持久化与系统变化、存储失败、键盘跳转与焦点、360px 布局、禁用表单、搜索空结果/竞态/不可用索引。[源码](../tests/e2e/deterministic/default/) | 无 AI 变体；行为由确定性测试验证。                                                                     |
-| rendering        | 宽表格、代码、公式局部滚动，页面不横向溢出，嵌入控件可用。[源码](../tests/e2e/deterministic/rendering/reading.e2e.ts)                                             | 将内容定位到视口后，以截图判断文字对比、遮挡和可读性。[源码](../tests/e2e/ai/rendering/reading.e2e.ts) |
-| configured-forms | 原生必填/email 验证、POST 字段、隐藏字段、弹窗和单次提交。[源码](../tests/e2e/deterministic/configured-forms/submission.e2e.ts)                                   | 无 AI 变体；提交由确定性测试验证。                                                                     |
-| i18n             | 双向切换、页面/锚点身份、URL 优先、刷新、阻止脚本时导航、下拉菜单与 360px 布局。[源码](../tests/e2e/deterministic/i18n/navigation.e2e.ts)                         | 不提供 AI 变体，运行器显式拒绝该组合。[源码](../tests/support/run-e2e.ts)                              |
+| 变体             | 确定性浏览器契约（事实）                                                                                                                                                                    | AI 补充（事实）                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| default          | 文章/标签导航、404、主题持久化与系统变化、存储失败、键盘跳转与焦点、360px 布局、禁用表单、搜索弹窗的焦点/滚动/状态恢复、空结果/竞态/不可用索引。[源码](../tests/e2e/deterministic/default/) | 无 AI 变体；行为由确定性测试验证。                                                                     |
+| rendering        | 宽表格、代码、公式局部滚动，页面不横向溢出，嵌入控件可用。[源码](../tests/e2e/deterministic/rendering/reading.e2e.ts)                                                                       | 将内容定位到视口后，以截图判断文字对比、遮挡和可读性。[源码](../tests/e2e/ai/rendering/reading.e2e.ts) |
+| configured-forms | 原生必填/email 验证、POST 字段、隐藏字段、弹窗和单次提交。[源码](../tests/e2e/deterministic/configured-forms/submission.e2e.ts)                                                             | 无 AI 变体；提交由确定性测试验证。                                                                     |
+| i18n             | 双向切换、页面/锚点身份、URL 优先、刷新、阻止脚本时导航、下拉菜单与 360px 布局。[源码](../tests/e2e/deterministic/i18n/navigation.e2e.ts)                                                   | 不提供 AI 变体，运行器显式拒绝该组合。[源码](../tests/support/run-e2e.ts)                              |
 
 **事实：**表单 fixture 使用假凭据，提交请求被拦截；断言检查方法、payload 与请求数量。因此这层验证表单客户端契约，并不验证第三方服务实际投递。[表单 fixture](../tests/support/e2e-variants.ts)、[拦截与断言](../tests/support/e2e-forms.ts)
 
@@ -70,7 +70,7 @@ pnpm run test:e2e -- --variant production-path
 env -u SITE_URL vp run build
 ```
 
-**事实：**`production-path` 在独立 `/blog/` fixture 中串起首页、固定文章、真实 Pagefind 唯一词搜索、保留查询的中文切换及同篇原文；精确验证路径、结果数量和原文身份，不覆盖根 `dist`。专项 `test:e2e:visual` 只运行 rendering 截图可读性检查；AI 入口默认 rendering 并拒绝其他变体；生产路径桌面贯通与四套三目标确定性测试均进入 CI `verify`。[生产路径测试](../tests/e2e/deterministic/production-path/navigation.e2e.ts)、[运行器](../tests/support/run-e2e.ts)
+**事实：**`production-path` 在独立 `/blog/` fixture 中串起首页、固定文章、真实 Pagefind 唯一词搜索、中文切换及同篇原文；搜索不改变文章 URL，切换语言后重新打开搜索时输入为空；精确验证路径、结果数量和原文身份，不覆盖根 `dist`。专项 `test:e2e:visual` 只运行 rendering 截图可读性检查；AI 入口默认 rendering 并拒绝其他变体；生产路径桌面贯通与四套三目标确定性测试均进入 CI `verify`。[生产路径测试](../tests/e2e/deterministic/production-path/navigation.e2e.ts)、[运行器](../tests/support/run-e2e.ts)
 
 **事实：**AI 配置从环境或 `.env.e2e` 获取凭据，默认模型为 `gpt-6.1-sol`，可由 `E2E_MODEL` 覆盖，限制步骤与模型调用数。交互式 E2E 未提供 manifest 时可启动桌面 dev target，固定 `APP_URL` 可复用本地 dev；生产回归应使用上述包装器。[AI 配置](../e2e.ai.config.ts)、[交互配置](../e2e.config.ts)、[使用说明](../tests/TESTING.md)
 
@@ -90,13 +90,17 @@ workflow 不设置 `paths` / `paths-ignore`，`verify` 始终产生检查结果�
 
 ## 5. 发布与部署：固定源码后重新验证
 
-**事实：**普通 `main` push 由[版本 PR 维护 workflow](../.github/workflows/release-please.yml) 更新版本和变更说明，不直接部署。合并同仓库版本 PR 到 `main` 后，[发布 workflow](../.github/workflows/release.yml) 固定事件中的完整 merge SHA；[固定候选脚本](../scripts/release-fixed.ts) 验证 PR 身份、稳定版本文件、当前 checkout、pending 状态和 tag SHA。核心检查与完整确定性浏览器验证通过后，分别构建 Pages 子路径和 Workers 根路径，并对实际目标产物检查路径、SEO 与搜索资源。
+**事实：**`release` push 由[版本 PR 维护 workflow](../.github/workflows/release-please.yml) 更新版本和变更说明，不直接部署。合并同仓库版本 PR 到 `release` 后，[发布 workflow](../.github/workflows/release.yml) 固定事件中的完整 merge SHA；[固定候选脚本](../scripts/release-fixed.ts) 验证 PR 身份、稳定版本文件、当前 checkout、pending 状态和 tag SHA。
 
-**事实：**Pages 在 Workers 构建前独立保存；两站仅消费当前 run/attempt 的各自产物。全部验证与构建成功后才公开 Release。历史公开版本只复用，不改 notes、tag 或资产；draft、prerelease 或冲突 tag 阻断。部署前两站各自检查最新稳定版本；过时候选跳过。两站 job 独立尝试部署与 GET smoke，任一失败使整体失败。[发布 workflow](../.github/workflows/release.yml)、[产物检查](../scripts/check-production-output.ts)、[smoke](../scripts/smoke-site.ts)
+**事实：**同一发布 workflow 还接受内容部署的手动触发：执行 ref 必须是 `release`，完整输入 SHA 必须等于事件 SHA 和当前 `release` HEAD。内容候选沿用最新稳定软件版本与 tag，并验证从软件 tag 到候选的累计差异属于内容白名单；它不创建软件版本、tag 或 Release。[候选验证](../scripts/release-fixed.ts)、[内容范围校验](../scripts/release-content.ts)、[发布指南](releasing.md)
 
-**事实：**发布与部署共用 `release-main` 保留等待任务的队列；版本 PR 维护使用独立组。临时故障须在原 run 选择 Re-run all jobs，重新验证构建；部署单独重试拒绝旧 attempt 输出。未公开源码缺陷候选需经明确授权退役 pending，再从修复准备新候选；已公开历史保持不变。[发布与恢复指南](releasing.md#inspect-and-retry)
+**事实：**软件发布与内容部署都执行完整核心检查和确定性浏览器验证，再分别构建 Pages 子路径和 Workers 根路径，对实际目标产物检查路径、SEO 与搜索资源。Pages 在 Workers 构建前独立保存；两站仅消费当前 run/attempt 的各自产物。软件候选全部验证与构建成功后才公开 Release；历史公开版本只复用，不改 notes、tag 或资产，draft、prerelease 或冲突 tag 阻断。[发布 workflow](../.github/workflows/release.yml)、[产物检查](../scripts/check-production-output.ts)
 
-**推断：**PR 通过、Release 公开和站点可用是不同结论：依据是发布重新验证固定 SHA，且每个平台有独立部署与 smoke 步骤。收尾需分别核对这些结果，不能用本地 preview 或公开 Release 代替线上验收。[收尾指南](agents/closeout.md)
+**事实：**部署前两站各自要求软件基线仍为最新稳定版本，且候选 SHA 仍是 `release` HEAD；过时候选跳过。两站 job 独立尝试部署与 GET smoke，任一失败使整体失败。发布与部署共用 `release-production` 保留等待任务的队列，版本 PR 维护使用 `release-pr-release`；软件发布后单独刷新下一版本 PR。[发布 workflow](../.github/workflows/release.yml)、[部署准入](../scripts/release-fixed.ts)、[smoke](../scripts/smoke-site.ts)
+
+**事实：**临时故障须在原 run 选择 Re-run all jobs，重新验证构建；部署单独重试拒绝旧 attempt 输出。未公开软件候选的源码缺陷需经明确授权退役 pending，再从修复准备新候选；已公开历史保持不变。内容修复沿用内容范围校验，超出范围的修复进入软件发布流程。[发布与恢复指南](releasing.md#inspect-and-retry)
+
+**推断：**PR 通过、软件 Release 公开和站点可用是不同结论：依据是发布重新验证固定 SHA，每个平台有独立部署与 smoke 步骤，且内容部署不创建 Release。收尾需分别核对这些结果，不能用本地 preview 或公开 Release 代替线上验收。[收尾指南](agents/closeout.md)
 
 ## 6. 失败诊断与覆盖边界
 

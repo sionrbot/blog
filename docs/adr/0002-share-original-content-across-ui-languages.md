@@ -19,6 +19,6 @@
 
 - **已确认要求：** [i18n 规格 R2、D5、D7](../i18n-spec.md#confirmed-decisions) 明确原文不翻译、内容和模板共享，避免复制两套内容与业务逻辑；[翻译边界](../i18n-spec.md#translation-boundary) 区分 UI 与作者原文。
 - **内容实现：** [文章 schema](../../src/content.config.ts) 独立定义内容语言，[共享路径生成](../../src/templates/paths.ts)与[文章模板](../../src/templates/Post.astro)供两种路由复用；[文章布局](../../src/layouts/PostLayout.astro)标记原文语言，[RSS](../../src/pages/rss.xml.ts)使用同一文章集合。
-- **工程决策与理由：** [i18n 规格：SEO and feeds](../i18n-spec.md#seo-and-feeds) 明确区分共享原文与完整翻译的 Contact，并将该策略标为工程建议，而非 Astro 自动行为或独立确认的产品要求。
+- **工程决策与理由：** [i18n 规格：SEO and feeds](../i18n-spec.md#seo-and-feeds) 明确区分共享原文与完整翻译的 Contact；该策略是项目实现约定，不是 Astro 自动行为。
 - **实现：** [canonicalPath](../../src/i18n/paths.ts) 对 Contact 保留当前语言路径，对其他页面返回无语言前缀的页面身份；[SEO 组件](../../src/components/common/SEO.astro) 和 [sitemap 配置](../../astro.config.mjs) 使用同一规则。
-- **验证契约：** [语言构建测试](../../tests/build/i18n.test.ts) 检查 Contact 的 self-canonical、两种 Contact 地址进入 sitemap，以及共享原文页面的首选地址。
+- **验证契约：** [SEO 构建测试](../../tests/build/seo.test.ts) 检查 Contact 的 self-canonical、两种 Contact 地址进入 sitemap，以及共享原文页面的首选地址。

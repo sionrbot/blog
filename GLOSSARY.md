@@ -11,7 +11,7 @@
 _Avoid_: 用“页面”代指文章本身；用“中文版文章”代指中文界面中的文章。
 
 **作者原文（Authored content）**：
-由作者维护、切换界面语言时保持原样的内容，包括文章标题、摘要、正文、标签、图片说明，以及首页口号和 About 等独立页面的原文。[依据](docs/i18n-spec.md#preserve-original-content)
+由作者维护、切换界面语言时保持原样的内容，包括文章标题、摘要、正文、标签、图片说明，以及 About 等独立页面的原文。[依据](docs/i18n-spec.md#preserve-original-content)
 _Avoid_: 将“原文”等同于英文；将所有可见文字都称为 UI 文案。
 
 **草稿（Draft）**：

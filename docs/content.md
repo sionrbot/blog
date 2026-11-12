@@ -14,7 +14,7 @@ Fields:
 - `description` (string, required, max 160 characters)
 - `pubDate` (date, required)
 - `updatedDate` (date, optional)
-- `lang` (string, optional, default `en`) — a valid BCP 47 language tag for the original content, for example `en`, `zh-Hans`, or `ja`. It is independent of the supported UI languages. The existing articles were checked and marked `en`; new articles should state their actual language.
+- `lang` (string, optional, default `en`) — a valid BCP 47 language tag for the original content, for example `en`, `zh-Hans`, or `ja`. It is independent of the supported UI languages. Set this to the article's actual language; the collection includes English and Simplified Chinese originals.
 - `heroImage` (image, optional) — relative path from the post to a file in `src/assets/`, e.g. `../../assets/content/cover.jpg`
 - `heroAlt` (string, required if `heroImage` is set)
 - `tags` (string array, default `[]`)

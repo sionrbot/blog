@@ -109,7 +109,7 @@ batch cannot independently produce a software release.
 
 ## Deploy content independently
 
-After the authorized remote cutover, promote an eligible content snapshot and
+With the release branch and environment rules configured, promote an eligible content snapshot and
 record the complete `release` HEAD SHA. Run **Release fixed source** manually
 from the `release` branch, supplying that SHA as the `sha` input. Equivalently,
 when deployment is authorized:
@@ -296,26 +296,17 @@ the version PR with write credentials; it does not publish a Release. Credential
 must not be saved in tracked files. Run `pnpm run test:unit` for release and
 recovery contracts without GitHub writes.
 
-## Start the project version history
+## Version history origin
 
 Versions through `1.4.1` in `CHANGELOG.md` belong to the upstream Pilcrow theme.
 Keep those entries as attributed history; do not push the inherited local tags or
 recreate upstream Releases in this repository.
 
-The bootstrap boundary is `7865317be2275f91472df7319f34d00319373c2f`, immediately
-before the blog's first personalization commit. While the manifest is `1.4.1`,
-the script requests `1.5.0` for the first release PR. Once that PR updates the
-manifest, normal automatic version calculation resumes without a permanent
-`release-as` override.
+`release-please-config.json` retains bootstrap boundary
+`7865317be2275f91472df7319f34d00319373c2f`, immediately before the blog's first
+personalization commit. `scripts/release.ts` requests `1.5.0` only when the
+manifest's released version is the inherited `1.4.1`; normal version calculation
+applies after bootstrap. Existing project history uses the manifest and public
+software Releases, including the explicit recovery boundary described above.
 
-Review the first release notes against the actual changes since that boundary.
-Some historical PR titles were not Conventional Commits, so their changes may
-need to be added to the notes. In particular, account for branding, bilingual UI,
-toolchain and testing changes, and GitHub Pages / Cloudflare Workers deployment.
-For a squash-merged historical PR, Release Please supports a
-`BEGIN_COMMIT_OVERRIDE` / `END_COMMIT_OVERRIDE` section in its description. Apply
-such corrections before refreshing the release PR; avoid editing generated notes
-only to have the next refresh overwrite them.
-
-See [Release Please's commit overrides](https://github.com/googleapis/release-please#how-can-i-fix-release-notes)
-and [bootstrap configuration](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md#bootstrapping).
+See [Release Please's bootstrap configuration](https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md#bootstrapping).
