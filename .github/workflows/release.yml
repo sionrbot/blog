@@ -45,6 +45,15 @@ jobs:
           node-version-file: package.json
       - id: pnpm
         run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - id: pnpm_store
+        name: Locate pnpm store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - id: pnpm_cache
+        name: Cache pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ steps.pnpm_store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'pnpm-workspace.yaml') }}
       - id: dependencies
         run: pnpm install --frozen-lockfile
       - id: candidate
@@ -217,6 +226,15 @@ jobs:
           node-version-file: package.json
       - id: workers_pnpm
         run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - id: pnpm_store
+        name: Locate pnpm store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - id: pnpm_cache
+        name: Cache pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ steps.pnpm_store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'pnpm-workspace.yaml') }}
       - id: workers_dependencies
         run: pnpm install --frozen-lockfile
       - id: workers_download
@@ -254,6 +272,15 @@ jobs:
         with:
           node-version-file: package.json
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
+      - id: pnpm_store
+        name: Locate pnpm store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - id: pnpm_cache
+        name: Cache pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ steps.pnpm_store.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'pnpm-workspace.yaml') }}
       - run: pnpm install --frozen-lockfile
       - name: Refresh the next version PR after clearing pending
         run: node scripts/release.ts pr
