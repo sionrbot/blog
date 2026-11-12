@@ -41,10 +41,15 @@ export async function createFormattedPullRequests<
   return manifest.createPullRequests();
 }
 
-async function main(): Promise<void> {
+export function parseReleaseOptions(args: string[]) {
   const { values, positionals } = parseArgs({
+    args,
     allowPositionals: true,
-    options: { 'recover-from': { type: 'string' }, 'release-as': { type: 'string' } },
+    options: {
+      'recover-from': { type: 'string' },
+      'release-as': { type: 'string' },
+      'preview-branch': { type: 'string' },
+    },
   });
   const [mode] = positionals;
   if (
@@ -62,6 +67,24 @@ async function main(): Promise<void> {
   if (!['pr', 'check'].includes(mode ?? '')) {
     throw new Error('Usage: node scripts/release.ts <pr|check>');
   }
+  const previewBranch = values['preview-branch'];
+  if (
+    previewBranch !== undefined &&
+    (mode !== 'check' ||
+      recovery ||
+      !/^promote\/[A-Za-z0-9][A-Za-z0-9_-]*(?:\/[A-Za-z0-9][A-Za-z0-9_-]*)*$/.test(previewBranch))
+  ) {
+    throw new Error(
+      '--preview-branch requires check, a promote/<name> branch, and no recovery options',
+    );
+  }
+  return { mode, recovery, targetBranch: previewBranch ?? 'release', previewBranch };
+}
+
+async function main(): Promise<void> {
+  const { mode, recovery, targetBranch, previewBranch } = parseReleaseOptions(
+    process.argv.slice(2),
+  );
   const token = process.env.GITHUB_TOKEN;
   const repository = process.env.GITHUB_REPOSITORY;
   if (!token || !repository) throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required');
@@ -70,7 +93,7 @@ async function main(): Promise<void> {
   const github = await GitHub.create({ owner, repo, token });
   // Maintain version PRs without automatic conversation messages.
   github.commentOnIssue = async () => '';
-  const manifest = await Manifest.fromManifest(github, 'main');
+  const manifest = await Manifest.fromManifest(github, targetBranch);
   if (
     !(await prepareReleaseManifest(github, manifest, fixedReleaseApi(repository, token), recovery))
   ) {
@@ -85,6 +108,8 @@ async function main(): Promise<void> {
     console.log(
       JSON.stringify(
         {
+          targetBranch,
+          preview: previewBranch !== undefined,
           pullRequests: pullRequests.map((pullRequest) => ({
             title: pullRequest.title.toString(),
             version: pullRequest.version?.toString(),

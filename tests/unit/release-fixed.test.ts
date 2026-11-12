@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vite-plus/test';
 import {
+  contentCandidate,
   fixedCandidate,
   fixedReleaseApi,
   mayDeploy,
   publishFixed,
   releaseNotes,
+  validateCandidateCheckout,
   type FixedCandidate,
   type FixedReleaseApi,
   type MergedPullRequest,
@@ -15,14 +17,16 @@ const pr: MergedPullRequest = {
   number: 10,
   merged: true,
   merge_commit_sha: sha,
-  base: { ref: 'main', repo: { full_name: 'owner/blog' } },
+  base: { ref: 'release', repo: { full_name: 'owner/blog' } },
   head: {
-    ref: 'release-please--branches--main--components--sionrbot-blog',
+    ref: 'release-please--branches--release--components--sionrbot-blog',
     repo: { full_name: 'owner/blog' },
   },
   labels: [{ name: 'autorelease: pending' }],
 };
 const candidate: FixedCandidate = {
+  kind: 'software',
+  tagSha: sha,
   repository: 'owner/blog',
   pr: 10,
   sha,
@@ -32,6 +36,7 @@ const candidate: FixedCandidate = {
 const published = { id: 5, tag_name: 'v2.0.0', draft: false, prerelease: false };
 function api(overrides: Partial<FixedReleaseApi> = {}): FixedReleaseApi {
   return {
+    branchHead: async () => sha,
     pullRequest: async () => pr,
     file: async (path) =>
       path === 'package.json'
@@ -50,6 +55,14 @@ function api(overrides: Partial<FixedReleaseApi> = {}): FixedReleaseApi {
 const event = { action: 'closed', pull_request: pr };
 
 describe('fixed release candidate', () => {
+  it('rejects checkout drift even when the release API reports a valid candidate', () => {
+    expect(() => validateCandidateCheckout(candidate, 'b'.repeat(40), '2.0.0', '2.0.0')).toThrow(
+      'Checkout',
+    );
+    expect(() => validateCandidateCheckout(candidate, sha, '2.0.1', '2.0.0')).toThrow('Checkout');
+    expect(() => validateCandidateCheckout(candidate, sha, '2.0.0', undefined)).toThrow('Checkout');
+    expect(() => validateCandidateCheckout(candidate, sha, '2.0.0', '2.0.0')).not.toThrow();
+  });
   it('reads versions only at the original merge SHA on every retry', async () => {
     const source = api();
     const file = vi.spyOn(source, 'file');
@@ -177,6 +190,11 @@ describe('publication and deployment', () => {
     await expect(
       mayDeploy({ ...source, tagCommit: async () => 'b'.repeat(40) }, candidate),
     ).rejects.toThrow('Conflicting');
+    // The software version has not changed, but newer content (even if not yet
+    // deployed) makes the old software run ineligible to overwrite either target.
+    expect(await mayDeploy({ ...source, branchHead: async () => 'b'.repeat(40) }, candidate)).toBe(
+      false,
+    );
   });
   it('retains the published version if label completion fails', async () => {
     const create = vi.fn();
@@ -219,7 +237,111 @@ describe('publication and deployment', () => {
   });
 });
 
+describe('content candidate', () => {
+  const contentSha = 'b'.repeat(40);
+  const dispatch = { inputs: { sha: contentSha } };
+  const source = () =>
+    api({
+      branchHead: async () => contentSha,
+      tagCommit: async () => sha,
+      release: async () => published,
+      latest: async () => published,
+    });
+  it('keeps the published software identity for successive content sources without writes', async () => {
+    const client = source();
+    const create = vi.spyOn(client, 'create');
+    const mark = vi.spyOn(client, 'markPublished');
+    const first = await contentCandidate(client, 'owner/blog', dispatch, 'refs/heads/release');
+    expect(first).toEqual({
+      kind: 'content',
+      repository: 'owner/blog',
+      sha: contentSha,
+      version: '2.0.0',
+      tag: 'v2.0.0',
+      tagSha: sha,
+    });
+    expect(await mayDeploy(client, first)).toBe(true);
+    const nextSha = 'c'.repeat(40);
+    client.branchHead = async () => nextSha;
+    const next = await contentCandidate(
+      client,
+      'owner/blog',
+      { inputs: { sha: nextSha } },
+      'refs/heads/release',
+    );
+    expect(next.version).toBe(first.version);
+    expect(await mayDeploy(client, first)).toBe(false);
+    expect(await mayDeploy(client, next)).toBe(true);
+    expect(create).not.toHaveBeenCalled();
+    expect(mark).not.toHaveBeenCalled();
+  });
+  it.each([
+    [{ inputs: { sha: 'release' } }, 'refs/heads/release'],
+    [dispatch, 'refs/heads/main'],
+    [{}, 'refs/heads/release'],
+  ])('rejects unsupported dispatch %#', async (event, ref) => {
+    await expect(contentCandidate(source(), 'owner/blog', event, ref)).rejects.toThrow(
+      'Content dispatch',
+    );
+  });
+  it('rejects missing, unpublished, stale or inconsistent software baselines', async () => {
+    const overrides: Partial<FixedReleaseApi>[] = [
+      { tagCommit: async () => null },
+      { release: async () => null },
+      { release: async () => ({ ...published, draft: true }) },
+      { release: async () => ({ ...published, prerelease: true }) },
+      { latest: async () => ({ ...published, tag_name: 'v2.1.0' }) },
+      { file: async () => '{"version":"2.0.0",".":"2.0.1"}' },
+      { branchHead: async () => sha },
+    ];
+    for (const override of overrides) {
+      await expect(
+        contentCandidate(
+          { ...source(), ...override },
+          'owner/blog',
+          dispatch,
+          'refs/heads/release',
+        ),
+      ).rejects.toThrow();
+    }
+  });
+  it('pins the prepared tag through deployment, but reports HEAD movement as superseded', async () => {
+    await expect(
+      contentCandidate(source(), 'owner/blog', dispatch, 'refs/heads/release', {
+        expectedTagSha: 'c'.repeat(40),
+        requireHead: false,
+      }),
+    ).rejects.toThrow('baseline changed');
+    const client = { ...source(), branchHead: async () => 'c'.repeat(40) };
+    const fixed = await contentCandidate(client, 'owner/blog', dispatch, 'refs/heads/release', {
+      expectedTagSha: sha,
+      requireHead: false,
+    });
+    expect(await mayDeploy(client, fixed)).toBe(false);
+  });
+  it('records each target decision when release advances between deployments', async () => {
+    const client = source();
+    const fixed = await contentCandidate(client, 'owner/blog', dispatch, 'refs/heads/release');
+    expect(await mayDeploy(client, fixed)).toBe(true);
+    client.branchHead = async () => 'c'.repeat(40);
+    expect(await mayDeploy(client, fixed)).toBe(false);
+  });
+});
+
 describe('native release API boundaries', () => {
+  it('reads an exact live release branch reference and rejects malformed objects', async () => {
+    const fetcher = vi.fn(async () => Response.json({ object: { type: 'commit', sha } }));
+    expect(await fixedReleaseApi('owner/blog', 'test-token', fetcher).branchHead()).toBe(sha);
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://api.github.com/repos/owner/blog/git/ref/heads/release',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    await expect(
+      fixedReleaseApi('owner/blog', 'test-token', async () =>
+        Response.json({ object: { type: 'tag', sha } }),
+      ).branchHead(),
+    ).rejects.toThrow('branch head');
+  });
   it('retrieves the live merge SHA using an API contract that includes it', async () => {
     const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(input instanceof Request ? input.url : input);

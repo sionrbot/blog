@@ -2,7 +2,7 @@
 
 Blog collection content lives under `src/content/blog/` and is defined in `src/content.config.ts`. Shared standalone page bodies live under `src/content/pages/`. Files are Markdown (`.md`) or MDX (`.mdx`) with a frontmatter block. Do not delete a schema field; new fields should be optional.
 
-Images go in `src/assets/`, not `public/` (except favicon/robots). Reference `heroImage` with a path relative to the content file, and it is processed through `astro:assets`.
+New content images go in `src/assets/content/`, not `public/` (except favicon/robots). Reference `heroImage` with a path relative to the content file, and it is processed through `astro:assets`.
 
 ## blog
 
@@ -15,7 +15,7 @@ Fields:
 - `pubDate` (date, required)
 - `updatedDate` (date, optional)
 - `lang` (string, optional, default `en`) — a valid BCP 47 language tag for the original content, for example `en`, `zh-Hans`, or `ja`. It is independent of the supported UI languages. The existing articles were checked and marked `en`; new articles should state their actual language.
-- `heroImage` (image, optional) — relative path from the post to a file in `src/assets/`, e.g. `../../assets/cover.jpg`
+- `heroImage` (image, optional) — relative path from the post to a file in `src/assets/`, e.g. `../../assets/content/cover.jpg`
 - `heroAlt` (string, required if `heroImage` is set)
 - `tags` (string array, default `[]`)
 - `draft` (boolean, default `false`) — `true` excludes the post from the production build
@@ -60,3 +60,18 @@ The old `/blog/<slug>/` and `/blog/tag/<tag>/` routes, including their Chinese
 variants, are removed without redirects. Old article and tag URLs return 404;
 update bookmarks and external links to the new addresses. The `/blog/` deployment
 prefix on GitHub Pages remains unchanged.
+
+## Independent content deployment
+
+Promote content through a fixed `main` snapshot into `release`, then explicitly
+approve its complete SHA through [the content deployment entry point](releasing.md#deploy-content-independently).
+Content deployments retain the software version and run full validation, both
+production builds and both targets' smoke checks.
+
+The [content allowlist](release-branch-spec.md#内容范围) is authoritative: blog
+Markdown/MDX, modifications to the existing About/Privacy/Terms bodies, content
+images and accompanying third-party notices. Review MDX imports and expressions;
+new executable behavior follows the software path. Changes to site configuration,
+UI strings, styles, components or routes are not independent content deployments.
+A cumulative comparison with the public software tag prevents previously promoted
+software changes from shipping through the content entry point.

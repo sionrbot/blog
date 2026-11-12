@@ -4,6 +4,11 @@ Sionrbot personal blog builds to a static site in `dist/`. There is no server ru
 
 ## Before you deploy
 
+Complete the authorized [release branch cutover](release-branch-spec.md#实施清单与切换)
+and verify live branch/environment rules first. The settings below are requirements,
+not evidence that remote configuration has already changed. Content deployment
+uses the same builds, artifacts and smoke checks; see [the content entry point](releasing.md#deploy-content-independently).
+
 Set `site.url` in `src/config.ts` to your production URL. It is used for canonical links, RSS, and the sitemap.
 
 ## Requirements
@@ -36,36 +41,39 @@ separate deployment or a root-hosted test build.
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the build
 source. The [release workflow](../.github/workflows/release.yml) validates the
-version PR's fixed merge SHA, builds for the Pages URL, checks its production
+candidate's fixed source SHA, builds for the Pages URL, checks its production
 output, and saves it to `release-output/pages` before building Workers.
-After both builds pass and the Release is public, the Pages job deploys that
+After both builds pass and the software baseline is public, the Pages job deploys that
 run's native Pages artifact to the `github-pages` environment and performs GET
 smoke checks. Only this job receives Pages write and OIDC permissions.
 
 In **Settings → Environments → github-pages → Deployment branches and tags**,
 choose **Selected branches and tags** and add these two **Branch** rules:
 
-- `main`
+- `release`
 - `refs/pull/*/merge`
 
-The release workflow is triggered by a merged version PR's `pull_request` event.
+Software releases use a merged version PR's `pull_request` event; content
+deployments use `workflow_dispatch` from `release`.
 GitHub evaluates environment access against the event's ref, which can be
 `refs/pull/<number>/merge`; checking out the validated merge SHA does not change
 that event ref. Keep both rules so the environment accepts the workflow's event
 context. The workflow still checks that the same-repository version PR merged
-into `main` and validates its fixed merge SHA before publication and deployment.
+into `release` and validates its fixed merge SHA before publication and deployment.
 See [GitHub's deployment branch rules](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags).
 
-Production deployment follows merged version PRs, not ordinary `main` pushes.
+Production deployment follows merged software version PRs or explicitly approved
+content dispatches. Ordinary pushes and promotion merges do not deploy.
 Each platform consumes its own output from the same release run and attempt.
-Before deploying, each job checks that the candidate is still the latest stable
-Release and its tag still matches the fixed SHA. Superseded candidates skip
-hosting changes.
+Before deploying, each job checks the public software baseline and its tag, and
+requires the fixed candidate SHA to equal live `release` HEAD. Any newer HEAD
+supersedes the old deployment candidate, even without a successful newer run.
 
 For temporary deployment or smoke failures, use **Re-run all jobs** on the
 original **Release fixed source** run. This repeats validation and both builds at
-the original version and SHA. Deployment-only retries reject outputs from an
-older attempt. Source defects require a repaired subsequent version; see
+the original version and SHA while that SHA remains `release` HEAD. Deployment-only retries reject outputs from an
+older attempt. Software source defects require a repaired subsequent version; content errors
+use a new eligible content SHA; see
 [release recovery](releasing.md#inspect-and-retry). Published history remains
 unchanged. There is no manual arbitrary-tag deployment entry point.
 An environment-rule rejection requires correcting the environment configuration
@@ -92,7 +100,7 @@ Set repository Actions secrets `CLOUDFLARE_API_TOKEN` and
 account. This static deployment uses the workers.dev hostname and no DNS, KV,
 R2, or server-side Astro adapter.
 
-For a local build or a separate local deployment, use the Workers URL so navigation,
+For local production-output verification, use the Workers URL so navigation,
 assets, feeds, and SEO metadata use the root path. Keep `site.url` unchanged for
 GitHub Pages. The preparation job uses the same build and verification steps before publication:
 
@@ -103,11 +111,10 @@ pnpm exec vp test --project build tests/build/base-path.test.ts tests/build/rout
 node scripts/check-production-output.ts dist "$SITE_URL"
 pnpm exec cf-wrangler build
 pnpm exec cf deploy --prebuilt --dry-run
-pnpm exec cf deploy --prebuilt
 ```
 
-For local deployment, authenticate with `cf auth login` or supply the two
-Cloudflare environment variables. CI receives credentials only in the deploy step.
+Production deployment goes through the shared release workflow. CI receives
+Cloudflare credentials only in the deploy step; local verification stops at dry-run.
 
 `wrangler.config.ts` packages `dist/` as `.cloudflare/output/v0/` using Wrangler's
 `cf-wrangler` binary. `cloudflare.config.ts` defines the Worker and static routing.

@@ -29,13 +29,17 @@ const steps = jobs.flatMap((job) => job.steps);
 // Evaluate actual template conditions with the Actions default success() guard.
 // External operations are controlled outcomes, not live deployment calls. This
 // verifies job/step wiring; GitHub's native scheduler is separately documented.
-function execute(failingStep?: string, superseded = false) {
+function execute(failingStep?: string, superseded = false, kind = 'software') {
   const results: Record<string, { outcome: string; outputs: Record<string, string> }> = {};
   const attempted: string[] = [];
   const jobResults: Record<string, string> = {};
   for (const job of jobs) {
     const needs = job.body.match(/^    needs: (\w+)$/m)?.[1];
     if (needs && jobResults[needs] !== 'success') {
+      jobResults[job.id] = 'skipped';
+      continue;
+    }
+    if (job.id === 'refresh' && kind !== 'software') {
       jobResults[job.id] = 'skipped';
       continue;
     }
@@ -47,6 +51,8 @@ function execute(failingStep?: string, superseded = false) {
         (!failed || explicitStatus) &&
         runInNewContext(condition, {
           steps: results,
+          github: { event_name: kind === 'content' ? 'workflow_dispatch' : 'pull_request' },
+          always: () => true,
           cancelled: () => false,
           failure: () => failed,
           success: () => !failed,
@@ -60,7 +66,12 @@ function execute(failingStep?: string, superseded = false) {
       if (outcome === 'failure') failed = true;
       results[step.id] = {
         outcome,
-        outputs: step.id.endsWith('_latest') ? { deploy: String(!superseded) } : {},
+        outputs:
+          step.id === 'candidate'
+            ? { kind }
+            : step.id.endsWith('_latest')
+              ? { deploy: String(!superseded) }
+              : {},
       };
     }
     jobResults[job.id] = failed ? 'failure' : 'success';
@@ -189,16 +200,142 @@ describe('fixed-source release wiring', () => {
     expect(prepare).not.toContain('pages: write');
     expect(prepare).not.toContain('id-token: write');
     expect(jobs.find((job) => job.id === 'pages')!.body).toContain('pages: write');
-    expect(jobs.find((job) => job.id === 'refresh')!.body).toContain('group: release-pr-main');
+    expect(jobs.find((job) => job.id === 'refresh')!.body).toContain('group: release-pr-release');
     expect(jobs.find((job) => job.id === 'refresh')!.body).toContain('node scripts/release.ts pr');
   });
 
+  test('content runs the same validation and both deployments without software publication', () => {
+    const software = execute();
+    const content = execute(undefined, false, 'content');
+    expect(content.failed).toBe(false);
+    expect(content.attempted).not.toContain('publish');
+    for (const id of software.attempted.filter((id) => !['publish'].includes(id))) {
+      expect(content.attempted).toContain(id);
+    }
+    expect(content.attempted).toContain('admission');
+    expect(content.attempted).toContain('pages_smoke');
+    expect(content.attempted).toContain('workers_smoke');
+    expect(jobs.find((job) => job.id === 'refresh')!.body).toContain(
+      "if: ${{ needs.prepare.outputs.kind == 'software' }}",
+    );
+  });
+
+  test.each(['candidate', 'checks', 'workers_build', 'pages_upload'])(
+    'content %s failure prevents both deployments and still records preparation',
+    (step) => {
+      const result = execute(step, false, 'content');
+      expect(result.failed).toBe(true);
+      expect(result.attempted).not.toContain('pages_deploy');
+      expect(result.attempted).not.toContain('workers_deploy');
+      expect(result.attempted).toContain('preparation_summary');
+    },
+  );
+
+  test('admits only the release execution ref and live fixed input before running repository code', () => {
+    const prepare = jobs.find((job) => job.id === 'prepare')!;
+    expect(prepare.steps[0].id).toBe('admission');
+    const admission = prepare.steps[0].body;
+    expect(admission).toContain('refs/heads/release');
+    expect(admission).toContain('^[a-f0-9]{40}$');
+    expect(admission).toContain('"$CANDIDATE_SHA" != "$GITHUB_SHA"');
+    expect(admission).toContain('/git/ref/heads/release');
+    expect(admission).toContain('ref.object.sha !== process.env.CANDIDATE_SHA');
+    expect(prepare.steps.find((step) => step.id === 'checkout')!.body).toContain('fetch-depth: 0');
+  });
+
+  test.each([
+    ['refs/heads/main', 'a'.repeat(40), 'a'.repeat(40)],
+    ['refs/heads/release', 'main', 'a'.repeat(40)],
+    ['refs/heads/release', 'b'.repeat(40), 'a'.repeat(40)],
+    ['refs/heads/release', 'a'.repeat(40) + '\n', 'a'.repeat(40)],
+  ])('rejects invalid dispatch before network access: %s / %s', (ref, input, executionSha) => {
+    const script = steps
+      .find((step) => step.id === 'admission')!
+      .body.split('        run: |\n')[1]
+      .split("          node --input-type=module <<'NODE'")[0]
+      .split('\n')
+      .map((line) => line.replace(/^          /, ''))
+      .join('\n');
+    const result = spawnSync('bash', ['-e', '-c', script], {
+      env: { ...process.env, GITHUB_REF: ref, CANDIDATE_SHA: input, GITHUB_SHA: executionSha },
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('Content deployment requires');
+  });
+
+  test('summary distinguishes a successful skipped job from an actual deployment and smoke failure', () => {
+    const block = template.split('      - id: delivery_summary\n')[1];
+    const script = block
+      .split("          node --input-type=module <<'NODE'\n")[1]
+      .split('          NODE')[0]
+      .split('\n')
+      .map((line) => line.replace(/^          /, ''))
+      .join('\n')
+      .replace("import { appendFileSync } from 'node:fs';", '');
+    let output = '';
+    runInNewContext(script, {
+      process: {
+        env: {
+          JOB_RESULTS: JSON.stringify({
+            prepare: {
+              result: 'success',
+              outputs: { version: '1.9.1', tag: 'v1.9.1', 'tag-sha': 'b'.repeat(40) },
+            },
+            pages: {
+              result: 'success',
+              outputs: { gate: 'false', deploy: 'skipped', smoke: 'skipped' },
+            },
+            workers: {
+              result: 'failure',
+              outputs: { gate: 'true', deploy: 'success', smoke: 'failure' },
+            },
+            refresh: { result: 'skipped' },
+          }),
+          CANDIDATE_KIND: 'content',
+          CANDIDATE_SHA: 'a'.repeat(40),
+          GITHUB_RUN_ID: '42',
+          GITHUB_RUN_ATTEMPT: '2',
+        },
+      },
+      appendFileSync: (_path: string, text: string) => {
+        output += text;
+      },
+    });
+    expect(output).toContain('Software publication: not applicable (content)');
+    expect(output).toContain(
+      '| pages | success | superseded; deployment skipped | skipped | skipped |',
+    );
+    expect(output).toContain('| workers | failure | eligible | success | failure |');
+    expect(output).toContain('Run / attempt: 42 / 2');
+  });
+
+  test('both target gates receive the prepared tag SHA and summaries preserve separate results', () => {
+    for (const target of ['pages', 'workers']) {
+      expect(steps.find((step) => step.id === `${target}_latest`)!.body).toContain(
+        'EXPECTED_TAG_SHA: ${{ needs.prepare.outputs.tag-sha }}',
+      );
+      expect(jobs.find((job) => job.id === target)!.body).toContain(
+        `smoke: \${{ steps.${target}_smoke.outcome }}`,
+      );
+    }
+    expect(template).toContain('needs: [prepare, pages, workers, refresh]');
+    expect(template).toContain("output.gate === 'false' ? 'superseded; deployment skipped'");
+    expect(template).toContain('not applicable (content)');
+  });
+
   test('preserves the bounded native queue independently from PR maintenance', () => {
-    expect(template).toContain('group: release-main\n  queue: max\n  cancel-in-progress: false');
-    expect(maintenance).toContain('group: release-pr-main');
+    expect(template).toContain(
+      'group: release-production\n  queue: max\n  cancel-in-progress: false',
+    );
+    expect(maintenance).toContain('group: release-pr-release');
     expect(maintenance).toContain('node scripts/release.ts pr');
-    expect(template).not.toContain('workflow_dispatch:');
+    expect(template).toContain('workflow_dispatch:');
+    expect(maintenance).toContain('branches: [release]');
+    expect(maintenance).toContain('ref: release');
     expect(template).not.toContain('continue-on-error:');
-    expect(template).toContain('ref: ${{ github.event.pull_request.merge_commit_sha }}');
+    expect(template).toContain(
+      "ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || github.event.pull_request.merge_commit_sha }}",
+    );
   });
 });
