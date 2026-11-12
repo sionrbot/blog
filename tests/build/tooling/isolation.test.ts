@@ -59,14 +59,13 @@ test('A0: independent builds retain distinct content and caches without changing
   });
   let second: BuildFixture | undefined;
   try {
-    const firstResult = await first.build();
-    expect(firstResult.code, firstResult.stderr).toBe(0);
-    const firstCaches = await cachePaths(first);
     second = await createFixture('isolation-second', {
       posts: [{ id: 'second-only', title: 'Second only', pubDate: '2026-02-01', tags: ['second'] }],
     });
-    const secondResult = await second.build();
+    const [firstResult, secondResult] = await Promise.all([first.build(), second.build()]);
+    expect(firstResult.code, firstResult.stderr).toBe(0);
     expect(secondResult.code, secondResult.stderr).toBe(0);
+    const firstCaches = await cachePaths(first);
     const secondCaches = await cachePaths(second);
     expect(firstCaches.astro).not.toBe(secondCaches.astro);
     expect(firstCaches.vite).not.toBe(secondCaches.vite);

@@ -20,8 +20,9 @@ export default defineConfig({
         test: {
           name: 'build',
           include: ['tests/build/**/*.test.ts'],
-          fileParallelism: false,
-          maxWorkers: 1,
+          // Fixtures own their sources, output and caches; cap concurrent test files.
+          fileParallelism: true,
+          maxWorkers: 2,
           testTimeout: 180_000,
           hookTimeout: 180_000,
         },

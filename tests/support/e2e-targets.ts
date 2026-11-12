@@ -96,7 +96,8 @@ export function e2eConfiguration(): E2EConfig {
         app,
       },
     ].filter((target) => variant !== 'production-path' || target.name === 'desktop'),
-    workers: 1,
+    // Deterministic tests own a browser context; AI checks stay serial.
+    workers: mode === 'deterministic' ? 2 : 1,
     retries: 0,
     timeout: 120_000,
     actionTimeout: 10_000,

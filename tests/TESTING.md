@@ -133,7 +133,8 @@ dependencies preinstalled. Keep the image and version checks in
 dependency when upgrading it. CI verifies the version and browser executables
 before running tests. Targets are Chromium
 `desktop` (1280×800), Chromium `narrow` (360×800) and WebKit `webkit` (360×800).
-The default target selection is `desktop,narrow`, with one worker and no retries.
+The default target selection is `desktop,narrow`. Deterministic suites use two
+workers with isolated browser contexts; AI suites use one worker. Both use no retries.
 `production-path` runs desktop only and rejects other targets; the four existing
 deterministic suites retain all three targets.
 
