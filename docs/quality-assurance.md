@@ -30,7 +30,7 @@ pnpm run test:build
 
 ## 2. 内容或模板变更后：检查真实构建产物
 
-**事实：**构建测试使用独立的 `build` 项目，单 worker、禁止文件并行，测试和 hook 超时均为 180 秒。需要修改内容、配置或故意引入错误的场景通过临时副本构建，隔离源码、输出和缓存；fixture 复用依赖目录，结束时清理临时目录并保留诊断。部分默认路由和隔离断言依赖根目录 `dist`，因此先构建当前源码。[测试配置](../vite.config.ts)、[fixture 实现](../tests/support/build-fixture.ts)、[默认路由测试](../tests/build/routes.test.ts)、[隔离测试](../tests/build/tooling/isolation.test.ts)
+**事实：**构建测试使用独立的 `build` 项目，最多两个 worker 并行运行测试文件，文件内测试保持顺序执行，测试和 hook 超时均为 180 秒。需要修改内容、配置或故意引入错误的场景通过临时副本构建，隔离源码、输出和缓存；fixture 复用依赖目录，结束时清理临时目录并保留诊断。部分默认路由和隔离断言依赖根目录 `dist`，因此先构建当前源码。[测试配置](../vite.config.ts)、[fixture 实现](../tests/support/build-fixture.ts)、[默认路由测试](../tests/build/routes.test.ts)、[隔离测试](../tests/build/tooling/isolation.test.ts)
 
 | 验证对象       | 源码中定义的契约（事实）                                                                                      | 一手证据                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -46,7 +46,7 @@ pnpm run test:build
 
 ## 3. 交互变更后：在浏览器里检查用户行为
 
-**事实：**生产回归通过 `test:e2e` 与 `test:e2e:ai` 包装器运行 Astro preview。默认变体读取根 `dist`，其他变体建立独立 fixture；运行器验证 manifest，默认选择 Chromium 的 desktop（1280×800）与 narrow（360×800），可另选 WebKit（360×800）；`production-path` 仅使用 desktop。配置为单 worker、零重试并启用 trace。[命令入口](../package.json)、[运行器](../tests/support/run-e2e.ts)、[目标配置](../tests/support/e2e-targets.ts)、[fixture 变体](../tests/support/e2e-variants.ts)
+**事实：**生产回归通过 `test:e2e` 与 `test:e2e:ai` 包装器运行 Astro preview。默认变体读取根 `dist`，其他变体建立独立 fixture；运行器验证 manifest，默认选择 Chromium 的 desktop（1280×800）与 narrow（360×800），可另选 WebKit（360×800）；`production-path` 仅使用 desktop。确定性回归使用两个 worker，AI 检查使用单 worker；均为零重试并启用 trace。[命令入口](../package.json)、[运行器](../tests/support/run-e2e.ts)、[目标配置](../tests/support/e2e-targets.ts)、[fixture 变体](../tests/support/e2e-variants.ts)
 
 | 变体             | 确定性浏览器契约（事实）                                                                                                                                          | AI 补充（事实）                                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
