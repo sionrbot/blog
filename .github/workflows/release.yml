@@ -160,6 +160,7 @@ jobs:
   pages:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pages: write
@@ -203,6 +204,7 @@ jobs:
   workers:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CF_SEND_TELEMETRY: 'false'
     steps:
@@ -260,6 +262,7 @@ jobs:
   refresh:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     concurrency:
       group: release-pr-main
       cancel-in-progress: false
