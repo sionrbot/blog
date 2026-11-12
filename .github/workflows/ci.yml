@@ -26,10 +26,15 @@ jobs:
     steps:
       - id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
       - id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: package.json
+      - id: scope
+        name: Select verification scope
+        run: node scripts/ci-scope.ts
       - id: pnpm
         run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
       - id: pnpm_store
@@ -43,19 +48,29 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'pnpm-workspace.yaml') }}
       - id: dependencies
         run: pnpm install --frozen-lockfile
+      - name: Check documentation formatting
+        if: ${{ steps.scope.outputs.scope == 'docs' }}
+        run: pnpm exec vp fmt --check
       - name: Check Astro types and templates
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run check
       - name: Check formatting, lint and TypeScript
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm exec vp check
       - name: Check Astro template lint rules
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run lint
       - name: Check translations
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run i18n:check
       - name: Test logic and tools
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:unit
       - name: Test date contracts across timezones
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:unit:tz
       - id: browsers
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         name: Verify preinstalled browser versions
         run: |
           node --input-type=module <<'NODE'
@@ -69,25 +84,32 @@ jobs:
           for (const browser of [chromium, webkit]) accessSync(browser.executablePath(), constants.X_OK);
           NODE
       - id: baseline_build
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         name: Build root-path test site
         run: pnpm run build
       - id: build_tests
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         name: Verify built contracts and internal links
         run: |
           pnpm run test:build
           pnpm dlx linkinator@8.1.0 dist --recurse --skip '^https?://(?!(localhost|127\.0\.0\.1|\[::1\])[:/])'
       - id: default_browser
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:e2e -- --variant default --target desktop,narrow,webkit
       - id: i18n_browser
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:e2e -- --variant i18n --target desktop,narrow,webkit
       - id: forms_browser
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:e2e -- --variant configured-forms --target desktop,narrow,webkit
       - id: rendering_browser
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:e2e -- --variant rendering --target desktop,narrow,webkit
       - id: production_path_browser
+        if: ${{ steps.scope.outputs.scope != 'docs' }}
         run: pnpm run test:e2e -- --variant production-path --target desktop
       - name: Preserve diagnostic reports
-        if: ${{ always() }}
+        if: ${{ always() && steps.scope.outputs.scope != 'docs' }}
         continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
