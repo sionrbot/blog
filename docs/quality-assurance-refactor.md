@@ -182,7 +182,7 @@ vp test list --project unit --project build --filesOnly --json tests/test-result
 - 撤销独立 build-tests、site-audit、quality 聚合及拟新增 delivery-tests/tooling-tests 的设计。删除独立 E2E 工作流的调度职责，将必要浏览器步骤放入 verify。
 - 保留 `unit`、`build` 现有测试入口。业务、交付、工具的代码归属可以整理，但先不新增测试项目或 CI job；先删除被退役机制的测试，再看剩余文件是否需要分目录。
 - PR title 的轻量检查保持独立，因其还需响应标题编辑；不因改标题重跑完整验证。若要求 Conventional Commit 标题，分支规则同时要求 title 与 verify，这不需要第三个汇总 gate。
-- 不新增路径过滤、动态任务选择器、自定义 CI 调度器或大而全的 `qa.ts`。workflow 应当直接读出执行顺序。
+- 不在 workflow 触发条件设置路径过滤，确保每个 PR 都产生 `verify` 和 `title`。仅允许单个 `verify` job 内的纯开发文档分支：白名单内的 Markdown 变更执行格式检查，其余变更完整验证。分类不确定时完整验证；不引入通用动态任务选择器、自定义 CI 调度器或大而全的 `qa.ts`。具体白名单与比较规则见[质量保证说明](quality-assurance.md#4-提交-pr-后一个-verify-job-执行检查)。
 
 一个串行 job 的代价是后续检查需要等待，前面失败后不会继续搜集全部失败，重跑可能重复已成功步骤。这是清晰性与反馈时延的取舍，不预先声称会更快。先记录实际时间；只有反馈时间确实不合适时，再考虑两个独立的 checks/browser job，各自构建、分别设为 required，不恢复 artifact 接力或聚合 gate。
 
