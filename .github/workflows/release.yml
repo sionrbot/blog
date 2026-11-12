@@ -35,12 +35,12 @@ jobs:
       CF_SEND_TELEMETRY: 'false'
     steps:
       - id: checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           persist-credentials: false
       - id: node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: package.json
       - id: pnpm
@@ -114,7 +114,7 @@ jobs:
           pnpm exec cf deploy --prebuilt --dry-run
       - id: workers_upload
         name: Preserve this run's Workers prebuilt output
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: workers-${{ github.run_id }}-${{ github.run_attempt }}
           path: .cloudflare/output/
@@ -123,7 +123,7 @@ jobs:
           retention-days: 1
       - id: pages_upload
         name: Preserve this run's Pages output
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: release-output/pages
@@ -136,7 +136,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       - id: diagnostics
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -169,12 +169,12 @@ jobs:
             exit 1
           fi
       - id: pages_checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           persist-credentials: false
       - id: pages_node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: package.json
       - id: pages_latest
@@ -184,7 +184,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - id: pages_deploy
         if: ${{ steps.pages_latest.outputs.deploy == 'true' }}
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - id: pages_smoke
@@ -207,12 +207,12 @@ jobs:
             exit 1
           fi
       - id: workers_checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           persist-credentials: false
       - id: workers_node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: package.json
       - id: workers_pnpm
@@ -220,7 +220,7 @@ jobs:
       - id: workers_dependencies
         run: pnpm install --frozen-lockfile
       - id: workers_download
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ needs.prepare.outputs.workers-artifact }}
           path: .cloudflare/output/
@@ -246,11 +246,11 @@ jobs:
       group: release-pr-main
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: package.json
       - run: npm i -g "$(node -p "require('./package.json').packageManager.split('+')[0]")"
