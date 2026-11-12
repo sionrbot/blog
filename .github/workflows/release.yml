@@ -251,7 +251,7 @@ jobs:
           EXPECTED_TAG_SHA: ${{ needs.prepare.outputs.tag-sha }}
       - id: pages_deploy
         if: ${{ steps.pages_latest.outputs.deploy == 'true' }}
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - id: pages_smoke
