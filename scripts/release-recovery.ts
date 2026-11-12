@@ -26,7 +26,7 @@ export async function prepareReleaseManifest(
 
   // Preserve the normal pending gate, including while a merged candidate is
   // still validating. A closed, unmerged PR is not a pending release.
-  for await (const pr of github.pullRequestIterator('main', 'MERGED')) {
+  for await (const pr of github.pullRequestIterator('release', 'MERGED')) {
     if (pr.labels.includes('autorelease: pending')) return false;
   }
   if (!recovery) {
@@ -71,7 +71,7 @@ export async function prepareReleaseManifest(
       discovered = true;
   }
   let reachable = false;
-  for await (const commit of github.mergeCommitIterator('main', {
+  for await (const commit of github.mergeCommitIterator('release', {
     maxResults: manifest.commitSearchDepth,
   })) {
     if (commit.sha === boundary) {

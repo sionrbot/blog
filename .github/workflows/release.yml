@@ -1,43 +1,79 @@
 name: Release fixed source
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('content {0}', inputs.sha) || format('software {0}', github.event.pull_request.merge_commit_sha) }}
 
 on:
   pull_request:
-    branches: [main]
+    branches: [release]
     types: [closed]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full release HEAD SHA approved for content deployment
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 # Covers validation, publication and both deployments. Maintenance has its own group.
 concurrency:
-  group: release-main
+  group: release-production
   queue: max
   cancel-in-progress: false
 
 jobs:
   prepare:
     if: >-
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.ref == 'release-please--branches--main--components--sionrbot-blog' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'release' &&
+      github.event.pull_request.head.ref == 'release-please--branches--release--components--sionrbot-blog' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 90
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
       options: --ipc=host
     outputs:
+      kind: ${{ steps.candidate.outputs.kind }}
       sha: ${{ steps.candidate.outputs.sha }}
+      version: ${{ steps.candidate.outputs.version }}
+      tag: ${{ steps.candidate.outputs.tag }}
+      tag-sha: ${{ steps.candidate.outputs.tag-sha }}
+      pr: ${{ steps.candidate.outputs.pr }}
+      publish: ${{ steps.publish.outcome }}
       attempt: ${{ steps.prepared.outputs.attempt }}
       workers-artifact: ${{ steps.workers_upload.outputs.artifact-id }}
     env:
       SITE_URL: https://sionrbot.github.io
       CF_SEND_TELEMETRY: 'false'
     steps:
+      - id: admission
+        name: Validate content execution ref and fixed input before checkout
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/release || ! "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ || "$CANDIDATE_SHA" != "$GITHUB_SHA" ]]; then
+            echo '::error::Content deployment requires the release ref and its complete event SHA.'
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          const response = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/git/ref/heads/release`, {
+            headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+            signal: AbortSignal.timeout(30000),
+          });
+          if (!response.ok) throw new Error(`Cannot verify release HEAD: ${response.status}`);
+          const ref = await response.json();
+          if (ref.object?.type !== 'commit' || ref.object.sha !== process.env.CANDIDATE_SHA) throw new Error('Content candidate must equal live release HEAD');
+          NODE
       - id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
           persist-credentials: false
       - id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -57,7 +93,7 @@ jobs:
       - id: dependencies
         run: pnpm install --frozen-lockfile
       - id: candidate
-        name: Fix version and source from the merged release PR
+        name: Fix and validate the software or content candidate
         run: node scripts/release-fixed.ts candidate
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -139,6 +175,7 @@ jobs:
       - id: prepared
         run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - id: publish
+        if: ${{ steps.candidate.outputs.kind == 'software' }}
         name: Publish or confirm the validated fixed version
         run: node scripts/release-fixed.ts publish
         env:
@@ -155,10 +192,29 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - id: preparation_summary
+        if: ${{ always() }}
+        name: Record validation, builds and software publication outcomes
+        env:
+          STEP_RESULTS: ${{ toJSON(steps) }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const steps = JSON.parse(process.env.STEP_RESULTS);
+          const ids = ['admission', 'candidate', 'checks', 'browsers', 'baseline_build', 'build_tests', 'default_browser', 'i18n_browser', 'forms_browser', 'rendering_browser', 'production_path_browser', 'pages_build', 'workers_build', 'pages_upload', 'workers_upload', 'publish'];
+          const kind = steps.candidate?.outputs?.kind;
+          const rows = ids.map(id => `| ${id} | ${id === 'publish' && kind === 'content' ? 'not applicable (content)' : steps[id]?.outcome ?? 'not run'} |`);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Preparation\n\n| Step | Outcome |\n| --- | --- |\n${rows.join('\n')}\n`);
+          NODE
+
   # Independent jobs preserve each platform's failure and still attempt the other.
   # Only this job receives Pages write/OIDC permissions; validation does not.
   pages:
     needs: prepare
+    outputs:
+      gate: ${{ steps.pages_latest.outputs.deploy }}
+      deploy: ${{ steps.pages_deploy.outcome }}
+      smoke: ${{ steps.pages_smoke.outcome }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -188,10 +244,11 @@ jobs:
         with:
           node-version-file: package.json
       - id: pages_latest
-        name: Check latest stable version before Pages deployment
+        name: Check software baseline and release HEAD before Pages deployment
         run: node scripts/release-fixed.ts latest
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_TAG_SHA: ${{ needs.prepare.outputs.tag-sha }}
       - id: pages_deploy
         if: ${{ steps.pages_latest.outputs.deploy == 'true' }}
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
@@ -203,6 +260,10 @@ jobs:
 
   workers:
     needs: prepare
+    outputs:
+      gate: ${{ steps.workers_latest.outputs.deploy }}
+      deploy: ${{ steps.workers_deploy.outcome }}
+      smoke: ${{ steps.workers_smoke.outcome }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -245,10 +306,11 @@ jobs:
           artifact-ids: ${{ needs.prepare.outputs.workers-artifact }}
           path: .cloudflare/output/
       - id: workers_latest
-        name: Check latest stable version before Workers deployment
+        name: Check software baseline and release HEAD before Workers deployment
         run: node scripts/release-fixed.ts latest
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_TAG_SHA: ${{ needs.prepare.outputs.tag-sha }}
       - id: workers_deploy
         if: ${{ steps.workers_latest.outputs.deploy == 'true' }}
         run: pnpm exec cf deploy --prebuilt
@@ -260,16 +322,17 @@ jobs:
         run: node scripts/smoke-site.ts https://sionrbot-blog.pgsnotfound404.workers.dev/
 
   refresh:
+    if: ${{ needs.prepare.outputs.kind == 'software' }}
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
-      group: release-pr-main
+      group: release-pr-release
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: main
+          ref: release
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -289,3 +352,46 @@ jobs:
         run: node scripts/release.ts pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+  summary:
+    if: ${{ always() }}
+    needs: [prepare, pages, workers, refresh]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: delivery_summary
+        name: Record candidate and independent target results
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+          CANDIDATE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || github.event.pull_request.merge_commit_sha }}
+          CANDIDATE_KIND: ${{ github.event_name == 'workflow_dispatch' && 'content' || 'software' }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const jobs = JSON.parse(process.env.JOB_RESULTS);
+          const candidate = jobs.prepare.outputs;
+          const sha = /^[a-f0-9]{40}$/.test(process.env.CANDIDATE_SHA ?? '') ? process.env.CANDIDATE_SHA : 'invalid input';
+          const rows = ['pages', 'workers'].map(target => {
+            const job = jobs[target];
+            const output = job.outputs;
+            const gate = output.gate === 'false' ? 'superseded; deployment skipped' : output.gate === 'true' ? 'eligible' : 'not established';
+            return `| ${target} | ${job.result} | ${gate} | ${output.deploy || 'not run'} | ${output.smoke || 'not run'} |`;
+          });
+          const publication = process.env.CANDIDATE_KIND === 'content' ? 'not applicable (content)' : candidate.publish || 'not run';
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            '## Fixed candidate', '',
+            `- Kind: ${process.env.CANDIDATE_KIND}`,
+            `- Source SHA: ${sha}`,
+            `- Software version: ${candidate.version || 'not established'}`,
+            `- Software tag: ${candidate.tag || 'not established'}`,
+            `- Software tag SHA: ${candidate['tag-sha'] || 'not established'}`,
+            `- Version PR: ${candidate.pr || 'not applicable / not established'}`,
+            `- Run / attempt: ${process.env.GITHUB_RUN_ID} / ${process.env.GITHUB_RUN_ATTEMPT}`,
+            `- Preparation: ${jobs.prepare.result}`,
+            `- Software publication: ${publication}`,
+            `- Version PR refresh: ${jobs.refresh.result}`, '',
+            '| Target | Job | Eligibility | Deployment | Smoke |',
+            '| --- | --- | --- | --- | --- |', ...rows, '',
+            'Job success alone does not certify deployment: inspect eligibility, deployment and smoke separately.', '',
+          ].join('\n'));
+          NODE

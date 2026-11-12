@@ -2,8 +2,9 @@ import { appendFile, readFile } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { checkContentHistory } from './release-content.ts';
 
-const releaseBranch = 'release-please--branches--main--components--sionrbot-blog';
+const releaseBranch = 'release-please--branches--release--components--sionrbot-blog';
 const stableVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 export interface MergedPullRequest {
@@ -15,12 +16,38 @@ export interface MergedPullRequest {
   labels: { name: string }[];
 }
 export interface FixedCandidate {
+  kind: 'software';
+  tagSha: string;
   repository: string;
   pr: number;
   sha: string;
   version: string;
   tag: string;
 }
+export interface ContentCandidate {
+  kind: 'content';
+  repository: string;
+  sha: string;
+  version: string;
+  tag: string;
+  tagSha: string;
+}
+export type DeploymentCandidate = FixedCandidate | ContentCandidate;
+
+export function validateCandidateCheckout(
+  candidate: DeploymentCandidate,
+  head: string,
+  packageVersion: unknown,
+  manifestVersion: unknown,
+): void {
+  if (
+    head !== candidate.sha ||
+    packageVersion !== candidate.version ||
+    manifestVersion !== candidate.version
+  )
+    throw new Error('Checkout must match the original fixed candidate');
+}
+
 interface PublishedRelease {
   id: number;
   tag_name: string;
@@ -28,6 +55,7 @@ interface PublishedRelease {
   prerelease: boolean;
 }
 export interface FixedReleaseApi {
+  branchHead(): Promise<string>;
   pullRequest(number: number): Promise<MergedPullRequest>;
   file(path: string, sha: string): Promise<string>;
   tagCommit(tag: string): Promise<string | null>;
@@ -43,15 +71,15 @@ function validatePullRequest(pr: MergedPullRequest, repository: string): void {
     pr.number <= 0 ||
     !pr.merged ||
     !/^[a-f0-9]{40}$/.test(pr.merge_commit_sha) ||
-    pr.base.ref !== 'main' ||
+    pr.base.ref !== 'release' ||
     pr.base.repo.full_name !== repository ||
     pr.head.repo.full_name !== repository ||
     pr.head.ref !== releaseBranch
   )
-    throw new Error('Expected a merged same-repository Release PR into main');
+    throw new Error('Expected a merged same-repository Release PR into release');
 }
 
-// Event identity survives a workflow rerun; moving main is never a source input.
+// Event identity survives a workflow rerun; moving release is never a source input.
 export async function fixedCandidate(
   api: FixedReleaseApi,
   repository: string,
@@ -79,7 +107,15 @@ export async function fixedCandidate(
   ) {
     throw new Error('Fixed source version files must agree on a stable version');
   }
-  const candidate = { repository, pr: pr.number, sha, version, tag: `v${version}` };
+  const candidate: FixedCandidate = {
+    kind: 'software',
+    repository,
+    pr: pr.number,
+    sha,
+    version,
+    tag: `v${version}`,
+    tagSha: sha,
+  };
   await consistentTag(api, candidate);
   const release = await api.release(candidate.tag);
   if (release && (release.draft || release.prerelease)) {
@@ -91,10 +127,59 @@ export async function fixedCandidate(
   return candidate;
 }
 
-async function consistentTag(api: FixedReleaseApi, candidate: FixedCandidate): Promise<boolean> {
+async function consistentTag(
+  api: FixedReleaseApi,
+  candidate: DeploymentCandidate,
+): Promise<boolean> {
   const sha = await api.tagCommit(candidate.tag);
-  if (sha !== null && sha !== candidate.sha) throw new Error(`Conflicting tag ${candidate.tag}`);
+  if (sha !== null && sha !== candidate.tagSha) throw new Error(`Conflicting tag ${candidate.tag}`);
   return sha !== null;
+}
+
+export async function contentCandidate(
+  api: FixedReleaseApi,
+  repository: string,
+  event: { inputs?: { sha?: unknown } },
+  ref: string | undefined,
+  options: { expectedTagSha?: string; requireHead?: boolean } = {},
+): Promise<ContentCandidate> {
+  const sha = event.inputs?.sha;
+  if (
+    !/^[\w.-]+\/[\w.-]+$/.test(repository) ||
+    ref !== 'refs/heads/release' ||
+    typeof sha !== 'string' ||
+    !/^[a-f0-9]{40}$/.test(sha)
+  )
+    throw new Error('Content dispatch requires release ref and a complete candidate SHA');
+  const [pkg, manifest] = await Promise.all([
+    api.file('package.json', sha),
+    api.file('.release-please-manifest.json', sha),
+  ]);
+  const version: unknown = (JSON.parse(pkg) as { version?: unknown }).version;
+  if (
+    typeof version !== 'string' ||
+    !stableVersion.test(version) ||
+    (JSON.parse(manifest) as Record<string, unknown>)['.'] !== version
+  )
+    throw new Error('Fixed source version files must agree on a stable version');
+  const tag = `v${version}`;
+  const tagSha = await api.tagCommit(tag);
+  if (!tagSha || !/^[a-f0-9]{40}$/.test(tagSha)) throw new Error('Content baseline tag is missing');
+  if (options.expectedTagSha !== undefined && options.expectedTagSha !== tagSha)
+    throw new Error('Conflicting tag: content baseline changed after preparation');
+  const release = await api.release(tag);
+  if (!release || release.draft || release.prerelease)
+    throw new Error('Content baseline needs a public stable Release');
+  // Preparation requires the current software baseline. At deployment, mayDeploy
+  // reports a newer release/HEAD as superseded rather than changing the candidate.
+  if (options.requireHead !== false) {
+    const latest = await api.latest();
+    if (!latest || latest.draft || latest.prerelease || latest.tag_name !== tag)
+      throw new Error('Content baseline must be the latest stable Release');
+    if ((await api.branchHead()) !== sha)
+      throw new Error('Content candidate must match release HEAD');
+  }
+  return { kind: 'content', repository, sha, version, tag, tagSha };
 }
 
 export function releaseNotes(changelog: string, version: string): string {
@@ -138,14 +223,21 @@ export async function publishFixed(api: FixedReleaseApi, candidate: FixedCandida
   await api.markPublished(candidate.pr);
 }
 
-export async function mayDeploy(api: FixedReleaseApi, candidate: FixedCandidate): Promise<boolean> {
+export async function mayDeploy(
+  api: FixedReleaseApi,
+  candidate: DeploymentCandidate,
+): Promise<boolean> {
   if (!(await consistentTag(api, candidate))) throw new Error('Deployment tag is missing');
   const release = await api.release(candidate.tag);
   if (!release || release.draft || release.prerelease)
     throw new Error('Deployment needs a stable Release');
   const latest = await api.latest();
   return (
-    latest !== null && !latest.draft && !latest.prerelease && latest.tag_name === candidate.tag
+    latest !== null &&
+    !latest.draft &&
+    !latest.prerelease &&
+    latest.tag_name === candidate.tag &&
+    (await api.branchHead()) === candidate.sha
   );
 }
 
@@ -183,6 +275,14 @@ export function fixedReleaseApi(
     return value;
   }
   return {
+    async branchHead() {
+      const ref = await required<{ object: { type: string; sha: string } }>(
+        'git/ref/heads/release',
+      );
+      if (ref.object.type !== 'commit' || !/^[a-f0-9]{40}$/.test(ref.object.sha))
+        throw new Error('Invalid release branch head');
+      return ref.object.sha;
+    },
     pullRequest: (number) => required(`pulls/${number}`),
     async file(path, sha) {
       const file = await required<{ encoding: string; content: string }>(
@@ -248,10 +348,19 @@ async function main(): Promise<void> {
   if (!repository || !token || !eventPath)
     throw new Error('Repository, token and original event required');
   const api = fixedReleaseApi(repository, token);
-  const event = JSON.parse(await readFile(eventPath, 'utf8')) as Parameters<
-    typeof fixedCandidate
-  >[2];
-  const candidate = await fixedCandidate(api, repository, event);
+  const event = JSON.parse(await readFile(eventPath, 'utf8'));
+  const content = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
+  if (!content && process.env.GITHUB_EVENT_NAME !== 'pull_request')
+    throw new Error('Unsupported candidate event');
+  if (content && mode === 'publish') throw new Error('Content candidates cannot publish software');
+  if (mode === 'latest' && !/^[a-f0-9]{40}$/.test(process.env.EXPECTED_TAG_SHA ?? ''))
+    throw new Error('Deployment requires the prepared software tag SHA');
+  const candidate = content
+    ? await contentCandidate(api, repository, event, process.env.GITHUB_REF, {
+        requireHead: mode !== 'latest',
+        expectedTagSha: mode === 'latest' ? process.env.EXPECTED_TAG_SHA : undefined,
+      })
+    : await fixedCandidate(api, repository, event);
   const head = execFileSync(
     'git',
     ['-c', `safe.directory=${realpathSync(process.cwd())}`, 'rev-parse', 'HEAD'],
@@ -262,18 +371,17 @@ async function main(): Promise<void> {
     string,
     string
   >;
-  if (
-    head !== candidate.sha ||
-    pkg.version !== candidate.version ||
-    manifest['.'] !== candidate.version
-  ) {
-    throw new Error('Checkout must match the original fixed candidate');
-  }
-  let output = `sha=${candidate.sha}\nversion=${candidate.version}\ntag=${candidate.tag}\npr=${candidate.pr}\n`;
-  if (mode === 'publish') await publishFixed(api, candidate);
+  validateCandidateCheckout(candidate, head, pkg.version, manifest['.']);
+  if (candidate.kind === 'content' && mode === 'candidate')
+    checkContentHistory(process.cwd(), candidate.tagSha, candidate.sha);
+  if (mode === 'latest' && candidate.tagSha !== process.env.EXPECTED_TAG_SHA)
+    throw new Error('Prepared software tag SHA differs from candidate');
+  let output = `kind=${candidate.kind}\nsha=${candidate.sha}\nversion=${candidate.version}\ntag=${candidate.tag}\ntag-sha=${candidate.tagSha}\npr=${candidate.kind === 'software' ? candidate.pr : ''}\n`;
+  if (mode === 'publish' && candidate.kind === 'software') await publishFixed(api, candidate);
   if (mode === 'latest') {
     const deploy = await mayDeploy(api, candidate);
     output += `deploy=${deploy}\n`;
+    output += `reason=${deploy ? 'eligible' : 'superseded'}\n`;
     if (!deploy)
       console.log(`${candidate.tag} superseded; skipping deployment, preserving history.`);
   }

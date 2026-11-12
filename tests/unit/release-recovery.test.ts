@@ -12,9 +12,9 @@ import type { PullRequest } from 'release-please/build/src/pull-request.js';
 async function recoveryFixture(labels: string[]) {
   const old: PullRequest = {
     number: 25,
-    headBranchName: 'release-please--branches--main--components--sionrbot-blog',
-    baseBranchName: 'main',
-    title: 'chore(main): release sionrbot-blog 1.8.3',
+    headBranchName: 'release-please--branches--release--components--sionrbot-blog',
+    baseBranchName: 'release',
+    title: 'chore(release): release sionrbot-blog 1.8.3',
     body: new PullRequestBody([
       { version: Version.parse('1.8.3'), notes: 'Unpublished candidate' },
     ]).toString(),
@@ -25,7 +25,8 @@ async function recoveryFixture(labels: string[]) {
   const createPullRequest = vi.fn(async (request: PullRequest) => ({ ...request, number: 27 }));
   const boundary = {
     repository: { owner: 'fixture', repo: 'blog', defaultBranch: 'main' },
-    async *pullRequestIterator(_branch: string, state: string) {
+    async *pullRequestIterator(branch: string, state: string) {
+      expect(branch).toBe('release');
       if (state === 'MERGED') yield old;
     },
     createPullRequest,
@@ -34,7 +35,7 @@ async function recoveryFixture(labels: string[]) {
   const github = boundary as unknown as GitHub;
   const strategy = new Node({
     github,
-    targetBranch: 'main',
+    targetBranch: 'release',
     packageName: 'sionrbot-blog',
     includeComponentInTag: false,
   });
@@ -55,7 +56,7 @@ async function recoveryFixture(labels: string[]) {
     ['autorelease: pending'],
   );
   if (!repaired) throw new Error('Node strategy did not produce the repaired candidate');
-  const manifest = new Manifest(github, 'main', { '.': { releaseType: 'node' } }, {});
+  const manifest = new Manifest(github, 'release', { '.': { releaseType: 'node' } }, {});
   // History discovery is not this test's contract. Pass its strategy result into
   // the real maintenance gate instead of mocking the gate or label filtering.
   vi.spyOn(manifest, 'buildPullRequests').mockResolvedValue([repaired]);
@@ -76,7 +77,7 @@ describe('version tool recovery', () => {
     const request = fixture.createPullRequest.mock.calls[0]![0];
     expect(request.body).toContain('repair production search routing');
     expect(fixture.repaired.version?.toString()).toBe('1.8.4');
-    expect(request.baseBranchName).toBe('main');
+    expect(request.baseBranchName).toBe('release');
     expect(request.labels).toContain('autorelease: pending');
   });
 

@@ -3,7 +3,11 @@ import { DefaultChangelogNotes } from 'release-please/build/src/changelog-notes/
 import { Changelog } from 'release-please/build/src/updaters/changelog.js';
 import { PackageJson } from 'release-please/build/src/updaters/node/package-json.js';
 import { Version } from 'release-please/build/src/version.js';
-import { createFormattedPullRequests, setInitialRelease } from '../../scripts/release';
+import {
+  createFormattedPullRequests,
+  parseReleaseOptions,
+  setInitialRelease,
+} from '../../scripts/release';
 
 const sha = 'a'.repeat(40);
 
@@ -46,7 +50,7 @@ it('renders first-release notes without comparing against the inherited theme ta
     {
       owner: 'sionrbot',
       repository: 'blog',
-      targetBranch: 'main',
+      targetBranch: 'release',
       version: manifest.repositoryConfig['.'].releaseAs!,
       currentTag: `v${manifest.repositoryConfig['.'].releaseAs}`,
       previousTag: previousVersion ? `v${previousVersion}` : undefined,
@@ -83,4 +87,38 @@ it('formats real release-please updates before creating the release PR', async (
   };
   await createFormattedPullRequests(manifest);
   expect(scan).toHaveBeenCalledTimes(1);
+});
+
+it('limits promotion previews to read-only check mode and safe promotion branch names', () => {
+  expect(parseReleaseOptions(['check', '--preview-branch', 'promote/2026-11-12'])).toMatchObject({
+    mode: 'check',
+    targetBranch: 'promote/2026-11-12',
+    previewBranch: 'promote/2026-11-12',
+  });
+  expect(parseReleaseOptions(['pr']).targetBranch).toBe('release');
+  expect(parseReleaseOptions(['check']).targetBranch).toBe('release');
+  for (const branch of [
+    '',
+    'main',
+    'release',
+    'promote/',
+    'promote/../main',
+    'promote/a//b',
+    'promote/a.lock',
+    'promote/a b',
+  ]) {
+    expect(() => parseReleaseOptions(['check', '--preview-branch', branch])).toThrow();
+  }
+  expect(() => parseReleaseOptions(['pr', '--preview-branch', 'promote/batch'])).toThrow();
+  expect(() =>
+    parseReleaseOptions([
+      'check',
+      '--preview-branch',
+      'promote/batch',
+      '--recover-from',
+      'v1.8.2',
+      '--release-as',
+      '1.8.4',
+    ]),
+  ).toThrow();
 });
