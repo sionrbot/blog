@@ -4,15 +4,26 @@ Sionrbot personal blog is a personal blog built with Astro, extensively customiz
 
 ## Features
 
-- Astro 7 + Tailwind CSS v4, zero client-side JS by default
-- Blog with tags, pagination, RSS, sitemap, JSON-LD
-- Dark mode, responsive from 360px, Lighthouse 95+
+- Astro 7 + Tailwind CSS v4, static pages with browser scripts for interactive controls
+- Blog with tags, pagination, Pagefind search, RSS, sitemap, JSON-LD
+- English and Simplified Chinese UI routes sharing original-language content
+- Dark mode and layouts designed for widths from 360px
+- On-demand Lighthouse checks with 95-point thresholds
 - Type-safe content collections (MDX)
-- `AGENTS.md` included — works out of the box with Claude Code / Cursor
+- Repository conventions and verification commands in `AGENTS.md`
 
 ## Quick start
 
-Vite+ 1.4.0 provides Vite, Oxlint, and Oxfmt. Its lint and format settings live in
+Use the Node.js runtime and pnpm version pinned in `package.json`; the workspace
+also records the Node.js pin in `pnpm-workspace.yaml`. Install dependencies and start Astro:
+
+```sh
+vp install
+vp run dev
+```
+
+Vite+ provides Vite, Oxlint, and Oxfmt; its version is pinned in the workspace
+catalog in `pnpm-workspace.yaml`. Its lint and format settings live in
 `vite.config.ts`; Astro application settings stay in `astro.config.mjs`.
 
 - `pnpm check` generates Astro content collection types and runs its template-aware type checker.
@@ -33,17 +44,23 @@ Colors and fonts: `src/styles/global.css` (`@theme` block). See [docs/customizat
 
 ## Deploy
 
-Static output. Works on Cloudflare Pages, Vercel, Netlify.
+Astro produces static output in `dist/`. The release workflow builds separate
+outputs for GitHub Pages (`/blog/`) and Cloudflare Workers (domain root).
 
 See [docs/deploy.md](docs/deploy.md).
 
 ## Releases
 
-Release PRs maintain version numbers and changelog entries. CI validates each PR
-in one `verify` job. Merging a version PR fixes its merge SHA, reruns validation,
-builds both production targets, then publishes a GitHub Release and deploys to
-GitHub Pages and Cloudflare Workers with separate GET smoke checks. Ordinary
-`main` pushes maintain the version PR without deploying.
+Development merges into `main`; promotion PRs bring selected changes into `release`.
+Pushes to `release` maintain a software version PR. Merging that version PR fixes
+its merge SHA, runs validation, builds both production targets, then publishes a
+GitHub Release and deploys each target with its own GET smoke check. Content-only
+deployment uses an explicit dispatch for the full current `release` SHA and retains
+the existing software version. Ordinary feature and promotion merges do not deploy.
+
+PR CI uses one `verify` job, with a formatting-only path for development-document
+changes and full verification for other changes. Release preparation always runs
+full verification.
 See [docs/releasing.md](docs/releasing.md) for setup, commit conventions, and retries.
 
 ## Test

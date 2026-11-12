@@ -42,7 +42,7 @@ After any change, `vp run check && vp check && vp run lint && vp run build` must
 | Add a blog post                          | `src/content/blog/<slug>.mdx`                               | Frontmatter schema below                                                                                                         |
 | Content schema fields                    | `src/content.config.ts`                                     | Never remove fields; add new ones as optional                                                                                    |
 | Header, footer                           | `src/components/common/Header.astro`, `Footer.astro`        | Link lists live in `config.ts`                                                                                                   |
-| SEO meta                                 | `src/components/common/SEO.astro`                           | Pages only pass `title` / `description` props                                                                                    |
+| SEO meta                                 | `src/components/common/SEO.astro`                           | Pass SEO props through layouts; posts also set image, article type, and JSON-LD                                                  |
 | New page                                 | Shared `src/templates/<Name>.astro` using `PageLayout`      | Thin entries in `src/pages/` and `src/pages/zh/`; shared authored MDX lives in `src/content/pages/`                              |
 | UI strings (buttons, labels)             | `src/i18n/<locale>.ts`                                      | Never write UI strings inside components                                                                                         |
 | UI language and routes                   | `src/i18n/locales.ts`, `src/i18n/links.ts`, `src/pages/`    | URL selects `en` (no prefix) or `zh-Hans` (`/zh/`). Components use `useT(Astro.currentLocale)`; system links use `localizedHref` |
@@ -93,8 +93,8 @@ Human-readable version: `docs/content.md`.
 
 1. Find the file in the map above. If the request isn't covered, tell the user which files you plan to touch first.
 2. Make the change.
-3. Run `pnpm check && pnpm build` and report the result.
-4. For visual changes (layout, color), start `pnpm dev` and ask the user to check.
+3. Run `vp run check && vp check && vp run lint && vp run build` and report the result.
+4. For visual changes (layout, color), start `vp run dev --background` and ask the user to check.
 5. Before merging a PR, synchronizing the repository, or cleaning task branches, read
    [docs/agents/closeout.md](docs/agents/closeout.md). Complete its final verification
    before reporting delivery complete; report pending release or deployment work separately.
@@ -102,10 +102,10 @@ Human-readable version: `docs/content.md`.
 ## Tool notes
 
 - For translation keys or locale changes, use the project `x18n` skill; use `x18n-check` for diagnostics and `x18n-setup` for configuration changes. For language routing, shared templates, content language, or SEO changes, read [docs/i18n-spec.md](docs/i18n-spec.md); project-specific workflow and scanner limits are in [tests/I18N.md](tests/I18N.md#agent-workflow).
-- Use the configured x18n MCP tools for interactive work, or `pnpm exec x18n <command> --json` as the CLI fallback. Finish with `pnpm run i18n:check` and `pnpm run test:unit`; the normal project checks still apply.
+- Use the configured x18n MCP tools for interactive work, or `vp exec x18n <command> --json` as the CLI fallback. Finish with `vp run i18n:check` and `vp run test:unit`; the normal project checks still apply.
 
-- Run the dev server in the background: `pnpm astro dev --background` / `astro dev stop|status|logs`.
-- TypeScript is pinned to 6.x. 7.x (native compiler) is not yet supported by `astro check` or typescript-eslint.
+- Run the dev server in the background: `vp run dev --background`; manage it with `vp run astro dev stop`, `vp run astro dev status`, or `vp run astro dev logs`.
+- Keep TypeScript on the 6.x range declared in `package.json`; validate changes with both Astro and Vite+ checks.
 - Use the pnpm 11 version pinned in `package.json#packageManager` and `allowBuilds` in `pnpm-workspace.yaml`. Vite+ manages Node.js through `package.json#devEngines.runtime`; keep the workspace `nodeVersion` aligned with that pin. `runtimeOnFail: ignore` and `pmOnFail: ignore` prevent pnpm from duplicating Vite+ environment management.
 
 ## Agent skills

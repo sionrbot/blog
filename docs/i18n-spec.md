@@ -1,6 +1,5 @@
 # i18n implementation spec
 
-- 更新日期：2026-11-10（Asia/Shanghai）。
 - 范围：英文与简体中文 UI；多语言静态路由；博客内容保持原文。
 - 测试与工具操作：[i18n testing](../tests/I18N.md)，描述测试范围、执行方法与工具边界。
 
@@ -24,23 +23,22 @@
 
 下文的实现约定是收敛后的工程方案，不冒充用户逐项确认的独立产品要求。优先使用 Astro 官方能力，常规工程细节按本方案处理；只有必须改变上述已确认行为时才重新讨论。
 
-## Current state
-
-**Fact — 当前工作区源码与本地构建产物：**
+## Implementation reference
 
 - [语言注册表](../src/i18n/locales.ts)、[字典](../src/i18n/t.ts) 与 x18n 使用 en/zh-Hans；`/zh/` 映射简体中文。
 - [共享模板](../src/templates/) 和薄路由入口生成两种 UI；[语言控件](../src/components/common/LanguageSwitcher.astro) 使用普通链接。URL 决定 UI，不读取语言偏好。
-- 已有 11 篇文章原文核查均为英文，显式补标 `lang: en`；schema 默认 en，其他有效语言标签可用于文章。
+- [文章 schema](../src/content.config.ts) 的 `lang` 默认 `en`，接受有效的 BCP 47 内容语言标签；[文章集合](../src/content/blog/) 同时包含英文和简体中文原文。
 - [首页模板](../src/templates/Home.astro) 仅展示最近 6 篇文章，列表标题和全部文章入口使用字典；首页不渲染 Hero 或 Newsletter。
 - Contact、导航与可复用订阅组件的 UI 使用字典；About/Privacy/Terms 原文由共享 MDX 维护。
-- 构建产物与浏览器验证覆盖混合语言、11 篇文章分页 fixture。具体命令、结果与限制以测试文档为准，未执行远程 CI。
+- [构建测试](../tests/build/i18n.test.ts) 与[浏览器测试](../tests/e2e/deterministic/i18n/navigation.e2e.ts) 使用混合语言和分页 fixture；执行方法与工具边界见 [i18n testing](../tests/I18N.md)。
 
 ## Translation boundary
 
 ### Translate as UI
 
 - 现有字典键的全部用途，包括可见文本、`aria-label`、placeholder、分页参数、404 和页面描述。
-- Header 的 Blog/About/Contact；Footer 的 Legal/Privacy/Terms；首页 Recent writing 和 All posts。
+- Header 的 Blog/About/Contact/Search；Footer 的 Legal/Privacy/Terms；首页 Recent writing 和 All posts。
+- 搜索弹窗的输入说明、加载／错误／空结果提示、结果数量、清空／更多按钮和键盘提示；结果中的作者原文保持原样。
 - 普通页面的通用标题，例如 About、Contact、Privacy、Terms。
 - Contact 标题、完整说明、表单标签、按钮和本站提供的状态／不可用提示。
 - 可复用订阅组件的退订说明、邮箱标签及 placeholder、订阅按钮和不可用提示；首页不展示订阅区块。
@@ -62,7 +60,7 @@
 - 日期显示按 UI 语言格式化，继续使用 UTC；`datetime`、JSON-LD 时间戳和正文手写日期不变。
 - UI 页标题和已纳入翻译范围的描述随 UI 渲染；文章标题、摘要和分享文案保持原文；About 导语不因复用于 metadata 而另行翻译。
 - 浏览器原生校验提示、表单提交后的第三方页面、实际订阅邮件不纳入本站 UI 翻译承诺。
-- Styleguide 开发样式指南不纳入本次范围。
+- Styleguide 开发样式指南不纳入 UI 翻译范围。
 
 ## Implementation design
 
@@ -97,26 +95,24 @@
 
 ### Dictionaries and formatting
 
-- 保留现有轻量字典、平坦 camelCase 键及 x18n；迁移为 en/zh-Hans，不额外引入运行时翻译库。
+- 轻量字典采用平坦 camelCase 键及 x18n，支持 en/zh-Hans。
 - 集中声明语言清单、路径映射和类型；使 Astro、字典、x18n 与测试一致，避免循环导入。
 - 支持列表和默认值在构建时校验，非法配置明确失败。字典查询限制为支持集合中的自有键，特殊属性名不得绕过检查。
-- 区分字典与辅助模块，调整 glob，避免 helper 被误加载为字典。
+- x18n 的字典 glob 只匹配语言字典，辅助模块不作为字典加载。
 - 参数化文案使用共享格式化函数：替换全部重复占位符；缺参明确报错；使用替换回调保留 `$&` 等参数的字面含义。
 - section 组件继续通过 props 接收内容，由页面选择翻译；不修改 `src/components/ui/` 的既有 props 签名。
-- x18n 的 `{name}` 占位符与实际引用扫描能力按锁定版本核验；移除仅为旧客户端更新设计提出的 DOM 标记扫描要求。
-- 不因本次功能升级无关依赖或改写主题样式。
+- x18n 的 `{name}` 占位符与实际引用扫描能力按锁定版本核验；扫描边界见 [i18n testing](../tests/I18N.md#scanner-and-browser-boundaries)。
 
 ### Content language
 
 - 根 `<html lang>` 表示 UI 语言；文章、英文 About 和首页文章列表中的原文标题／摘要独立标记实际内容语言。
-- 在文章 schema 增加可选 `lang`，表示有效 BCP 47 内容语言；不限制为 UI 支持集合，不产生翻译副本。
-- 实施时核对现有文章并补标；旧文章的默认兼容值以内容核查为依据，不凭字符比例猜测。
+- 文章 schema 的可选 `lang` 表示有效 BCP 47 内容语言，默认 `en`；新文章按原文填写，不限制为 UI 支持集合，不产生翻译副本。
 - 原文标题、摘要、正文及图片说明保留内容语言语义；周围翻译控件和格式化日期使用 UI 语言，避免错误继承。
 - `BlogPosting.inLanguage` 来自文章语言，不来自当前 UI。
 
 ### SEO and feeds
 
-**实施建议，不是 Astro 自动行为：** 对正文相同的双 UI 页面，以无前缀地址作为首选 canonical；两种 UI 地址均保持可访问，用语言替代链接描述对应关系。中文页不因此永久跳转或简单添加 `noindex`。这不承诺搜索引擎分别索引两个页面或展示指定 UI。
+**项目实现约定：** 对正文相同的双 UI 页面，以无前缀地址作为首选 canonical；两种 UI 地址均保持可访问，用语言替代链接描述对应关系。中文页不因此永久跳转或简单添加 `noindex`。这不承诺搜索引擎分别索引两个页面或展示指定 UI。
 
 - 统一核对 canonical、语言替代链接、sitemap 和 `og:url`，避免互相矛盾。
 - 优先使用现有 `@astrojs/sitemap` 集成的语言映射与产物控制能力；先确定首选索引 URL 与变体关系，再核验实际 XML，不能只开启 i18n 选项便认定正确。
@@ -124,23 +120,21 @@
 - RSS 保持一份混合原文 feed，不按 UI 复制或筛选；条目使用稳定的无前缀地址。混合内容不错误宣称单一语言。
 - `og:locale` 与 HTML 语言标签不是同一格式；不直接输出裸 `en` 或 `zh`，不为地区中性的英文擅自增加地区要求，可省略该可选字段。
 
-## Change map
+## Implementation map
 
-本次实施范围：
+相关实现与职责：
 
-| 区域                                                 | 修改目的                                    |
-| ---------------------------------------------------- | ------------------------------------------- |
-| `astro.config.mjs`                                   | i18n 路由、sitemap 配置                     |
-| `src/i18n/`、`src/config.ts`、`x18n.config.ts`       | 双语字典、语言映射、UI 配置接入、移除 ko/hu |
-| `src/pages/`、`src/layouts/`、共享 MDX 内容          | 薄路由入口、共用模板、两套静态页面          |
-| `src/components/common/`、`src/components/blog/`     | 导航、语言切换器、分页、可访问名称和 SEO    |
-| 首页文章列表、Contact、可复用 Newsletter 组件        | 接入已确认的翻译文案                        |
-| `src/utils/posts.ts`、集中链接工具                   | 文章／标签链接、日期                        |
-| `src/content.config.ts`、文章语言字段                | 原文语言语义与兼容                          |
-| `tests/`、必要的 E2E 配置／CI                        | 单测、构建产物、浏览器验证                  |
-| i18n 文档、`docs/content.md`、`AGENTS.md` 等相关说明 | 实施后同步路由、语言与验收规则              |
-
-保留工作区已有未提交的 x18n 接入及其他无关改动。移除旧 UI 语言不改变其他语言的文章原文。
+| 区域                                                 | 修改目的                                 |
+| ---------------------------------------------------- | ---------------------------------------- |
+| `astro.config.mjs`                                   | i18n 路由、sitemap 配置                  |
+| `src/i18n/`、`src/config.ts`、`x18n.config.ts`       | 双语字典、语言映射、UI 配置接入          |
+| `src/pages/`、`src/layouts/`、共享 MDX 内容          | 薄路由入口、共用模板、两套静态页面       |
+| `src/components/common/`、`src/components/blog/`     | 导航、语言切换器、分页、可访问名称和 SEO |
+| 首页文章列表、Contact、可复用 Newsletter 组件        | 接入已确认的翻译文案                     |
+| `src/utils/posts.ts`、集中链接工具                   | 文章／标签链接、日期                     |
+| `src/content.config.ts`、文章语言字段                | 原文语言语义与兼容                       |
+| `tests/`、必要的 E2E 配置／CI                        | 单测、构建产物、浏览器验证               |
+| i18n 文档、`docs/content.md`、`AGENTS.md` 等相关说明 | 路由、语言与验收规则                     |
 
 ## Validation and delivery
 
@@ -171,16 +165,7 @@ pnpm run test:unit:tz
 pnpm run test:build
 ```
 
-另运行覆盖上述用户流程的相关 E2E，并记录实际报告路径。各命令的实际执行结果见测试文档；门禁清单本身不代表检查通过。
-
-交付顺序：
-
-1. 配置语言、字典、格式化与链接工具，验证单测和字典扫描。
-2. 接入共享内容／模板及两种路由，验证构建产物、原文和 SEO 关系。
-3. 验证实际导航、双向切换、无 JS、键盘和窄屏布局。
-4. 同步文档，报告实际检查结果、改动范围与剩余限制；区分本地验证与远程 CI。
-
-本 spec 取代旧的客户端原地切换建议。已确认的产品决定足以推进实施；常规工程细节不再扩展为逐项产品问答。
+另运行覆盖上述用户流程的相关 E2E，并在交付报告中记录实际结果和报告路径。测试文档定义操作方法，不保存某次执行状态。
 
 ## Sources
 

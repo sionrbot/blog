@@ -4,8 +4,9 @@ Sionrbot personal blog builds to a static site in `dist/`. There is no server ru
 
 ## Before you deploy
 
-Complete the authorized [release branch cutover](release-branch-spec.md#实施清单与切换)
-and verify live branch/environment rules first. The settings below are requirements,
+Verify live branch/environment rules first. When setting up the publication line,
+follow the authorized [release branch cutover](release-branch-spec.md#实施清单与切换).
+The settings below are requirements,
 not evidence that remote configuration has already changed. Content deployment
 uses the same builds, artifacts and smoke checks; see [the content entry point](releasing.md#deploy-content-independently).
 
@@ -118,8 +119,8 @@ Cloudflare credentials only in the deploy step; local verification stops at dry-
 
 `wrangler.config.ts` packages `dist/` as `.cloudflare/output/v0/` using Wrangler's
 `cf-wrangler` binary. `cloudflare.config.ts` defines the Worker and static routing.
-The prebuilt commands bypass `cf` framework detection, which does not support
-Astro 6+ during the beta. Tool versions are pinned in the project lockfile.
+The prebuilt commands use the explicit static-output configuration instead of
+`cf` framework detection. Tool versions are pinned in the project lockfile.
 Do not use `cf build` or plain `cf deploy` for this project.
 
 Unknown URLs return the generated root `404.html` with HTTP 404. Chinese pages
@@ -146,7 +147,11 @@ Build command: `pnpm build`. Publish directory: `dist`.
 ## CI and deployment verification
 
 [CI](../.github/workflows/ci.yml) runs one `verify` job on pull requests and manual
-dispatch, with a fixed root-hosted test URL. It installs dependencies once, runs
+dispatch. For a PR whose complete diff changes only `README.md`, `AGENTS.md`,
+`GLOSSARY.md`, `THIRD-PARTY-NOTICES.md`, or Markdown files under `docs/`,
+[scripts/ci-scope.ts](../scripts/ci-scope.ts) selects formatting-only verification.
+All other changes, manual dispatches, and uncertain scope detection run full
+verification with a fixed root-hosted test URL. It installs dependencies once, runs
 source/translation/unit/timezone checks, builds the baseline, checks build
 contracts and internal links, and runs the four deterministic browser suites on
 `desktop,narrow,webkit` plus the `production-path` desktop journey. The baseline
