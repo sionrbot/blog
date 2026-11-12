@@ -23,14 +23,13 @@ const t = useT(Astro.currentLocale);
     data-bundle={withBase('/pagefind/pagefind.js')}
     data-base={withBase('/')}
     data-post-base={localizedHref('/articles/', Astro.currentLocale)}
-    data-prompt={t.searchPrompt}
     data-loading={t.searchLoading}
     data-empty={t.searchEmpty}
     data-error={t.searchError}
     data-count={t.searchResultsCount}
     class="flex min-h-0 flex-1 flex-col"
   >
-    <div class="flex shrink-0 items-center gap-2 border-b border-border p-4">
+    <div class="flex shrink-0 items-center gap-2 p-4">
       <form role="search" class="relative min-w-0 flex-1">
         <label for="search-query" class="sr-only">
           {t.searchLabel}
@@ -63,16 +62,17 @@ const t = useT(Astro.currentLocale);
         </button>
       </form>
     </div>
-    <div data-search-scroll class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-5">
+    <div
+      data-search-scroll
+      class="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-border px-6 pb-5"
+    >
       <p
         data-search-status
         role="status"
         aria-live="polite"
         aria-atomic="true"
         class="my-5 text-sm text-muted"
-      >
-        {t.searchPrompt}
-      </p>
+      ></p>
       <ol data-search-results role="list" class="m-0 list-none p-0"></ol>
       <button
         data-search-more
@@ -105,6 +105,15 @@ const t = useT(Astro.currentLocale);
 </dialog>
 
 <style>
+  [data-search-status]:empty {
+    margin-block: 0;
+  }
+
+  [data-search-scroll]:has([data-search-status]:empty):has([data-search-results]:empty) {
+    border-top-width: 0;
+    padding-bottom: 0;
+  }
+
   input[type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
     appearance: none;

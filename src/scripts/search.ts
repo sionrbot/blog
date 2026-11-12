@@ -115,7 +115,7 @@ export function setupSearch(root: HTMLElement) {
     shown = 0;
     if (!query) {
       more.disabled = false;
-      status.textContent = messages.prompt!;
+      status.textContent = '';
       return;
     }
     status.textContent = messages.loading!;

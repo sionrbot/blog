@@ -6,10 +6,21 @@ const base = process.env.SEARCH_TEST_BASE ?? '';
 
 test('search finds Chinese originals once and keeps the current UI language', async ({
   app,
+  browser,
   screen,
 }) => {
   await app.open(`${base}/`);
   await screen.getByRole('button', 'Search', { exact: true }).tap();
+  await expect(screen.getByRole('searchbox', 'Search articles')).toHaveAttribute(
+    'placeholder',
+    'Enter a word or phrase to search all articles',
+  );
+  await expect(screen.getByRole('status')).toHaveText('');
+  expect(
+    await browser.evaluate(
+      () => document.querySelector('[data-search-scroll]')!.getBoundingClientRect().height,
+    ),
+  ).toBe(0);
   await screen.getByRole('searchbox', 'Search articles').fill('寒蝉效应');
   await expect(screen.getByRole('status')).toHaveText('Results: 1');
   await expect(
@@ -23,6 +34,11 @@ test('search finds Chinese originals once and keeps the current UI language', as
   await screen.getByRole('link', '简体中文').tap();
   await screen.getByRole('button', '搜索', { exact: true }).tap();
   await expect(screen.getByRole('searchbox', '搜索文章')).toHaveValue('');
+  await expect(screen.getByRole('searchbox', '搜索文章')).toHaveAttribute(
+    'placeholder',
+    '输入关键词或短语，搜索全部文章',
+  );
+  await expect(screen.getByRole('status')).toHaveText('');
   await screen.getByRole('searchbox', '搜索文章').fill('寒蝉效应');
   await expect(screen.getByRole('status')).toHaveText('找到 1 篇文章');
   await expect(
@@ -41,7 +57,7 @@ test('search finds Chinese originals once and keeps the current UI language', as
   ).toBeVisible();
 });
 
-test('search handles English, empty queries, and no results', async ({ app, screen }) => {
+test('search handles English, empty queries, and no results', async ({ app, browser, screen }) => {
   await app.open(`${base}/zh/`);
   await screen.getByRole('button', '搜索', { exact: true }).tap();
   await screen.getByRole('searchbox', '搜索文章').fill('newsletter');
@@ -52,7 +68,12 @@ test('search handles English, empty queries, and no results', async ({ app, scre
   await expect(screen.getByRole('status')).toHaveText('没有找到相关文章，请换个关键词或短语。');
   await screen.getByRole('button', '清除').tap();
   await expect(screen.getByRole('searchbox', '搜索文章')).toHaveValue('');
-  await expect(screen.getByRole('status')).toHaveText('输入关键词或短语，搜索全部文章。');
+  await expect(screen.getByRole('status')).toHaveText('');
+  expect(
+    await browser.evaluate(
+      () => document.querySelector('[data-search-scroll]')!.getBoundingClientRect().height,
+    ),
+  ).toBe(0);
   await expect(screen.getByRole('dialog', '搜索')).toBeVisible();
   await expect(screen.getByRole('searchbox', '搜索文章')).toBeFocused();
   await expect(screen.getByRole('button', '清除')).toBeHidden();
